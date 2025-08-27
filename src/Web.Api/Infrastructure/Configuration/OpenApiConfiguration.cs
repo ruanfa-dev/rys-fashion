@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System.Text.Json;
+
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi.Models;
 
-using System.Text.Json;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Web.Api.Infrastructure.Configuration;
 
@@ -12,7 +14,8 @@ public static class OpenApiConfiguration
     {
         services.AddOpenApi(options => options
             .AddDocumentTransformer<BearerSecuritySchemeTransformer>()
-            .AddDocumentTransformer<SnakeCaseSchemaTransformer>());
+            .AddDocumentTransformer<SnakeCaseSchemaTransformer>()
+            .AddOperationTransformer<SnakeCaseParameterTransformer>());
         return services;
     }
 
@@ -24,8 +27,7 @@ public static class OpenApiConfiguration
             if (authenticationSchemes.Any(authScheme => authScheme.Name == "Bearer"))
             {
                 // Add the security scheme at the document level
-                var requirements = new Dictionary<string,
-                    OpenApiSecurityScheme>
+                var requirements = new Dictionary<string, OpenApiSecurityScheme>
                 {
                     ["Bearer"] = new OpenApiSecurityScheme
                     {
@@ -70,21 +72,6 @@ public static class OpenApiConfiguration
                 }
             }
 
-            // Transform parameter names in paths
-            foreach (var path in document.Paths.Values)
-            {
-                foreach (var operation in path.Operations.Values)
-                {
-                    if (operation.Parameters != null)
-                    {
-                        foreach (var parameter in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
-                        {
-                            parameter.Name = ToSnakeCase(parameter.Name);
-                        }
-                    }
-                }
-            }
-
             return Task.CompletedTask;
         }
 
@@ -112,6 +99,31 @@ public static class OpenApiConfiguration
             {
                 TransformSchema(additionalPropsSchema);
             }
+        }
+
+        private string ToSnakeCase(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            return JsonNamingPolicy.SnakeCaseLower.ConvertName(input);
+        }
+    }
+
+    internal sealed class SnakeCaseParameterTransformer : IOpenApiOperationTransformer
+    {
+        public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+        {
+            // Transform query parameter names to snake_case
+            if (operation.Parameters != null)
+            {
+                foreach (var parameter in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
+                {
+                    parameter.Name = ToSnakeCase(parameter.Name);
+                }
+            }
+
+            return Task.CompletedTask;
         }
 
         private string ToSnakeCase(string input)

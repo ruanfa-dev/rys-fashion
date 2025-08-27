@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Text.Json;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Text.Json;
 
 using Serilog;
+
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Web.Api.Infrastructure.Configuration;
 
@@ -15,6 +17,7 @@ public static class SwaggerConfiguration
         {
             o.CustomSchemaIds(id => id.FullName!.Replace('+', '-'));
             o.SchemaFilter<SnakeCaseSchemaFilter>();
+            o.ParameterFilter<SnakeCaseParameterFilter>();
 
             var securityScheme = new OpenApiSecurityScheme
             {
@@ -42,6 +45,7 @@ public static class SwaggerConfiguration
                     new List<string>()
                 }
             };
+
             o.UseAllOfToExtendReferenceSchemas();
             o.AddSecurityRequirement(securityRequirement);
         });
@@ -76,6 +80,17 @@ public static class SwaggerConfiguration
             {
                 var snakeCaseKey = JsonNamingPolicy.SnakeCaseLower.ConvertName(key);
                 schema.Properties[snakeCaseKey] = value;
+            }
+        }
+    }
+
+    public class SnakeCaseParameterFilter : IParameterFilter
+    {
+        public void Apply(OpenApiParameter parameter, ParameterFilterContext context)
+        {
+            if (parameter.In == ParameterLocation.Query)
+            {
+                parameter.Name = JsonNamingPolicy.SnakeCaseLower.ConvertName(parameter.Name);
             }
         }
     }
