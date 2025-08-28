@@ -1,53 +1,58 @@
-﻿using Core.Identity;
+﻿using ErrorOr;
 
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 using UseCases.Common.Persistence.Context;
+using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.BackgroundServices.Jobs;
 
-public sealed class RefreshTokenCleanupJob(IUnitOfWork unitOfWork)
+public sealed class RefreshTokenCleanupJob
 {
+    private readonly IRefreshTokenService _refreshTokenService;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<RefreshTokenCleanupJob> _logger;
+
     public const string RecurringJobId = "refresh-token-cleanup";
-    public const string CronExpression = "0 2 * * *";
+    public const string CronExpression = "0 2 * * *"; // Runs daily at 2 AM
     public const string Description = "Cleans up expired and revoked refresh tokens from the database.";
     public const string Tag = "security";
 
+    public RefreshTokenCleanupJob(
+        IRefreshTokenService refreshTokenService,
+        IUnitOfWork unitOfWork,
+        ILogger<RefreshTokenCleanupJob> logger)
+    {
+        _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        await unitOfWork.BeginTransactionAsync(cancellationToken);
+        _logger.LogInformation("Starting refresh token cleanup job at {Time}", DateTimeOffset.UtcNow);
 
         try
         {
-            var expiredTokens = await unitOfWork.Context.Set<RefreshToken>()
-                .Where(rt => rt.IsExpired || rt.IsRevoked)
-                .ToListAsync(cancellationToken);
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-            if (expiredTokens.Count > 0)
-            {
-                unitOfWork.Context.Set<RefreshToken>().RemoveRange(expiredTokens);
+            ErrorOr<int> result = await _refreshTokenService.CleanupExpiredTokensAsync(cancellationToken);
 
-                try
-                {
-                    await unitOfWork.SaveChangesAsync(cancellationToken);
-                    await unitOfWork.CommitTransactionAsync(cancellationToken);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    await unitOfWork.RollbackTransactionAsync(cancellationToken);
-                    throw;
-                }
-            }
-            else
+            if (result.IsError)
             {
-                await unitOfWork.CommitTransactionAsync(cancellationToken);
+                _logger.LogError("Failed to clean up refresh tokens: {Errors}", string.Join(", ", result.Errors));
+                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                throw new InvalidOperationException($"Cleanup failed: {string.Join(", ", result.Errors)}");
             }
+
+            await _unitOfWork.CommitTransactionAsync(cancellationToken);
+            _logger.LogInformation("Successfully cleaned up {Count} refresh tokens", result.Value);
         }
-        catch
+        catch (Exception ex)
         {
-            await unitOfWork.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Refresh token cleanup job failed");
+            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
             throw;
         }
     }
 }
-

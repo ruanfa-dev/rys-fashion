@@ -1,4 +1,6 @@
-﻿using SharedKernel.Domain.Primitives;
+﻿using ErrorOr;
+
+using SharedKernel.Domain.Primitives;
 
 namespace Core.Identity;
 
@@ -96,6 +98,5 @@ public sealed partial class RefreshToken : AuditableEntity
             MarkAsUpdated();
         }
     }
-
     #endregion
 }

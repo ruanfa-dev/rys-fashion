@@ -12,4 +12,5 @@ public partial class Role
         // Description: Allow most characters but restrict length
         public const int MaxDescriptionLength = 1000;
     }
+
 }

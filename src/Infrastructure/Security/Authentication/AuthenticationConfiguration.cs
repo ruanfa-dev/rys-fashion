@@ -4,7 +4,7 @@ using Ardalis.GuardClauses;
 
 using Infrastructure.Security.Authentication.Contexts;
 using Infrastructure.Security.Authentication.Options;
-using Infrastructure.Security.Authentication.Tokens;
+using Infrastructure.Security.Authentication.Tokens.Services;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
 using UseCases.Common.Security.Authentication.Contexts;
-using UseCases.Common.Security.Authentication.Tokens;
+using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication;
 
@@ -96,8 +96,10 @@ public static class AuthenticationConfiguration
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, UserContext>();
 
-        // Register: JwtTokenService
+        // Register: Token services
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<ITokenManagementService, TokenManagementService>();
 
         return services;
     }

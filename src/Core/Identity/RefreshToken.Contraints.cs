@@ -1,5 +1,5 @@
 ﻿namespace Core.Identity;
-public partial class RefreshToken
+public sealed partial class RefreshToken
 {
     public static class Constraints
     {
@@ -20,8 +20,5 @@ public partial class RefreshToken
         // UserAgent: Allow most printable characters, restrict length
         public const int UserAgentLength = 512;
         public const string UserAgentAllowedPattern = @"^[\u0020-\u007E]{1,512}$"; // Printable ASCII
-
-        // Expiration: Days
-        public const int ExpirationTimeInDays = 30;
     }
 }

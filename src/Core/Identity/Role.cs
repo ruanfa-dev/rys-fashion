@@ -7,6 +7,8 @@ public partial class Role : IdentityRole<Guid>, IAuditable
 {
     #region Properties
     public string? Description { get; set; }
+    public bool IsDefault { get; set; } = false;
+    public bool IsSystemRole { get; set; } = false;
 
     #region Auditable Properties
     public DateTimeOffset CreatedAt { get; set; }

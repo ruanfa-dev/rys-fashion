@@ -51,7 +51,7 @@ public partial class User : IdentityUser<Guid>, IAuditable
     #endregion
 
     #region Tracking
-    public void RecordSignIn(string ipAddress)
+    public void RecordSignIn(string? ipAddress = null)
     {
         LastSignInAt = CurrentSignInAt;
         LastSignInIp = CurrentSignInIp;
