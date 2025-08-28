@@ -168,24 +168,29 @@ public static class Schema
     public const string FulfillmentMetrics = "fulfillment_metrics";
     public const string CustomerServiceTickets = "customer_service_tickets";
     public const string ReturnReasons = "return_reasons"; // Fashion-specific returns
-    
+
     // ===========================================
     // OPTIONAL EXTENSIONS - Future enhancements
     // ===========================================
-    
+
     // Advanced Fashion Features (implement if time permits)
     // public const string FashionTrends = "fashion_trends";
     // public const string PersonalStyleProfiles = "personal_style_profiles";
     // public const string VirtualFittingData = "virtual_fitting_data";
     // public const string SustainabilityMetrics = "sustainability_metrics";
-    
+
     // Multi-tenant Support (for scaling)
     // public const string Tenants = "tenants";
     // public const string TenantUsers = "tenant_users";
     // public const string TenantConfigurations = "tenant_configurations";
-    
+
     // Advanced Integrations
     // public const string ExternalInventorySources = "external_inventory_sources";
     // public const string SupplierIntegrations = "supplier_integrations";
     // public const string DropshippingOrders = "dropshipping_orders";
+
+
+    // Testing & QA (for development purposes)
+    public const string TodoItems = "todo_items";
+    public const string TodoLists = "todo_lists";
 }

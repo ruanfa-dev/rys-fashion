@@ -73,7 +73,7 @@ public static class DependencyInjection
 
         Log.Information(LogTemplate.RegisterServiceWithOptions, "MediatR", new
         {
-            Assembly = executingAssembly.GetName().Name,
+            Assembly = executingAssembly.GetName().FullName,
             BehaviorsCount = 1,
             HasValidationBehavior = true
         });
@@ -107,7 +107,7 @@ public static class DependencyInjection
 
         Log.Information(LogTemplate.RegisterServiceWithOptions, "FluentValidation", new
         {
-            Assembly = executingAssembly.GetName().Name,
+            Assembly = executingAssembly.GetName().FullName,
             ValidatorCount = validatorTypes.Count,
             ValidatorTypes = validatorTypes.Select(t => t.Name).ToArray()
         });
