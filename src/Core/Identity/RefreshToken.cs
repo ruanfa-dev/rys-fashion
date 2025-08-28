@@ -1,6 +1,6 @@
 ﻿using SharedKernel.Domain.Primitives;
 
-namespace Infrastructure.Identity.Models;
+namespace Core.Identity;
 
 /// <summary>
 /// Refresh token entity for JWT token management.

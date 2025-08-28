@@ -33,11 +33,6 @@
 
 
   <ItemGroup>
-    <Folder Include="Identity\Endpoints\" />
-  </ItemGroup>
-
-
-  <ItemGroup>
     <ProjectReference Include="..\UseCases\UseCases.csproj" />
   </ItemGroup>
 

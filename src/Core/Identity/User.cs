@@ -2,7 +2,7 @@
 
 using SharedKernel.Domain.Attributes;
 
-namespace Infrastructure.Identity.Models;
+namespace Core.Identity;
 
 public partial class User : IdentityUser<Guid>, IAuditable
 {

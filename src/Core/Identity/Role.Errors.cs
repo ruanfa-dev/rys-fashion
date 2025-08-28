@@ -1,6 +1,6 @@
 ﻿using ErrorOr;
 
-namespace Infrastructure.Identity.Models;
+namespace Core.Identity;
 
 public partial class Role
 {

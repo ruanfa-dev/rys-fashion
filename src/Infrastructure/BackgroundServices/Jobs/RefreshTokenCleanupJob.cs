@@ -1,4 +1,4 @@
-﻿using Infrastructure.Identity.Models;
+﻿using Core.Identity;
 
 using Microsoft.EntityFrameworkCore;
 

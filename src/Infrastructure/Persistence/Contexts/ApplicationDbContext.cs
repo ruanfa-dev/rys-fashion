@@ -1,8 +1,8 @@
 using System.Reflection;
 
+using Core.Identity;
 using Core.Todos;
 
-using Infrastructure.Identity.Models;
 using Infrastructure.Persistence.Converters;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

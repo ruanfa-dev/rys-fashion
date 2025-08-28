@@ -1,6 +1,6 @@
-using ErrorOr;
+using Core.Identity;
 
-using Infrastructure.Identity.Models;
+using ErrorOr;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

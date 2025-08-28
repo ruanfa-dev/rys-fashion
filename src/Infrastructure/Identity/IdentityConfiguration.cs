@@ -1,4 +1,5 @@
-﻿using Infrastructure.Identity.Models;
+﻿using Core.Identity;
+
 using Infrastructure.Persistence.Contexts;
 
 using Microsoft.AspNetCore.Identity;

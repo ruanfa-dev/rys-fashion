@@ -1,4 +1,6 @@
-﻿using Infrastructure.BackgroundServices;
+﻿using Core.Identity;
+
+using Infrastructure.BackgroundServices;
 using Infrastructure.Identity;
 using Infrastructure.Notification;
 using Infrastructure.Persistence;

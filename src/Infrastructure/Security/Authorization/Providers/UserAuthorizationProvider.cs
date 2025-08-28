@@ -3,7 +3,8 @@ using System.Text.Json;
 
 using AsyncKeyedLock;
 
-using Infrastructure.Identity.Models;
+using Core.Identity;
+
 using Infrastructure.Security.Authorization.Options;
 
 using Microsoft.AspNetCore.Identity;
