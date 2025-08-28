@@ -31,13 +31,11 @@ public sealed class TodoListEndpoint : ICarterModule
     public const string Summary = "Todo Lists API";
     public const string Description = "Todo lists management API. Allows creating, updating, retrieving, and deleting todo lists.";
 
-    public const string Route = "lists";
-    public const string IdPath = $"{TodoEndpoint.Route}/lists";
+    public const string Route = $"{TodoEndpoint.Route}/lists";
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.GetTodoEndpoint()
-            .MapGroup(Route)
+        var group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tags)
             .WithSummary(Summary)
@@ -47,7 +45,7 @@ public sealed class TodoListEndpoint : ICarterModule
         {
             var command = new CreateTodoList.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResultCreated($"{IdPath}/{result.Value?.Id}");
+            return result.ToTypedResultCreated($"{Route}/{result.Value?.Id}");
         })
         .WithName(CreateTodoList.Name)
         .WithSummary(CreateTodoList.Summary)

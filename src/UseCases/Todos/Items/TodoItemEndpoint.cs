@@ -1,10 +1,4 @@
-﻿using UseCases.Todos.Items.Complete;
-using UseCases.Todos.Items.Create;
-using UseCases.Todos.Items.Delete;
-using UseCases.Todos.Items.GetById;
-using UseCases.Todos.Items.Update;
-
-using Carter;
+﻿using Carter;
 
 using MediatR;
 
@@ -13,9 +7,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using UseCases.Common.Extensions;
 using UseCases.Common.Security.Authorization.Permissions;
 using UseCases.Todos.Items.Common;
-using UseCases.Common.Extensions;
+using UseCases.Todos.Items.Complete;
+using UseCases.Todos.Items.Create;
+using UseCases.Todos.Items.Delete;
+using UseCases.Todos.Items.GetById;
+using UseCases.Todos.Items.Update;
 
 namespace UseCases.Todos.Items;
 
@@ -26,13 +25,11 @@ public sealed class TodoItemEndpoint : ICarterModule
     public const string Summary = "Todo Items API";
     public const string Description = "Todo items management API. Allows creating, updating, retrieving, and deleting todo items.";
 
-    public const string Route = "items";
-    public const string IdPath = $"{TodoEndpoint.Route}/items";
+    public const string Route = $"{TodoEndpoint.Route}/items";
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.GetTodoEndpoint()
-            .MapGroup(Route)
+        var group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -42,7 +39,7 @@ public sealed class TodoItemEndpoint : ICarterModule
         {
             var command = new CreateTodoItem.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResultCreated($"{IdPath}/{result.Value}");
+            return result.ToTypedResultCreated($"{Route}/{result.Value}");
         })
         .WithName(CreateTodoItem.Name)
         .WithSummary(CreateTodoItem.Summary)

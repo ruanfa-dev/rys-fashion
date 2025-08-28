@@ -22,7 +22,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Accounts\Auth\Login\External\" />
+    <Folder Include="Accounts\Auth\RefreshToken\Revoke\" />
+    <Folder Include="Accounts\Auth\RefreshToken\Refresh\" />
+    <Folder Include="Accounts\Auth\Register\" />
+    <Folder Include="Accounts\Common\" />
+    <Folder Include="Accounts\Email\Change\" />
+    <Folder Include="Accounts\Email\Confirm\" />
+    <Folder Include="Accounts\Email\Resend\" />
+    <Folder Include="Accounts\Password\Change\" />
+    <Folder Include="Accounts\Password\Forgot\" />
+    <Folder Include="Accounts\Password\Reset\" />
+    <Folder Include="Accounts\Phone\Change\" />
+    <Folder Include="Accounts\Profile\" />
     <Folder Include="Common\Notification\Constants\" />
+    <Folder Include="Common\Security\Authentication\Results\" />
   </ItemGroup>
 
 </Project>
