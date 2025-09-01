@@ -41,7 +41,7 @@ public static class JsonOptionsConfiguration
     /// <summary>
     /// Converter for DateTimeOffset that serializes to UTC with "Z" suffix.
     /// </summary>
-    public class SystemTextJsonUtcDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
+    public sealed class SystemTextJsonUtcDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
     {
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -70,7 +70,7 @@ public static class JsonOptionsConfiguration
     /// <summary>
     /// Converter for nullable DateTimeOffset that serializes to UTC with "Z" suffix or null.
     /// </summary>
-    public class SystemTextJsonNullableDateTimeOffsetConverter : JsonConverter<DateTimeOffset?>
+    public sealed class SystemTextJsonNullableDateTimeOffsetConverter : JsonConverter<DateTimeOffset?>
     {
         public override DateTimeOffset? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -106,7 +106,7 @@ public static class JsonOptionsConfiguration
         }
     }
 
-    public class SnakeCaseQueryModelBinderProvider : IModelBinderProvider
+    public sealed class SnakeCaseQueryModelBinderProvider : IModelBinderProvider
     {
         public IModelBinder? GetBinder(ModelBinderProviderContext context)
         {
@@ -118,7 +118,7 @@ public static class JsonOptionsConfiguration
         }
     }
 
-    public class SnakeCaseComplexTypeModelBinder : IModelBinder
+    public sealed class SnakeCaseComplexTypeModelBinder : IModelBinder
     {
         public Task BindModelAsync(ModelBindingContext bindingContext)
         {

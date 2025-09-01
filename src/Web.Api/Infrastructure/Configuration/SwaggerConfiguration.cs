@@ -67,7 +67,7 @@ public static class SwaggerConfiguration
         return app;
     }
 
-    public class SnakeCaseSchemaFilter : ISchemaFilter
+    public sealed class SnakeCaseSchemaFilter : ISchemaFilter
     {
         public void Apply(OpenApiSchema schema, SchemaFilterContext context)
         {
@@ -84,7 +84,7 @@ public static class SwaggerConfiguration
         }
     }
 
-    public class SnakeCaseParameterFilter : IParameterFilter
+    public sealed class SnakeCaseParameterFilter : IParameterFilter
     {
         public void Apply(OpenApiParameter parameter, ParameterFilterContext context)
         {

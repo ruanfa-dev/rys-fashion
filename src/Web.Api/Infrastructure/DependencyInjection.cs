@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using Microsoft.AspNetCore.DataProtection;
+
 using Serilog;
 
 using SharedKernel.Logging;
@@ -141,8 +143,8 @@ public static class DependencyInjection
             var traceId = context.HttpContext.TraceIdentifier;
             var userAgent = context.HttpContext.Request.Headers.UserAgent.ToString();
 
-            context.ProblemDetails.Extensions["TraceId"] = traceId;
-            context.ProblemDetails.Extensions["UserAgent"] = userAgent;
+            context.ProblemDetails.Extensions["trace_id"] = traceId;
+            context.ProblemDetails.Extensions["user_agent"] = userAgent;
 
             Log.Debug("Enhanced problem details with TraceId: {TraceId}", traceId);
         };
@@ -176,11 +178,18 @@ public static class DependencyInjection
         // Register: Session configuration with security settings
         services.AddSession(options =>
         {
-            options.IdleTimeout = TimeSpan.FromMinutes(30);
+            options.IdleTimeout = TimeSpan.FromMinutes(10);
             options.Cookie.HttpOnly = true;
             options.Cookie.IsEssential = true;
-            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Lax; // Compatible with OAuth redirects
         });
+
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo("./keys")) // Adjust path as needed
+            .SetApplicationName("YourAppName") // Replace with your actual app name
+            .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
+
         Log.Information(LogTemplate.RegisterServiceWithOptions, "Session management", new
         {
             IdleTimeoutMinutes = 30,
