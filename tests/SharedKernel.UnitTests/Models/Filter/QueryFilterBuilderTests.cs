@@ -11,7 +11,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     private readonly ITestOutputHelper _output = output;
 
     // Test data class (same as in QueryFilterExtensionsTests)
-    public class User
+    public sealed class User
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;

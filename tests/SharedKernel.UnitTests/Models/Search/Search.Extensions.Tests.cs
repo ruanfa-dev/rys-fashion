@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace SharedKernel.UnitTests.Models.Search;
 
-public class SearchParamsExtensionsTests
+public sealed class SearchParamsExtensionsTests
 {
     private readonly List<TestEntity> _testData;
 

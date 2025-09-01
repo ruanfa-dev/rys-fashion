@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace SharedKernel.UnitTests.Models.Paging;
 
-public class PagingParamsTests
+public sealed class PagingParamsTests
 {
     #region Constructor Tests
 

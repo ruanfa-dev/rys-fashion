@@ -5,9 +5,9 @@ using Shouldly;
 
 namespace SharedKernel.UnitTests.Models.Paging;
 
-public class PagingExtensionsTests
+public sealed class PagingExtensionsTests
 {
-    public class User
+    public sealed class User
     {
         public int Id { get; set; }
         public required string Name { get; set; }
