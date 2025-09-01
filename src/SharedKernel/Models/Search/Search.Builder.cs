@@ -4,7 +4,7 @@ namespace SharedKernel.Models.Search;
 /// <summary>
 /// Fluent builder for search operations.
 /// </summary>
-public class SearchBuilder<T>
+public sealed class SearchBuilder<T>
 {
     private readonly IQueryable<T> _query;
     private readonly string _searchTerm;
