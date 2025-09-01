@@ -1,5 +1,7 @@
 ﻿using ErrorOr;
 
+using Microsoft.VisualBasic;
+
 namespace Core.Identity;
 
 public partial class User
@@ -11,6 +13,12 @@ public partial class User
             Error.Validation(
                 code: $"User.UserIdRequired",
                 description: "User ID is required.");
+
+        public static Error UserIdInvalidFormat =>
+            Error.Validation(
+                code: $"User.UserIdInvalidFormat",
+                description: "User ID format is invalid.");
+
         public static Error UserNotFound =>
             Error.NotFound(
                 code: $"User.UserNotFound",
@@ -100,6 +108,14 @@ public partial class User
         public static Error PhoneNumberAlreadyExists =>
             Error.Conflict($"User.PhoneNumberAlreadyExists",
                 "A user with this phone number already exists.");
+
+        public static Error SamePhoneNumberNotAllowed =>
+            Error.Conflict($"User.SamePhoneNumberNotAllowed",
+                "New phone number cannot be the same as the current phone number.");
+
+        public static Error PhoneNumberNotConfirmed => Error.Validation(
+            code: "Auth.PhoneNumberNotConfirmed",
+            description: "Phone number is not confirmed.");
         #endregion
 
         #region Email errors
@@ -218,18 +234,44 @@ public partial class User
             Error.Validation($"User.ConfirmationCodeRequired",
                 "Confirmation code is required.");
 
+        public static Error ConfirmationCodeInvalidFormat =>
+            Error.Validation($"User.ConfirmationCodeInvalidFormat",
+            $"Invalid email confirmation code format");
+
         public static Error ConfirmationCodeExpired =>
             Error.Validation($"User.ConfirmationCodeExpired",
                 "Email confirmation code has expired.");
 
-        public static Error
-            ConfirmationCodeInvalid =>
+        public static Error ConfirmationCodeInvalid =>
             Error.Validation($"User.ConfirmationCodeInvalid",
                 "Invalid email confirmation code.");
 
         public static Error EmailAlreadyConfirmed =>
             Error.Validation($"User.EmailAlreadyConfirmed",
                 "Email address is already confirmed.");
+        #endregion
+
+        #region Phone Confirmation errors
+        public static Error PhoneConfirmationCodeRequired =>
+            Error.Validation($"User.PhoneConfirmationCodeRequired",
+                "Phone confirmation code is required.");
+
+        public static Error PhoneConfirmationCodeInvalidFormat =>
+            Error.Validation($"User.PhoneConfirmationCodeInvalidFormat",
+                "Invalid phone confirmation code format.");
+
+        public static Error PhoneConfirmationCodeExpired =>
+            Error.Validation($"User.PhoneConfirmationCodeExpired",
+                "Phone confirmation code has expired.");
+
+        public static Error PhoneConfirmationCodeInvalid =>
+            Error.Validation($"User.PhoneConfirmationCodeInvalid",
+                "Invalid phone confirmation code.");
+
+        public static Error PhoneAlreadyConfirmed =>
+            Error.Validation($"User.PhoneAlreadyConfirmed",
+                "Phone number is already confirmed.");
+
         #endregion
 
         #region Password Reset errors
@@ -271,6 +313,11 @@ public partial class User
         public static Error InsufficientPermissions => Error.Validation(
             code: "Auth.InsufficientPermissions",
             description: "You do not have permission to perform this action.");
+
+        public static Error UserUnauthorized => Error.Unauthorized(
+            code: "Auth.UserUnauthorized",
+            description: "User is not authorized to access this resource.");
+
         #endregion
 
         #region Token errors

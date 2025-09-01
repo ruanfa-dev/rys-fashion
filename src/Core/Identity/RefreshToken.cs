@@ -1,102 +1,60 @@
-﻿using ErrorOr;
-
-using SharedKernel.Domain.Primitives;
+﻿using System.Security.Cryptography;
+using System.Text;
 
 namespace Core.Identity;
 
 /// <summary>
-/// Refresh token entity for JWT token management.
-/// Supports rotation, revocation, and validation checks.
+/// Represents a refresh token for a user, implementing rotation and reuse detection.
 /// </summary>
-public sealed partial class RefreshToken : AuditableEntity
+public sealed partial class RefreshToken
 {
-    #region Properties
-    public Guid UserId { get; set; }
-    public string Token { get; set; } = string.Empty;
-    public DateTimeOffset ExpiresAt { get; set; }
-    public string CreatedByIp { get; set; } = string.Empty;
+    public Guid Id { get; private set; } = Guid.NewGuid();
+    public Guid UserId { get; private set; }
+    public string TokenHash { get; private set; } = string.Empty;
+    public string? ReplacedByTokenHash { get; set; }
 
-    // Revocation info
-    public bool IsRevoked { get; set; }
-    public DateTimeOffset? RevokedAt { get; set; }
-    public string? RevokedByIp { get; set; }
-    public string? ReplacedByToken { get; set; }
-    public string? RevocationReason { get; set; }
-    #endregion
+    public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
+    public string CreatedByIp { get; private set; } = string.Empty;
+    public DateTimeOffset ExpiresAt { get; private set; }
 
-    #region Relationships
-    public User User { get; set; } = null!;
-    #endregion
+    public DateTimeOffset? RevokedAt { get; private set; }
+    public string? RevokedByIp { get; private set; }
+    public string? RevokedReason { get; private set; }
 
-    #region Computed Properties
     public bool IsExpired => DateTimeOffset.UtcNow >= ExpiresAt;
-    public bool IsActive => !IsRevoked && !IsExpired;
-    public bool IsReplaced => !string.IsNullOrWhiteSpace(ReplacedByToken);
-    #endregion
+    public bool IsRevoked => RevokedAt.HasValue;
 
-    #region Factory
-    /// <summary>
-    /// Create a new refresh token.
-    /// </summary>
-    public static RefreshToken Create(Guid userId, string token, DateTimeOffset expiresAt, string createdByIp)
+    public User User { get; private set; } = null!;
+
+    // Private constructor for EF Core
+    private RefreshToken() { }
+
+    public static RefreshToken Create(Guid userId, string rawToken, DateTimeOffset expiresAt, string ipAddress)
     {
         return new RefreshToken
         {
             UserId = userId,
-            Token = token,
+            TokenHash = Hash(rawToken),
             ExpiresAt = expiresAt,
-            CreatedByIp = createdByIp,
-            IsRevoked = false
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedByIp = ipAddress,
         };
     }
-    #endregion
 
-    #region Behaviors
-
-    /// <summary>
-    /// Revoke this token (manually or as part of rotation).
-    /// </summary>
-    public void Revoke(string revokedByIp, string? replacedByToken = null, string? reason = null)
+    public void Revoke(string ipAddress, string? reason = null, string? replacedByTokenHash = null)
     {
-        if (IsRevoked)
-            return; // already revoked
+        if (IsRevoked) return;
 
-        IsRevoked = true;
         RevokedAt = DateTimeOffset.UtcNow;
-        RevokedByIp = revokedByIp;
-        ReplacedByToken = replacedByToken;
-        RevocationReason = reason;
-
-        MarkAsUpdated();
+        RevokedByIp = ipAddress;
+        RevokedReason = reason;
+        ReplacedByTokenHash = replacedByTokenHash ?? ReplacedByTokenHash;
     }
 
-    /// <summary>
-    /// Replace this token with a new one during rotation.
-    /// </summary>
-    public RefreshToken Replace(string newToken, DateTimeOffset newExpiresAt, string createdByIp)
+    public static string Hash(string rawToken)
     {
-        // Revoke current token and point it to replacement
-        Revoke(createdByIp, newToken, "Rotated");
-
-        // Return new token instance (caller must persist)
-        return Create(UserId, newToken, newExpiresAt, createdByIp);
+        using var sha = SHA256.Create();
+        var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(rawToken));
+        return Convert.ToBase64String(bytes);
     }
-
-    /// <summary>
-    /// Determine if this token can still be used for refreshing.
-    /// </summary>
-    public bool CanBeRefreshed() => IsActive;
-
-    /// <summary>
-    /// Extend expiry (for sliding sessions, e.g. "Remember Me").
-    /// </summary>
-    public void ExtendExpiry(int days)
-    {
-        if (IsActive)
-        {
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(days);
-            MarkAsUpdated();
-        }
-    }
-    #endregion
 }

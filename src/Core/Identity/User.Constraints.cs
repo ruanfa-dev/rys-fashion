@@ -50,24 +50,15 @@ public partial class User
         public const int TwoFactorRecoveryCodeLength = 8;
         public const string TwoFactorRecoveryCodePattern = @"^[A-Z0-9]{8}$";
 
-        // Confirm Email: Base64 encoded string, similar to reset password tokens
-        public const int ConfirmationCodeMinLength = 80;
-
-        public const int ConfirmationCodeMaxLength = 256;
-
-        // Pattern: URL-safe Base64 (alphanumeric, '-', '_', '=', '.')
-        public const string ConfirmationCodePattern =
-            @"^[A-Za-z0-9\-_=.]{80,256}$"; // matches Identity tokens
+        // Confirm Email: Base64 encoded string
+        // Pattern: URL-safe Base64 (alphanumeric, '-', '_', '.')
+        public const string ConfirmationCodePattern = @"^[A-Za-z0-9\-_]";
 
         // Reset Password Token: Identity tokens are long, URL-safe Base64 strings
-        public const int
-            ResetPasswordCodeMinLength = 80; // typical minimum length
-
-        public const int ResetPasswordCodeMaxLength = 256; // safe upper bound
 
         // Pattern: URL-safe Base64 (alphanumeric, '-', '_', '=', '.')
-        public const string ResetPasswordCodePattern =
-            @"^[A-Za-z0-9\-_=.]{80,256}$"; // matches Identity tokens
+        public const string ResetPasswordCodePattern = @"^[A-Za-z0-9\-_]";
+
 
         // External Authentication: Provider names and constraints
         public const string GoogleProvider = "Google";

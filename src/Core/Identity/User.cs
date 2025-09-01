@@ -8,6 +8,13 @@ public partial class User : IdentityUser<Guid>, IAuditable
 {
     #region Properties
 
+    #region Personal information
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    #endregion
+
+    public string? ProfileImagePath { get; set; }
+
     #region Tracking
     public DateTimeOffset? LastSignInAt { get; set; }
     public string? LastSignInIp { get; set; }
