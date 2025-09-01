@@ -1,276 +1,284 @@
 ﻿using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 
 using Core.Identity;
 
 using ErrorOr;
 
-using Infrastructure.Security.Authentication.Options;
-
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using UseCases.Common.Persistence.Context;
+using UseCases.Common.Security.Authentication.Options;
 using UseCases.Common.Security.Authentication.Tokens.Models;
 using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication.Tokens.Services;
 
-public class RefreshTokenService : IRefreshTokenService
+/// <summary>
+/// Issues, validates, rotates and revokes refresh tokens using hash-at-rest and one-time use.
+/// Implements reuse detection (revokes descendant chain).
+/// </summary>
+public sealed class RefreshTokenService : IRefreshTokenService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _uow;
     private readonly ILogger<RefreshTokenService> _logger;
-    private readonly JwtOptions _jwtOptions;
+    private readonly JwtOptions _options;
+    private readonly UserManager<User> _userManager;
+    private readonly RoleManager<Role> _roleManager;
 
     public RefreshTokenService(
-        IUnitOfWork unitOfWork,
-        IOptions<JwtOptions> jwtOptions,
+        IUnitOfWork uow,
+        IOptions<JwtOptions> options,
+        UserManager<User> userManager,
+        RoleManager<Role> roleManager,
         ILogger<RefreshTokenService> logger)
     {
-        _unitOfWork = unitOfWork;
-        _jwtOptions = jwtOptions.Value;
-        _logger = logger;
+        _uow = uow ?? throw new ArgumentNullException(nameof(uow));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+        _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
+        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
     public async Task<ErrorOr<RefreshTokenResult>> GenerateRefreshTokenAsync(
-        Guid userId,
-        string ipAddress,
-        bool rememberMe = false,
-        bool isSystemUser = false,
-        CancellationToken cancellationToken = default)
+         Guid userId,
+         string ipAddress,
+         bool rememberMe = false,
+         CancellationToken cancellationToken = default)
     {
-        // Input validation
         if (userId == Guid.Empty)
-            return RefreshToken.Errors.Invalid;
-
+            return Error.Validation("RefreshToken.InvalidUserId", "User ID cannot be empty");
         if (string.IsNullOrWhiteSpace(ipAddress))
-            return RefreshToken.Errors.InvalidIpAddress;
+            return Error.Validation("RefreshToken.InvalidIpAddress", "IP address is required");
 
         try
         {
-            // Check: token limits
-            var canHaveMoreResult = await CanUserHaveMoreTokensAsync(userId, isSystemUser, cancellationToken);
-            if (canHaveMoreResult.IsError)
-                return canHaveMoreResult.Errors;
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return Error.NotFound("User.NotFound", "Associated user not found");
 
-            if (!canHaveMoreResult.Value)
-                return RefreshToken.Errors.TooManyActiveTokens;
+            // Check: is user admin (system role)
+            var systemRoles = await _roleManager.Roles
+                .Where(r => r.IsSystemRole)
+                .Select(r => r.Name)
+                .ToListAsync(cancellationToken);
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var isAdmin = userRoles.Any(r => systemRoles.Contains(r));
 
-            // Generate: secure token using constraints
-            var token = GenerateSecureToken();
+            var maxActiveTokens = isAdmin
+                ? _options.AdminMaxActiveRefreshTokensPerUser
+                : _options.MaxActiveRefreshTokensPerUser;
 
-            var expiresAt = DateTimeOffset.UtcNow.AddDays(
-                rememberMe ? _jwtOptions.RefreshTokenExpiryRememberMeInDays
-                          : _jwtOptions.RefreshTokenExpiryInDays);
+            var lifetimeDays = isAdmin
+                ? _options.AdminRefreshTokenLifetimeDays
+                : (rememberMe ? _options.RefreshTokenRememberMeLifetimeDays : _options.RefreshTokenLifetimeDays);
 
-            // Create and add token using domain factory method
-            var refreshToken = RefreshToken.Create(userId, token, expiresAt, ipAddress);
-            _unitOfWork.Context.RefreshTokens.Add(refreshToken);
+            var activeCount = await _uow.Context.RefreshTokens
+                .CountAsync(r => r.UserId == userId && DateTimeOffset.UtcNow < r.ExpiresAt && !r.RevokedAt.HasValue, cancellationToken);
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            if (activeCount >= maxActiveTokens)
+                return Error.Conflict("RefreshToken.TooManyActive", "Maximum number of active refresh tokens reached");
 
-            _logger.LogInformation("Generated refresh token for user {UserId} from IP {IpAddress}",
-                userId, ipAddress);
+            var raw = GenerateRawToken();
+            var expires = DateTimeOffset.UtcNow.AddDays(lifetimeDays);
 
-            return new RefreshTokenResult
-            {
-                Token = token,
-                ExpiresAt = expiresAt,
-                UserId = userId,
-                CreatedByIp = ipAddress,
-                RememberMe = rememberMe
-            };
+            var token = RefreshToken.Create(userId, raw, expires, ipAddress);
+            _uow.Context.RefreshTokens.Add(token);
+            await _uow.SaveChangesAsync(cancellationToken);
+
+            return new RefreshTokenResult { Token = raw, ExpiresAt = expires, UserId = userId };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to generate refresh token for user {UserId}", userId);
-            return RefreshToken.Errors.GenerationFailed;
+            _logger.LogError(ex, "Generate refresh token failed for user {UserId}", userId);
+            return Error.Failure("RefreshToken.GenerationFailed", "Failed to generate refresh token");
         }
     }
 
     public async Task<ErrorOr<RefreshTokenValidationResult>> ValidateRefreshTokenAsync(
-        string token,
+        string rawToken,
         CancellationToken cancellationToken = default)
     {
-        // Format validation using domain constraints
-        var formatValidation = ValidateTokenFormat(token);
-        if (formatValidation.IsError)
-            return formatValidation.Errors;
+        // Validate: token is not empty
+        if (string.IsNullOrWhiteSpace(rawToken))
+            return Error.Validation("RefreshToken.Empty", "Refresh token is required");
 
         try
         {
-            // Find token using UnitOfWork context
-            var refreshToken = await _unitOfWork.Context.RefreshTokens
-                .Include(rt => rt.User)
-                .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken);
+            // Fetch: refresh token by hash
+            var hash = RefreshToken.Hash(rawToken);
+            var token = await _uow.Context.RefreshTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
-            if (refreshToken == null)
-                return RefreshToken.Errors.NotFound;
+            if (token is null)
+                return RefreshToken.Errors.RefreshTokenNotFound;
 
-            // Use domain method for validation
-            var validationResult = ValidateRefreshTokenSecurity(refreshToken);
-            if (validationResult.IsError)
-                return validationResult.Errors;
-
-            return new RefreshTokenValidationResult
+            if (token.IsRevoked)
             {
-                UserId = refreshToken.UserId,
-                RefreshToken = refreshToken,
-                User = refreshToken.User
+                // Reuse attempt? If it was rotated, we treat as incident and revoke descendants.
+                if (!string.IsNullOrWhiteSpace(token.ReplacedByTokenHash))
+                    await RevokeDescendantChainAsync(token, "Detected refresh token reuse", cancellationToken);
+
+                return Error.Unauthorized("RefreshToken.Revoked", "Refresh token is revoked");
+            }
+
+            if (token.IsExpired)
+                return Error.Unauthorized("RefreshToken.Expired", "Refresh token is expired");
+
+            if (token.User is null)
+                return Error.NotFound("RefreshToken.UserNotFound", "Associated user not found");
+
+            return new RefreshTokenValidationResult()
+            {
+                RefreshToken = token,
+                User = token.User
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate refresh token");
-            return RefreshToken.Errors.Invalid;
+            _logger.LogError(ex, "Validate refresh token failed");
+            return Error.Failure("RefreshToken.ValidationFailed", "Token validation failed");
         }
     }
 
     public async Task<ErrorOr<RefreshTokenResult>> RotateRefreshTokenAsync(
-        string currentToken,
-        string ipAddress,
-        bool rememberMe = false,
-        bool isSystemUser = false,
-        CancellationToken cancellationToken = default)
+      string rawCurrentToken,
+      string ipAddress,
+      bool rememberMe = false,
+      CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(ipAddress))
+            return Error.Validation("RefreshToken.InvalidIpAddress", "IP address is required");
+
         try
         {
-            await _unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
-            // 1. Validate current token
-            var validationResult = await ValidateRefreshTokenAsync(currentToken, cancellationToken);
-            if (validationResult.IsError)
-            {
-                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                return validationResult.Errors;
-            }
+            await _uow.BeginTransactionAsync(cancellationToken);
+            var validated = await ValidateRefreshTokenAsync(rawCurrentToken, cancellationToken);
+            if (validated.IsError)
+                return validated.Errors;
 
-            var validation = validationResult.Value;
+            var (oldToken, user) = (validated.Value.RefreshToken, validated.Value.User);
 
-            var canHaveMoreResult = await CanUserHaveMoreTokensAsync(validation.UserId, isSystemUser, cancellationToken);
-            if (canHaveMoreResult.IsError || !canHaveMoreResult.Value)
-                return RefreshToken.Errors.TooManyActiveTokens;
+            // Check: is user admin (system role)
+            var systemRoles = await _roleManager.Roles
+                .Where(r => r.IsSystemRole)
+                .Select(r => r.Name)
+                .ToListAsync(cancellationToken);
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var isAdmin = userRoles.Any(r => systemRoles.Contains(r));
 
-            // Generate: secure token using constraints
-            var newToken = GenerateSecureToken();
+            var lifetimeDays = isAdmin
+                ? _options.AdminRefreshTokenLifetimeDays
+                : (rememberMe ? _options.RefreshTokenRememberMeLifetimeDays : _options.RefreshTokenLifetimeDays);
 
-            var newExpiresAt = DateTimeOffset.UtcNow.AddDays(
-                rememberMe ? _jwtOptions.RefreshTokenExpiryRememberMeInDays
-                          : _jwtOptions.RefreshTokenExpiryInDays);
+            // Create new token before revoking old one
+            var rawNewToken = GenerateRawToken();
+            var expires = DateTimeOffset.UtcNow.AddDays(lifetimeDays);
+            var newToken = RefreshToken.Create(user.Id, rawNewToken, expires, ipAddress);
 
-            // 3. Use domain method for token replacement
-            var newRefreshToken = validation.RefreshToken.Replace(newToken, newExpiresAt, ipAddress);
+            // Revoke old token and link it to the new one
+            oldToken.Revoke(ipAddress, "Rotated", newToken.TokenHash);
 
-            // 4. Update old token and add new token
-            _unitOfWork.Context.RefreshTokens.Update(validation.RefreshToken);
-            _unitOfWork.Context.RefreshTokens.Add(newRefreshToken);
+            _uow.Context.RefreshTokens.Update(oldToken);
+            _uow.Context.RefreshTokens.Add(newToken);
 
-            // 5. Save all changes in transaction
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            await _unitOfWork.CommitTransactionAsync(cancellationToken);
+            await _uow.SaveChangesAsync(cancellationToken);
+            await _uow.CommitTransactionAsync(cancellationToken);
 
-            _logger.LogInformation("Token rotation successful for user {UserId}", validation.UserId);
-
-            return new RefreshTokenResult
-            {
-                Token = newToken,
-                ExpiresAt = newExpiresAt,
-                UserId = validation.UserId,
-                CreatedByIp = ipAddress,
-                RememberMe = false
-            };
+            return new RefreshTokenResult { Token = rawNewToken, ExpiresAt = expires, UserId = user.Id };
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            await _uow.RollbackTransactionAsync(cancellationToken);
+            _logger.LogWarning(ex, "Concurrency conflict during token rotation. Possible race condition detected.");
+            return Error.Conflict("RefreshToken.ConcurrencyConflict", "This token has been used. Please log in again.");
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-            _logger.LogError(ex, "Token rotation failed");
-            return RefreshToken.Errors.RotationFailed;
+            await _uow.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Rotate refresh token failed");
+            return Error.Failure("RefreshToken.RotationFailed", "Token rotation failed");
         }
     }
 
+
     public async Task<ErrorOr<Success>> RevokeTokenAsync(
-        string token,
+        string rawToken,
         string ipAddress,
         string? reason = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(token))
-            return RefreshToken.Errors.Invalid;
-
+        if (string.IsNullOrWhiteSpace(rawToken))
+            return Error.Validation("RefreshToken.Empty", "Refresh token is required");
         if (string.IsNullOrWhiteSpace(ipAddress))
-            return RefreshToken.Errors.InvalidIpAddress;
+            return Error.Validation("RefreshToken.InvalidIpAddress", "IP address is required");
 
         try
         {
-            var refreshToken = await _unitOfWork.Context.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken);
+            var hash = RefreshToken.Hash(rawToken);
+            var token = await _uow.Context.RefreshTokens
+                .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
-            if (refreshToken == null)
-                return RefreshToken.Errors.NotFound;
+            if (token is null)
+                return Error.NotFound("RefreshToken.NotFound", "Refresh token not found");
 
-            if (refreshToken.IsRevoked)
-                return RefreshToken.Errors.Revoked;
-
-            // Use domain method for revocation
-            refreshToken.Revoke(ipAddress, null, reason ?? "Manual revocation");
-            _unitOfWork.Context.RefreshTokens.Update(refreshToken);
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Revoked refresh token for user {UserId} from IP {IpAddress}",
-                refreshToken.UserId, ipAddress);
+            if (!token.IsRevoked)
+            {
+                token.Revoke(ipAddress, reason);
+                _uow.Context.RefreshTokens.Update(token);
+                await _uow.SaveChangesAsync(cancellationToken);
+            }
 
             return Result.Success;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to revoke refresh token");
-            return RefreshToken.Errors.RevocationFailed;
+            _logger.LogError(ex, "Revoke refresh token failed");
+            return Error.Failure("RefreshToken.RevocationFailed", "Token revocation failed");
         }
     }
 
     public async Task<ErrorOr<int>> RevokeAllUserTokensAsync(
         Guid userId,
         string ipAddress,
-        string? reason = null,
-        string? exceptToken = null,
+         string? reason = null,
+        string? exceptRawToken = null,
         CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty)
-            return RefreshToken.Errors.Invalid;
-
+            return Error.Validation("RefreshToken.InvalidUserId", "User ID cannot be empty");
         if (string.IsNullOrWhiteSpace(ipAddress))
-            return RefreshToken.Errors.InvalidIpAddress;
+            return Error.Validation("RefreshToken.InvalidIpAddress", "IP address is required");
 
         try
         {
-            // Get all active tokens for user
-            var activeTokens = await _unitOfWork.Context.RefreshTokens
-                .Where(rt => rt.UserId == userId && rt.IsActive)
-                .Where(rt => exceptToken == null || rt.Token != exceptToken)
+            var exceptHash = string.IsNullOrWhiteSpace(exceptRawToken) ? null : RefreshToken.Hash(exceptRawToken);
+
+            var tokens = await _uow.Context.RefreshTokens
+                .Where(t => t.UserId == userId && !t.RevokedAt.HasValue && !(DateTimeOffset.UtcNow >= t.ExpiresAt))
                 .ToListAsync(cancellationToken);
 
-            if (!activeTokens.Any())
-                return 0;
+            if (!string.IsNullOrWhiteSpace(exceptHash))
+                tokens = tokens.Where(t => t.TokenHash != exceptHash).ToList();
 
-            // Use domain method for revocation
-            foreach (var token in activeTokens)
+            foreach (var t in tokens)
+                t.Revoke(ipAddress, reason);
+
+            if (tokens.Count > 0)
             {
-                token.Revoke(ipAddress, null, reason ?? "All tokens revoked");
+                _uow.Context.RefreshTokens.UpdateRange(tokens);
+                await _uow.SaveChangesAsync(cancellationToken);
             }
 
-            _unitOfWork.Context.RefreshTokens.UpdateRange(activeTokens);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Revoked {Count} tokens for user {UserId}",
-                activeTokens.Count, userId);
-
-            return activeTokens.Count;
+            return tokens.Count;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to revoke all tokens for user {UserId}", userId);
-            return RefreshToken.Errors.RevocationFailed;
+            _logger.LogError(ex, "Revoke all user tokens failed for {UserId}", userId);
+            return Error.Failure("RefreshToken.BulkRevocationFailed", "Bulk token revocation failed");
         }
     }
 
@@ -278,105 +286,70 @@ public class RefreshTokenService : IRefreshTokenService
     {
         try
         {
-            var cutoffDate = DateTimeOffset.UtcNow.AddDays(-_jwtOptions.MaxTokenAgeInDays);
             var now = DateTimeOffset.UtcNow;
+            var cutoff = now.AddDays(-_options.RevokedTokenRetentionDays);
 
-            var expiredTokens = await _unitOfWork.Context.RefreshTokens
-                .Where(rt => rt.ExpiresAt < now || (rt.IsRevoked && rt.RevokedAt < cutoffDate))
+            var toDelete = await _uow.Context.RefreshTokens
+                .Where(t => t.ExpiresAt < now || (t.IsRevoked && t.RevokedAt < cutoff))
                 .ToListAsync(cancellationToken);
 
-            if (!expiredTokens.Any())
-                return 0;
+            if (toDelete.Count == 0) return 0;
 
-            _unitOfWork.Context.RefreshTokens.RemoveRange(expiredTokens);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Cleaned up {Count} expired/revoked tokens", expiredTokens.Count);
-
-            return expiredTokens.Count;
+            _uow.Context.RefreshTokens.RemoveRange(toDelete);
+            await _uow.SaveChangesAsync(cancellationToken);
+            return toDelete.Count;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to cleanup expired tokens");
-            return RefreshToken.Errors.RevocationFailed;
+            _logger.LogError(ex, "Cleanup expired tokens failed");
+            return Error.Failure("RefreshToken.CleanupFailed", "Token cleanup failed");
         }
     }
 
+    // ----- Private ----------------------------------------------------------
 
-    #region Private Helper Methods
+    private static string GenerateRawToken()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(64);
+        return Convert.ToBase64String(bytes)
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_'); // base64url
+    }
 
-    private async Task<ErrorOr<bool>> CanUserHaveMoreTokensAsync(
-        Guid userId,
-        bool isSystemUser,
-        CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Revoke all descendants in a rotation chain starting from a reused token.
+    /// </summary>
+    private async Task RevokeDescendantChainAsync(
+        RefreshToken reused,
+        string reason,
+        CancellationToken ct)
     {
         try
         {
-            var maxTokens = isSystemUser
-                ? _jwtOptions.MaxTokensSystemUser
-                : _jwtOptions.MaxTokensCustomer;
+            var toRevoke = new List<RefreshToken> { reused };
 
-            var activeTokenCount = await _unitOfWork.Context.RefreshTokens
-                .CountAsync(rt => rt.UserId == userId && rt.IsActive, cancellationToken);
+            // Walk forward: find child by ReplacedByTokenHash repeatedly
+            var current = reused;
+            while (!string.IsNullOrWhiteSpace(current.ReplacedByTokenHash))
+            {
+                var next = await _uow.Context.RefreshTokens
+                    .FirstOrDefaultAsync(t => t.TokenHash == current.ReplacedByTokenHash, ct);
 
-            return activeTokenCount < maxTokens;
+                if (next is null || next.IsRevoked)
+                    break;
+
+                toRevoke.Add(next);
+                current = next;
+            }
+
+            foreach (var t in toRevoke)
+                t.Revoke(reused.RevokedByIp ?? "n/a", reason);
+
+            _uow.Context.RefreshTokens.UpdateRange(toRevoke);
+            await _uow.SaveChangesAsync(ct);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to check token limits for user {UserId}", userId);
-            return RefreshToken.Errors.Invalid;
+            _logger.LogError(ex, "Failed to revoke descendant chain for reused token {TokenId}", reused.Id);
         }
     }
-
-    private static string GenerateSecureToken()
-    {
-        // Generate token according to domain constraints (64 alphanumeric characters)
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        using var rng = RandomNumberGenerator.Create();
-        var tokenChars = new char[RefreshToken.Constraints.TokenLength];
-
-        var bytes = new byte[RefreshToken.Constraints.TokenLength];
-        rng.GetBytes(bytes);
-
-        for (int i = 0; i < RefreshToken.Constraints.TokenLength; i++)
-        {
-            tokenChars[i] = chars[bytes[i] % chars.Length];
-        }
-
-        return new string(tokenChars);
-    }
-
-    private static ErrorOr<Success> ValidateTokenFormat(string token)
-    {
-        if (string.IsNullOrWhiteSpace(token))
-            return RefreshToken.Errors.Invalid;
-
-        // Use domain constraints for validation
-        if (token.Length != RefreshToken.Constraints.TokenLength)
-            return RefreshToken.Errors.InvalidFormat;
-
-        if (!Regex.IsMatch(token, RefreshToken.Constraints.TokenAllowedPattern))
-            return RefreshToken.Errors.InvalidFormat;
-
-        return Result.Success;
-    }
-
-    private static ErrorOr<Success> ValidateRefreshTokenSecurity(RefreshToken refreshToken)
-    {
-        // Check if token is expired
-        if (refreshToken.IsExpired)
-            return RefreshToken.Errors.Expired;
-
-        // Check if token is revoked
-        if (refreshToken.IsRevoked)
-            return RefreshToken.Errors.Revoked;
-
-        // Check if token can be refreshed using domain method
-        if (!refreshToken.CanBeRefreshed())
-            return RefreshToken.Errors.Invalid;
-
-        return Result.Success;
-    }
-
-    #endregion
 }

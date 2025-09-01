@@ -3,6 +3,7 @@ using System.Reflection;
 using Core.Identity;
 using Core.Todos;
 
+using Infrastructure.Persistence.Constants;
 using Infrastructure.Persistence.Converters;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -12,12 +13,13 @@ using UseCases.Common.Persistence.Context;
 
 namespace Infrastructure.Persistence.Contexts;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<User, Role, Guid>(options), IApplicationDbContext
 {
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.HasDefaultSchema(Schema.Default);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         builder.ApplyUtcDateTimeConverter();
     }

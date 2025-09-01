@@ -3,15 +3,22 @@
 using Ardalis.GuardClauses;
 
 using Infrastructure.Security.Authentication.Contexts;
-using Infrastructure.Security.Authentication.Options;
+using Infrastructure.Security.Authentication.Externals.Validators;
 using Infrastructure.Security.Authentication.Tokens.Services;
 
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 using UseCases.Common.Security.Authentication.Contexts;
+using UseCases.Common.Security.Authentication.Externals;
+using UseCases.Common.Security.Authentication.Options;
 using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication;
@@ -20,48 +27,49 @@ public static class AuthenticationConfiguration
 {
     public static IServiceCollection AddAuthenticationInternal(this IServiceCollection services, IConfiguration configuration)
     {
-        // Register: Authentication Options
         services.AddAuthenticationOptions(configuration);
-
-        // Register: Authentication context
         services.AddAuthenticationContext();
-
+        services.AddExternalTokenValidation();
         return services;
     }
 
     public static IServiceCollection AddAuthenticationOptions(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<JwtOptions>()
-            .Bind(configuration.GetSection(JwtOptions.Section))
+            .BindConfiguration(JwtOptions.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddOptions<GoogleOption>()
-            .Bind(configuration.GetSection(GoogleOption.Section))
+            .BindConfiguration(GoogleOption.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddOptions<FacebookOption>()
-            .Bind(configuration.GetSection(FacebookOption.Section))
+            .BindConfiguration(FacebookOption.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        // Resolve options for authentication setup
-        var jwtOptions = configuration.GetSection(JwtOptions.Section).Get<JwtOptions>();
-        Guard.Against.Null(jwtOptions, nameof(jwtOptions), "JWT options must be configured in appsettings.");
-        var googleOptions = configuration.GetSection(GoogleOption.Section).Get<GoogleOption>();
-        Guard.Against.Null(googleOptions, nameof(googleOptions), "Google authentication options must be configured in appsettings.");
-        var facebookOptions = configuration.GetSection(FacebookOption.Section).Get<FacebookOption>();
-        Guard.Against.Null(facebookOptions, nameof(facebookOptions), "Facebook authentication options must be configured in appsettings.");
+        var jwtOptions = GetRequiredOptions<JwtOptions>(configuration, JwtOptions.Section);
+        var googleOptions = GetOptionalOptions<GoogleOption>(configuration, GoogleOption.Section);
+        var facebookOptions = GetOptionalOptions<FacebookOption>(configuration, FacebookOption.Section);
 
-        services.AddAuthentication(options =>
+        var authBuilder = services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
-        .AddJwtBearer(o =>
+        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(IdentityConstants.ExternalScheme, options =>
         {
-            o.TokenValidationParameters = new TokenValidationParameters
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = true;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidateAudience = true,
@@ -69,37 +77,103 @@ public static class AuthenticationConfiguration
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = jwtOptions.Issuer,
                 ValidAudience = jwtOptions.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+                ClockSkew = TimeSpan.FromMinutes(5)
             };
-        })
-        .AddGoogle(o =>
-        {
-            o.ClientId = googleOptions.ClientId;
-            o.ClientSecret = googleOptions.ClientSecret;
-            o.SaveTokens = true;
-            o.CallbackPath = googleOptions.CallbackPath;
-        })
-        .AddFacebook(o =>
-        {
-            o.AppId = facebookOptions.AppId;
-            o.AppSecret = facebookOptions.AppSecret;
-            o.SaveTokens = true;
-            o.CallbackPath = facebookOptions.CallbackPath;
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                    logger?.LogWarning("JWT authentication failed: {Exception}", context.Exception.Message);
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                    logger?.LogDebug("JWT token validated for user: {UserId}",
+                        context.Principal?.FindFirst("sub")?.Value ?? "Unknown");
+                    return Task.CompletedTask;
+                }
+            };
         });
 
+        if (googleOptions != null && IsProviderConfigurationValid(googleOptions.ClientId, googleOptions.ClientSecret))
+        {
+            authBuilder.AddGoogle(options =>
+            {
+                options.ClientId = googleOptions.ClientId;
+                options.ClientSecret = googleOptions.ClientSecret;
+                options.Scope.Add("profile");
+                options.SignInScheme = IdentityConstants.ExternalScheme;
+                options.SaveTokens = true;
+            });
+        }
+
+        if (facebookOptions != null && IsProviderConfigurationValid(facebookOptions.AppId, facebookOptions.AppSecret))
+        {
+            authBuilder.AddFacebook(options =>
+            {
+                options.AppId = facebookOptions.AppId;
+                options.AppSecret = facebookOptions.AppSecret;
+                options.Scope.Add("profile");
+                options.SignInScheme = IdentityConstants.ExternalScheme;
+                options.SaveTokens = true;
+            });
+        }
         return services;
+    }
+
+    private static T GetRequiredOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
+    {
+        var options = configuration.GetSection(sectionName).Get<T>();
+        Guard.Against.Null(options, nameof(options), $"{typeof(T).Name} options must be configured in appsettings at section '{sectionName}'.");
+        return options;
+    }
+
+    private static T? GetOptionalOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
+    {
+        var section = configuration.GetSection(sectionName);
+        return section.Exists() ? section.Get<T>() : null;
+    }
+
+    private static bool IsProviderConfigurationValid(string? clientId, string? clientSecret)
+    {
+        return !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret);
     }
 
     public static IServiceCollection AddAuthenticationContext(this IServiceCollection services)
     {
-        // Register: Authentication Context
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, UserContext>();
-
-        // Register: Token services
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITokenManagementService, TokenManagementService>();
+        return services;
+    }
+
+    public static IServiceCollection AddExternalTokenValidation(this IServiceCollection services)
+    {
+        // Add HTTP clients for token validators
+        services.AddHttpClient<GoogleTokenValidator>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "Rys.Shop/1.0");
+        });
+
+        services.AddHttpClient<FacebookTokenValidator>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "Rys.Shop/1.0");
+        });
+
+        // Register individual validators
+        services.AddScoped<GoogleTokenValidator>();
+        services.AddScoped<FacebookTokenValidator>();
+
+        // Register composite validator
+        services.AddScoped<IExternalTokenValidator, CompositeExternalTokenValidator>();
 
         return services;
     }

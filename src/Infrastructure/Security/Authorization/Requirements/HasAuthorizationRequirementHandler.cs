@@ -1,9 +1,8 @@
-﻿using Infrastructure.Security.Authorization.Providers;
-
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
 using UseCases.Common.Security.Authentication.Contexts;
+using UseCases.Common.Security.Authorization.Providers;
 
 namespace Infrastructure.Security.Authorization.Requirements;
 

@@ -4,7 +4,7 @@ using UseCases.Common.Persistence.Context;
 
 namespace Infrastructure.BackgroundServices.Jobs;
 
-public class LowStockItem
+public sealed class LowStockItem
 {
     public string ProductName { get; set; } = string.Empty;
     public string Sku { get; set; } = string.Empty;

@@ -96,26 +96,6 @@ public static class IdentityConfiguration
             o.TokenLifespan = TimeSpan.FromHours(2); // common practice for shops
         });
 
-        // Configure cookie settings for fashion e-shop
-        services.ConfigureApplicationCookie(options =>
-        {
-            options.LoginPath = "/Account/Login";
-            options.LogoutPath = "/Account/Logout";
-            options.AccessDeniedPath = "/Account/AccessDenied";
-            options.ReturnUrlParameter = "returnUrl";
-
-            // Cookie settings
-            options.Cookie.Name = "RysFashion.Auth";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
-            options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
-
-            // Expiration settings
-            options.ExpireTimeSpan = TimeSpan.FromDays(30); // Remember me for 30 days
-            options.SlidingExpiration = true; // Extend session on activity
-        });
-
-
         return services;
     }
 }

@@ -2,10 +2,11 @@
 
 public static class Schema
 {
+    public const string Default = "eshopdb";
     // ===========================================
     // PHASE 1: CORE FOUNDATION (Weeks 1-2) - Essential infrastructure
     // ===========================================
-    
+
     // Authentication & Authorization - Full Spree complexity maintained
     public const string Users = "users";
     public const string Roles = "roles";

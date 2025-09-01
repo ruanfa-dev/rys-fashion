@@ -4,7 +4,7 @@ using UseCases.Common.Persistence.Context;
 
 namespace Infrastructure.BackgroundServices.Jobs;
 
-public class SalesReportData
+public sealed class SalesReportData
 {
     public int OrderCount { get; set; }
     public decimal TotalRevenue { get; set; }

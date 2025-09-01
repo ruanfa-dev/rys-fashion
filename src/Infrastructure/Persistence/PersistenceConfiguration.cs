@@ -1,11 +1,14 @@
 ﻿using Ardalis.GuardClauses;
 
+using Infrastructure.Persistence.Constants;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Interceptors;
 using Infrastructure.Persistence.Options;
+using Infrastructure.Persistence.Seeders;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,6 +38,9 @@ public static class PersistenceConfiguration
         // Register: Unit of Work into DI
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        // Register: Seeders into DI
+        services.AddSeeders();
+
         return services;
     }
 
@@ -60,11 +66,16 @@ public static class PersistenceConfiguration
             else if (environment.IsDevelopment())
             {
                 // Development: Use PostgreSQL with detailed logging
-                options.UseNpgsql(connectionString)
-                       .EnableSensitiveDataLogging()
-                       .EnableDetailedErrors()
-                       .UseSnakeCaseNamingConvention()
-                       .LogTo(Console.WriteLine, LogLevel.Information);
+                // Temporarily using In-Memory for Development as well
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schema.Default);
+                    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                })
+                .EnableSensitiveDataLogging()
+                .EnableDetailedErrors()
+                .UseSnakeCaseNamingConvention()
+                .LogTo(Console.WriteLine, LogLevel.Information);
                 Log.Information("Using PostgreSQL for Development environment");
             }
             else
@@ -119,6 +130,17 @@ public static class PersistenceConfiguration
             });
             Log.Information("Using Redis distributed cache for {Environment} environment", environment.EnvironmentName);
         }
+
+        return services;
+    }
+
+    private static IServiceCollection AddSeeders(this IServiceCollection services)
+    {
+        // Register: seeders
+        services.AddTransient<IDataSeeder, IdentitySeedProvider>();
+
+        // Register orchestrator as hosted service
+        services.AddHostedService<SeedOrchestrator>();
 
         return services;
     }

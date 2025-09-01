@@ -19,16 +19,27 @@ public static class NotificationConfiguration
 {
     public static IServiceCollection AddNotificationServices(this IServiceCollection services, IConfiguration configuration, Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment)
     {
-        var emailSection = configuration.GetSection(SmtpOptions.Section);
-        var smtpOptions = emailSection.Get<SmtpOptions>();
+        services.AddOptions<SmtpOptions>()
+            .BindConfiguration(SmtpOptions.Section)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<SmsOptions>()
+            .BindConfiguration(SmsOptions.Section)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        var smtpOptions = configuration.GetSection(SmtpOptions.Section).Get<SmtpOptions>();
         Guard.Against.Null(smtpOptions, message: "SmtpOptions configuration section is missing or invalid.");
 
-        var smsSection = configuration.GetSection(SmsOptions.Section);
-        var smsOptions = smsSection.Get<SmsOptions>();
+        var smsOptions = configuration.GetSection(SmsOptions.Section).Get<SmsOptions>();
         Guard.Against.Null(smsOptions, message: "SmsOptions configuration section is missing or invalid.");
 
         AddEmailNotificationServices(services, smtpOptions);
         AddSmsNotificationServices(services, smsOptions);
+
+        // Add: notification services
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }

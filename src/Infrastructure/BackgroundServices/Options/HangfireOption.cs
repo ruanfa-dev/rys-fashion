@@ -2,7 +2,7 @@
 
 namespace Infrastructure.BackgroundServices.Options;
 
-public class HangfireOptions
+public sealed class HangfireOptions
 {
     public const string Section = "BackgroundServices:Hangfire";
 
@@ -24,7 +24,7 @@ public class HangfireOptions
     public HangfireServerOptions Server { get; init; } = new();
 }
 
-public class HangfireServerOptions
+public sealed class HangfireServerOptions
 {
     /// <summary>
     /// Number of worker threads (1-2 for single store e-shop)

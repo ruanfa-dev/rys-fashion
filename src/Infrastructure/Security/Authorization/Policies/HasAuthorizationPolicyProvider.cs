@@ -78,17 +78,17 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
     {
         if (part.StartsWith(CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
         {
-            var values = part.AsSpan(CustomClaim.Permission.Length);
+            var values = part.AsSpan(CustomClaim.Permission.Length + 1);
             AddValues(values, permissions);
         }
         else if (part.StartsWith(CustomClaim.Policy, StringComparison.OrdinalIgnoreCase))
         {
-            var values = part.AsSpan(CustomClaim.Policy.Length);
+            var values = part.AsSpan(CustomClaim.Policy.Length + 1);
             AddValues(values, policies);
         }
         else if (part.StartsWith(CustomClaim.Role, StringComparison.OrdinalIgnoreCase))
         {
-            var values = part.AsSpan(CustomClaim.Role.Length);
+            var values = part.AsSpan(CustomClaim.Role.Length + 1);
             AddValues(values, roles);
         }
     }

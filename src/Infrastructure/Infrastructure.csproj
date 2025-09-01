@@ -13,6 +13,7 @@
     <PackageReference Include="FluentEmail.Smtp" />
     <PackageReference Include="FluentStorage" />
     <PackageReference Include="FluentStorage.Azure.Blobs" />
+    <PackageReference Include="Google.Apis.Auth" />
     <PackageReference Include="Hangfire.AspNetCore" />
     <PackageReference Include="Hangfire.Core" />
     <PackageReference Include="Hangfire.InMemory" />
@@ -28,6 +29,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Octokit" />
     <PackageReference Include="Sinch" />
     <PackageReference Include="starkbank-ecdsa" />
   </ItemGroup>

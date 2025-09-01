@@ -1,6 +1,4 @@
-﻿using ErrorOr;
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authentication.Tokens.Services;
@@ -14,8 +12,8 @@ public sealed class RefreshTokenCleanupJob
     private readonly ILogger<RefreshTokenCleanupJob> _logger;
 
     public const string RecurringJobId = "refresh-token-cleanup";
-    public const string CronExpression = "0 2 * * *"; // Runs daily at 2 AM
-    public const string Description = "Cleans up expired and revoked refresh tokens from the database.";
+    public const string CronExpression = "0 2 * * *"; // Every day at 2 AM
+    public const string Description = "Cleans up expired and revoked refresh tokens.";
     public const string Tag = "security";
 
     public RefreshTokenCleanupJob(
@@ -36,23 +34,26 @@ public sealed class RefreshTokenCleanupJob
         {
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-            ErrorOr<int> result = await _refreshTokenService.CleanupExpiredTokensAsync(cancellationToken);
+            var result = await _refreshTokenService.CleanupExpiredTokensAsync(cancellationToken);
 
             if (result.IsError)
             {
-                _logger.LogError("Failed to clean up refresh tokens: {Errors}", string.Join(", ", result.Errors));
+                _logger.LogError("Failed to clean up refresh tokens: {Errors}",
+                    string.Join(", ", result.Errors.Select(e => $"{e.Code}:{e.Description}")));
+
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                throw new InvalidOperationException($"Cleanup failed: {string.Join(", ", result.Errors)}");
+                return; // don’t throw, just log — otherwise Hangfire/Quartz might retry endlessly
             }
 
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
-            _logger.LogInformation("Successfully cleaned up {Count} refresh tokens", result.Value);
+
+            _logger.LogInformation("Successfully cleaned up {Count} expired/invalid refresh tokens",
+                result.Value);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Refresh token cleanup job failed");
+            _logger.LogError(ex, "Refresh token cleanup job failed unexpectedly");
             await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-            throw;
         }
     }
 }

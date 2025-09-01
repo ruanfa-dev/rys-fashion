@@ -36,11 +36,11 @@ internal sealed class NotificationService(
         using var scope = serviceScopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-        var validContacts = await GetValidContactsAsync(unitOfWork, notificationData, notificationData.SendMethodType, cancellationToken);
-        if (validContacts.Count == 0)
-            return Errors.ContactNotFound;
+        //var validContacts = await GetValidContactsAsync(unitOfWork, notificationData, notificationData.SendMethodType, cancellationToken);
+        //if (validContacts.Count == 0)
+        //    return Errors.ContactNotFound;
 
-        notificationData.Receivers = validContacts;
+        //notificationData.Receivers = validContacts;
 
         var validationResult = notificationData.Validate();
         if (validationResult.IsError)
