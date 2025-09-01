@@ -20,7 +20,6 @@ public interface IRefreshTokenService
         Guid userId,
         string ipAddress,
         bool rememberMe = false,
-        bool isSystemUser = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -46,7 +45,6 @@ public interface IRefreshTokenService
         string currentToken,
         string ipAddress,
         bool rememberMe = false,
-        bool isSystemUser = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>

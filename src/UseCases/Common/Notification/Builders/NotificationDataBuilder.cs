@@ -1,18 +1,21 @@
 using ErrorOr;
+
+using UseCases.Common.Notification.Constants;
+using UseCases.Common.Notification.Models;
+
 using static UseCases.Common.Notification.Constants.NotificationFormats;
 using static UseCases.Common.Notification.Constants.NotificationParameters;
+using static UseCases.Common.Notification.Constants.NotificationPriorities;
 using static UseCases.Common.Notification.Constants.NotificationSendMethods;
 using static UseCases.Common.Notification.Constants.NotificationUseCases;
-using static UseCases.Common.Notification.Constants.NotificationPriorities;
-using UseCases.Common.Notification.Models;
 
 namespace UseCases.Common.Notification.Builders;
 
 public static class NotificationDataBuilder
 {
-    private static readonly Dictionary<NotificationUseCase, NotificationTemplate> Templates = new(); // Placeholder for Templates
+    private static readonly Dictionary<NotificationUseCase, TemplateDescription> Templates = NotificationUseCases.Templates;
 
-    public static ErrorOr<NotificationData> Create(NotificationUseCase useCase = NotificationUseCase.None)
+    public static ErrorOr<NotificationData> WithUseCase(NotificationUseCase useCase = NotificationUseCase.None)
     {
         var template = Templates.GetValueOrDefault(useCase);
         var notificationData = new NotificationData
@@ -28,13 +31,14 @@ public static class NotificationDataBuilder
             Attachments = new List<string>()
         };
 
-        return notificationData.Validate();
+        return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithUseCase(this NotificationData? notificationData, NotificationUseCase useCase = NotificationUseCase.None)
+    public static ErrorOr<NotificationData> WithUseCase(this ErrorOr<NotificationData> result, NotificationUseCase useCase = NotificationUseCase.None)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
 
         var template = Templates.GetValueOrDefault(useCase);
         notificationData.UseCase = useCase;
@@ -47,29 +51,35 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithSendMethodType(this NotificationData? notificationData, NotificationSendMethod sendMethodType)
+    public static ErrorOr<NotificationData> WithSendMethodType(this ErrorOr<NotificationData> result, NotificationSendMethod sendMethodType)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
 
         notificationData.SendMethodType = sendMethodType;
+
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> AddParam(this NotificationData? notificationData, NotificationParameter parameter, string? value)
+    public static ErrorOr<NotificationData> AddParam(this ErrorOr<NotificationData> result, NotificationParameter parameter, string? value)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
 
         notificationData.Values ??= new Dictionary<NotificationParameter, string?>();
         notificationData.Values[parameter] = value;
+
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> AddParams(this NotificationData? notificationData, Dictionary<NotificationParameter, string?>? values)
+    public static ErrorOr<NotificationData> AddParams(this ErrorOr<NotificationData> result, Dictionary<NotificationParameter, string?>? values)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (values == null)
             return NotificationData.Errors.NullParameters;
 
@@ -81,10 +91,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithReceivers(this NotificationData? notificationData, List<string>? receivers)
+    public static ErrorOr<NotificationData> WithReceivers(this ErrorOr<NotificationData> result, List<string>? receivers)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (receivers == null || !receivers.Any(r => !string.IsNullOrWhiteSpace(r)))
             return notificationData;
 
@@ -94,10 +106,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithReceiver(this NotificationData? notificationData, string? receiver)
+    public static ErrorOr<NotificationData> WithReceiver(this ErrorOr<NotificationData> result, string? receiver)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(receiver))
             return notificationData;
 
@@ -107,10 +121,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithTitle(this NotificationData? notificationData, string? title)
+    public static ErrorOr<NotificationData> WithTitle(this ErrorOr<NotificationData> result, string? title)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(title))
             return NotificationData.Errors.InvalidTitle;
 
@@ -118,10 +134,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithContent(this NotificationData? notificationData, string? content)
+    public static ErrorOr<NotificationData> WithContent(this ErrorOr<NotificationData> result, string? content)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(content))
             return NotificationData.Errors.InvalidContent;
 
@@ -129,10 +147,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithHtmlContent(this NotificationData? notificationData, string? htmlContent)
+    public static ErrorOr<NotificationData> WithHtmlContent(this ErrorOr<NotificationData> result, string? htmlContent)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(htmlContent))
             return NotificationData.Errors.InvalidHtmlContent;
 
@@ -140,10 +160,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithCreatedBy(this NotificationData? notificationData, string? createdBy)
+    public static ErrorOr<NotificationData> WithCreatedBy(this ErrorOr<NotificationData> result, string? createdBy)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(createdBy))
             return NotificationData.Errors.InvalidCreatedBy;
 
@@ -151,10 +173,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithAttachments(this NotificationData? notificationData, List<string>? attachments)
+    public static ErrorOr<NotificationData> WithAttachments(this ErrorOr<NotificationData> result, List<string>? attachments)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (attachments == null || !attachments.Any(a => !string.IsNullOrWhiteSpace(a)))
             return notificationData;
 
@@ -164,19 +188,22 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithPriority(this NotificationData? notificationData, NotificationPriority priority)
+    public static ErrorOr<NotificationData> WithPriority(this ErrorOr<NotificationData> result, NotificationPriority priority)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
 
         notificationData.Priority = priority;
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> WithLanguage(this NotificationData? notificationData, string? language)
+    public static ErrorOr<NotificationData> WithLanguage(this ErrorOr<NotificationData> result, string? language)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(language))
             return NotificationData.Errors.InvalidLanguage;
 
@@ -184,10 +211,12 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> SetCreatedBy(this NotificationData? notificationData, string? createdBy, DateTimeOffset? createAt = null)
+    public static ErrorOr<NotificationData> SetCreatedBy(this ErrorOr<NotificationData> result, string? createdBy, DateTimeOffset? createAt = null)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
+
         if (string.IsNullOrWhiteSpace(createdBy))
             return NotificationData.Errors.InvalidCreatedBy;
 
@@ -196,10 +225,11 @@ public static class NotificationDataBuilder
         return notificationData;
     }
 
-    public static ErrorOr<NotificationData> Build(this NotificationData? notificationData)
+    public static ErrorOr<NotificationData> Build(this ErrorOr<NotificationData> result)
     {
-        if (notificationData == null)
-            return NotificationData.Errors.NullData;
+        if (result.IsError)
+            return result.Errors;
+        var notificationData = result.Value;
 
         return notificationData.Validate();
     }
@@ -336,16 +366,5 @@ public static class NotificationDataBuilder
             NotificationUseCase.FlashSaleNotification => NotificationPriority.High,
             _ => NotificationPriority.Normal
         };
-    }
-
-    // Placeholder for NotificationTemplate
-    private class NotificationTemplate
-    {
-        public NotificationSendMethod? SendMethodType { get; set; }
-        public NotificationFormat? TemplateFormatType { get; set; }
-        public string? TemplateContent { get; set; }
-        public string? HtmlTemplateContent { get; set; }
-        public string? Name { get; set; }
-        public List<NotificationParameter>? ParamValues { get; set; }
     }
 }

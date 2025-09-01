@@ -5,7 +5,7 @@ using static Core.Todos.TodoList.Errors;
 
 namespace UseCases.Todos.Lists.Common;
 
-public class TodoListParamValidator : AbstractValidator<TodoListParam>
+public sealed class TodoListParamValidator : AbstractValidator<TodoListParam>
 {
     public TodoListParamValidator()
     {

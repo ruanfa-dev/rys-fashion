@@ -44,7 +44,7 @@ public partial class NotificationUseCases
         WishlistItemOnSale              // Notification sent when a wishlisted item is discounted
     }
 
-    public class TemplateDescription
+    public sealed class TemplateDescription
     {
         public NotificationUseCase UserCase { get; init; }
         public NotificationSendMethod SendMethodType { get; init; } = NotificationSendMethod.Email;

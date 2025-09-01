@@ -1,0 +1,80 @@
+﻿using Core.Identity;
+
+using ErrorOr;
+
+using FluentValidation;
+
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+
+using Serilog;
+
+using SharedKernel.Messaging.Abstracts;
+
+using UseCases.Accounts.Common;
+using UseCases.Common.Notification.Services;
+using UseCases.Common.Security.Authentication.Contexts;
+
+namespace UseCases.Accounts.Phone.Resend;
+public static partial class ResendPhoneVerification
+{
+    public sealed record Command(Param Param) : ICommand<Result>;
+    public sealed class CommandValidator : AbstractValidator<Command>
+    {
+        public CommandValidator()
+        {
+            RuleFor(x => x.Param).SetValidator(new ParamValidator());
+        }
+    }
+    public sealed class Handler(
+       UserManager<User> userManager,
+       IUserContext userContext,
+       INotificationService notificationService,
+       IConfiguration configuration)
+       : ICommandHandler<Command, Result>
+    {
+        public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
+        {
+            // Load: user context
+            var userId = userContext.UserId;
+            var isAuthenticated = userContext.IsAuthenticated;
+
+            // Check: user is authenticated
+            if (userId is null || !isAuthenticated)
+                return User.Errors.UserUnauthorized;
+
+            // Check: user exists
+            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            if (user is null)
+                return User.Errors.UserNotFound;
+
+            var param = request.Param;
+
+            // Check: phone is not already in use by another user
+            var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.PhoneNumber && u.Id != user.Id);
+            var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
+            if (existingUser != null)
+                return User.Errors.PhoneNumberAlreadyExists;
+
+            // Send: phone verification SMS
+            var sendSmsResult = await userManager.GenerateAndSendConfirmationSmsAsync(
+                notificationService,
+                configuration,
+                user,
+                newPhoneNumber: param.PhoneNumber,
+                cancellationToken: cancellationToken);
+
+            if (sendSmsResult.IsError)
+            {
+                Log.Warning("Failed to resend phone verification to {PhoneNumber} for user {UserId}: {Errors}",
+                    param.PhoneNumber, userId, string.Join(", ", sendSmsResult.Errors.Select(e => e.Description)));
+                return sendSmsResult.Errors;
+            }
+
+            Log.Information("Phone verification resent for user {UserId} to {PhoneNumber}", userId, param.PhoneNumber);
+
+            return Result.Default(param.PhoneNumber);
+        }
+    }
+}

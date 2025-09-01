@@ -27,7 +27,7 @@ public static partial class NotificationPriorities
         High
     }
 
-    public class PriorityDescription
+    public sealed class PriorityDescription
     {
         public NotificationPriority Priority { get; set; }
         public string Name { get; set; } = default!;

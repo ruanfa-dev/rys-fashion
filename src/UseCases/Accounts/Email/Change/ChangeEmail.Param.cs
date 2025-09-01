@@ -2,18 +2,20 @@
 
 using FluentValidation;
 
-using UseCases.Common.Security.Authentication.Tokens.Models;
-
-namespace UseCases.Accounts.Auth.Login.Password;
-public static partial class LoginWithPassword
+namespace UseCases.Accounts.Email.Change;
+public static partial class ChangeEmail
 {
-    public sealed record Param(string Email, string Password, bool RememberMe = false);
-    public sealed record Result : AuthenticationResult;
+    public sealed record Param(
+        string CurrentEmail,
+        string NewEmail,
+        string Password);
+
     public sealed class ParamValidator : AbstractValidator<Param>
     {
         public ParamValidator()
         {
-            RuleFor(x => x.Email)
+
+            RuleFor(x => x.CurrentEmail)
                 .NotEmpty()
                 .WithErrorCode(User.Errors.EmailRequired.Code)
                 .WithMessage(User.Errors.EmailRequired.Description)
@@ -23,6 +25,20 @@ public static partial class LoginWithPassword
                 .EmailAddress()
                 .WithErrorCode(User.Errors.EmailInvalidFormat.Code)
                 .WithMessage(User.Errors.EmailInvalidFormat.Description);
+
+            RuleFor(x => x.NewEmail)
+                .NotEmpty()
+                .WithErrorCode(User.Errors.EmailRequired.Code)
+                .WithMessage(User.Errors.EmailRequired.Description)
+                .MaximumLength(User.Constraints.EmailMaxLength)
+                .WithErrorCode(User.Errors.EmailTooLong.Code)
+                .WithMessage(User.Errors.EmailTooLong.Description)
+                .EmailAddress()
+                .WithErrorCode(User.Errors.EmailInvalidFormat.Code)
+                .WithMessage(User.Errors.EmailInvalidFormat.Description)
+                .NotEqual(x => x.CurrentEmail)
+                .WithErrorCode(User.Errors.SameEmailNotAllowed.Code)
+                .WithMessage(User.Errors.SameEmailNotAllowed.Description);
 
             RuleFor(x => x.Password)
                 .NotEmpty()
@@ -39,5 +55,4 @@ public static partial class LoginWithPassword
                 .WithMessage(User.Errors.PasswordInvalidFormat.Description);
         }
     }
-
 }

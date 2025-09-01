@@ -7,7 +7,7 @@ public static partial class NotificationFormats
         Html
     }
 
-    public class FormatDescription
+    public sealed class FormatDescription
     {
         public NotificationFormat Format { get; set; }
         public string Name { get; set; } = default!;

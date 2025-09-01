@@ -283,7 +283,7 @@ public static class ErrorOrExtensions
 /// <summary>
 /// Example service layer that returns ErrorOr results
 /// </summary>
-public class UserService
+public sealed class UserService
 {
     public async Task<ErrorOr<UserExample>> GetUserByIdAsync(int id)
     {
@@ -402,7 +402,7 @@ public static class MinimalApiExamples
 [ApiController]
 [Route("api/[controller]")]
 [ApiExplorerSettings(IgnoreApi = true)]
-public class UsersExampleController : ControllerBase
+public sealed class UsersExampleController : ControllerBase
 {
     private readonly UserService _userService;
 

@@ -23,7 +23,6 @@ public interface ITokenManagementService
         User user,
         string ipAddress,
         bool rememberMe = false,
-        bool isSystemUser = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -39,7 +38,6 @@ public interface ITokenManagementService
         string refreshToken,
         string ipAddress,
         bool rememberMe = false,
-        bool isSystemUser = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -49,10 +47,9 @@ public interface ITokenManagementService
     /// <param name="ipAddress">Client IP address</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Success or error</returns>
-    Task<ErrorOr<Success>> LogoutAsync(
+    Task<ErrorOr<Deleted>> LogoutAsync(
         string refreshToken,
         string ipAddress,
-        string? userAgent = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -8,7 +8,7 @@ namespace UseCases.Todos.Items.Update;
 
 public static partial class UpdateTodoItem
 {
-    public class EventHandler : IDomainEventHandler<TodoItemUpdatedEvent>
+    public sealed class EventHandler : IDomainEventHandler<TodoItemUpdatedEvent>
     {
         public Task Handle(TodoItemUpdatedEvent notification, CancellationToken cancellationToken)
         {

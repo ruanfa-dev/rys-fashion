@@ -6,7 +6,7 @@ namespace UseCases.Todos.Lists.Update;
 
 public partial class UpdateTodoList
 {
-    public class Validator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
         {
