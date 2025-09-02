@@ -1,10 +1,11 @@
 ﻿using System.Text.Json;
 
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
-using Swashbuckle.AspNetCore.SwaggerGen;
+using UseCases.Common.Security.Authentication.Options;
 
 namespace Web.Api.Infrastructure.Configuration;
 
@@ -13,49 +14,146 @@ public static class OpenApiConfiguration
     public static IServiceCollection AddOpenApiWithAuth(this IServiceCollection services)
     {
         services.AddOpenApi(options => options
-            .AddDocumentTransformer<BearerSecuritySchemeTransformer>()
+            .AddDocumentTransformer<MultiAuthSecuritySchemeTransformer>()
             .AddDocumentTransformer<SnakeCaseSchemaTransformer>()
             .AddOperationTransformer<SnakeCaseParameterTransformer>());
         return services;
     }
 
-    internal sealed class BearerSecuritySchemeTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider) : IOpenApiDocumentTransformer
+    internal sealed class MultiAuthSecuritySchemeTransformer() : IOpenApiDocumentTransformer
     {
-        public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+        public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
         {
-            var authenticationSchemes = await authenticationSchemeProvider.GetAllSchemesAsync();
-            if (authenticationSchemes.Any(authScheme => authScheme.Name == "Bearer"))
+            document.Components ??= new OpenApiComponents();
+            document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
             {
-                // Add the security scheme at the document level
-                var requirements = new Dictionary<string, OpenApiSecurityScheme>
-                {
-                    ["Bearer"] = new OpenApiSecurityScheme
-                    {
-                        Type = SecuritySchemeType.Http,
-                        Scheme = "bearer",
-                        In = ParameterLocation.Header,
-                        BearerFormat = "Json Web Token"
-                    }
-                };
-                document.Components ??= new OpenApiComponents();
-                document.Components.SecuritySchemes = requirements;
+                [JwtBearerDefaults.AuthenticationScheme] = CreateJwtSecurityScheme(),
+                ["Google"] = CreateGoogleOAuth2Scheme(),
+                ["Facebook"] = CreateFacebookOAuth2Scheme()
+            };
 
-                // Apply it as a requirement for all operations
-                foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations))
-                {
-                    operation.Value.Security.Add(new OpenApiSecurityRequirement
-                    {
-                        [new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Id = "Bearer",
-                                Type = ReferenceType.SecurityScheme
-                            }
-                        }] = Array.Empty<string>()
-                    });
-                }
+            // Apply security requirements for all operations
+            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations))
+            {
+                operation.Value.Security.Add(CreateJwtSecurityRequirement());
+                operation.Value.Security.Add(CreateGoogleSecurityRequirement());
+                operation.Value.Security.Add(CreateFacebookSecurityRequirement());
             }
+
+            return Task.CompletedTask;
+        }
+
+        private static OpenApiSecurityScheme CreateJwtSecurityScheme()
+        {
+            return new OpenApiSecurityScheme
+            {
+                Name = "JWT Authentication",
+                Description = "Enter your JWT token in this field",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                BearerFormat = "JWT"
+            };
+        }
+
+        private static OpenApiSecurityScheme CreateGoogleOAuth2Scheme()
+        {
+            return new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.OAuth2,
+                Description = "Google OAuth2 Authentication",
+                Flows = new OpenApiOAuthFlows
+                {
+                    AuthorizationCode = new OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri("https://accounts.google.com/o/oauth2/v2/auth"),
+                        TokenUrl = new Uri("https://oauth2.googleapis.com/token"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            { "openid", "OpenID Connect" },
+                            { "profile", "User profile information" },
+                            { "email", "User email address" }
+                        }
+                    }
+                }
+            };
+        }
+
+        private static OpenApiSecurityScheme CreateFacebookOAuth2Scheme()
+        {
+            return new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.OAuth2,
+                Description = "Facebook OAuth2 Authentication",
+                Flows = new OpenApiOAuthFlows
+                {
+                    AuthorizationCode = new OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri("https://www.facebook.com/v18.0/dialog/oauth"),
+                        TokenUrl = new Uri("https://graph.facebook.com/v18.0/oauth/access_token"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            { "openid", "OpenID Connect" },
+                            { "email", "User email address" },
+                            { "public_profile", "User public profile information" }
+                        }
+                    }
+                }
+            };
+        }
+
+        private static OpenApiSecurityRequirement CreateJwtSecurityRequirement()
+        {
+            return new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = JwtBearerDefaults.AuthenticationScheme
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            };
+        }
+
+        private static OpenApiSecurityRequirement CreateGoogleSecurityRequirement()
+        {
+            return new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Google"
+                        }
+                    },
+                    new[] { "openid", "profile", "email" }
+                }
+            };
+        }
+
+        private static OpenApiSecurityRequirement CreateFacebookSecurityRequirement()
+        {
+            return new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Facebook"
+                        }
+                    },
+                    new[] { "email", "public_profile" }
+                }
+            };
         }
     }
 

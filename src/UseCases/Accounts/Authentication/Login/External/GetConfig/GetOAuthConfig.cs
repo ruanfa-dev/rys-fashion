@@ -76,7 +76,7 @@ public static partial class GetOAuthConfig
                     ["access_type"] = "offline",
                     ["prompt"] = "consent"
                 },
-                TokenExchangeUrl = $"{baseUrl}/{ExternalLoginEndpoint.Route}/token/exchange/facebook"
+                TokenExchangeUrl = $"{baseUrl}/{ExternalLoginEndpoint.Route}/token/exchange/google"
             };
         }
 

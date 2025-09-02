@@ -16,6 +16,7 @@ using UseCases.Accounts.Sessions.Get;
 using UseCases.Common.Extensions;
 
 namespace UseCases.Accounts.Authentication;
+
 public sealed class AuthenticationEndpoint : ICarterModule
 {
     internal const string Route = $"{AccountEndpoint.Route}/auth";
@@ -32,6 +33,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
             .WithSummary(Summary)
             .WithDescription(Description);
 
+        // Login with password
         group.MapPost(LoginWithPassword.Route, async ([FromBody] LoginWithPassword.Param param, [FromServices] ISender mediator) =>
         {
             var command = new LoginWithPassword.Command(param);
@@ -46,6 +48,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
 
+        // Customer registration
         group.MapPost(CustomerRegister.Route, async ([FromBody] CustomerRegister.Param param, [FromServices] ISender sender) =>
         {
             var command = new CustomerRegister.Command(param);
@@ -61,6 +64,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
         .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
 
+        // Get current session
         group.MapGet(GetSession.Route, async ([FromServices] ISender mediator) =>
         {
             var query = new GetSession.Query();
@@ -75,6 +79,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequireAuthorization();
 
+        // Logout current session
         group.MapPost(Logout.Route, async ([FromBody] Logout.Param param, [FromServices] ISender mediator) =>
         {
             var command = new Logout.Command(param);
@@ -87,8 +92,10 @@ public sealed class AuthenticationEndpoint : ICarterModule
         .Produces(StatusCodes.Status204NoContent)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status500InternalServerError);
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
+        .RequireAuthorization();
 
+        // Logout from all devices
         group.MapPost(LogoutFromAll.Route, async ([FromBody] LogoutFromAll.Param param, [FromServices] ISender mediator) =>
         {
             var command = new LogoutFromAll.Command(param);
@@ -101,6 +108,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
         .Produces(StatusCodes.Status204NoContent)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status500InternalServerError);
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
+        .RequireAuthorization();
     }
 }
