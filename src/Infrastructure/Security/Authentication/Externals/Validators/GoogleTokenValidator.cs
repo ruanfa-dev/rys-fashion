@@ -5,11 +5,12 @@ using ErrorOr;
 
 using Google.Apis.Auth;
 
+using Infrastructure.Security.Authentication.Options;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using UseCases.Common.Security.Authentication.Externals;
-using UseCases.Common.Security.Authentication.Options;
 
 namespace Infrastructure.Security.Authentication.Externals.Validators;
 public sealed class GoogleTokenValidator : IExternalTokenValidator

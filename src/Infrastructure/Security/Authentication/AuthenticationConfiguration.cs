@@ -4,9 +4,9 @@ using Ardalis.GuardClauses;
 
 using Infrastructure.Security.Authentication.Contexts;
 using Infrastructure.Security.Authentication.Externals.Validators;
+using Infrastructure.Security.Authentication.Options;
 using Infrastructure.Security.Authentication.Tokens.Services;
 
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
@@ -18,7 +18,6 @@ using Microsoft.IdentityModel.Tokens;
 
 using UseCases.Common.Security.Authentication.Contexts;
 using UseCases.Common.Security.Authentication.Externals;
-using UseCases.Common.Security.Authentication.Options;
 using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication;
