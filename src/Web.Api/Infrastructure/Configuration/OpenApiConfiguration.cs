@@ -2,10 +2,7 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-
-using UseCases.Common.Security.Authentication.Options;
 
 namespace Web.Api.Infrastructure.Configuration;
 

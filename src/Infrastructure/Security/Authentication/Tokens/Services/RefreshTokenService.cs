@@ -433,7 +433,9 @@ public sealed class RefreshTokenService : IRefreshTokenService
                 : _options.MaxActiveRefreshTokensPerUser,
             LifetimeDays = isAdmin 
                 ? _options.AdminRefreshTokenLifetimeDays 
-                : (rememberMe ? _options.RefreshTokenRememberMeLifetimeDays : _options.RefreshTokenLifetimeDays)
+                : (rememberMe 
+                    ? _options.RefreshTokenRememberMeLifetimeDays 
+                    : _options.RefreshTokenLifetimeDays)
         };
     }
 

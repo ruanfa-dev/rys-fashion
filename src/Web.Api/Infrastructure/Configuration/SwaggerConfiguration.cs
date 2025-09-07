@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 
+using Infrastructure.Security.Authentication.Options;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
@@ -8,7 +10,6 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 
 using Swashbuckle.AspNetCore.SwaggerGen;
-using UseCases.Common.Security.Authentication.Options;
 
 namespace Web.Api.Infrastructure.Configuration;
 
