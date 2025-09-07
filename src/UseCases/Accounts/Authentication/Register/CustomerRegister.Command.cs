@@ -4,14 +4,12 @@ using ErrorOr;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 using Serilog;
 
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Accounts.Common;
-using UseCases.Common.Notification.Services;
 using UseCases.Common.Security.Authorization.Roles;
 
 namespace UseCases.Accounts.Authentication.Register;
@@ -20,9 +18,7 @@ public static partial class CustomerRegister
     public record Command(Param Param) : ICommand<Guid>;
     public sealed class Handler(
         UserManager<User> userManager,
-        RoleManager<Role> roleManager,
-        INotificationService notificationService,
-        IConfiguration configuration) : ICommandHandler<Command, Guid>
+        RoleManager<Role> roleManager) : ICommandHandler<Command, Guid>
     {
         public async Task<ErrorOr<Guid>> Handle(Command request, CancellationToken cancellationToken)
         {
@@ -92,42 +88,6 @@ public static partial class CustomerRegister
 
             // Log: user registration
             Log.Information("User {UserId} registered successfully with email {Email}", user.Id, user.Email);
-
-            // Send: confirmation email
-            var emailResult = await userManager.GenerateAndSendConfirmationEmailAsync(
-                notificationService: notificationService,
-                configuration: configuration,
-                user: user,
-                cancellationToken: cancellationToken);
-
-            if (emailResult.IsError)
-            {
-                // Rollback: user creation if email sending fails
-                await userManager.DeleteAsync(user);
-                Log.Error("Failed to send confirmation email to {Email}: {Errors}", param.Email, emailResult.Errors);
-                return emailResult.Errors;
-            }
-
-            // Send: confirmation SMS if phone number is provided
-            if (!string.IsNullOrWhiteSpace(param.PhoneNumber))
-            {
-                var smsResult = await userManager.GenerateAndSendConfirmationSmsAsync(
-                    notificationService: notificationService,
-                    configuration: configuration,
-                    user: user,
-                    cancellationToken: cancellationToken);
-
-                if (smsResult.IsError)
-                {
-                    // Don't rollback user creation for SMS failure, just log the warning
-                    Log.Warning("Failed to send confirmation SMS to {PhoneNumber} for user {UserId}: {Errors}",
-                        param.PhoneNumber, user.Id, string.Join(", ", smsResult.Errors.Select(e => e.Description)));
-                }
-                else
-                {
-                    Log.Information("Confirmation SMS sent to {PhoneNumber} for user {UserId}", param.PhoneNumber, user.Id);
-                }
-            }
 
             // Return: user ID
             return user.Id;

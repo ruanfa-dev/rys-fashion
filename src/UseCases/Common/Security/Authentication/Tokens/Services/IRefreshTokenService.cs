@@ -3,6 +3,7 @@
 using UseCases.Common.Security.Authentication.Tokens.Models;
 
 namespace UseCases.Common.Security.Authentication.Tokens.Services;
+
 /// <summary>
 /// Service for managing refresh tokens including generation, validation, and rotation.
 /// </summary>
@@ -37,7 +38,6 @@ public interface IRefreshTokenService
     /// </summary>
     /// <param name="currentToken">Current refresh token</param>
     /// <param name="ipAddress">IP address performing the rotation</param>
-    /// <param name="isSystemUser">Whether the token belongs to a system user</param>
     /// <param name="rememberMe">Whether this is a "remember me" token with extended expiry</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>New refresh token or error</returns>

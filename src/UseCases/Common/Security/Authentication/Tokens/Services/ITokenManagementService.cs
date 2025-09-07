@@ -5,20 +5,21 @@ using ErrorOr;
 using UseCases.Common.Security.Authentication.Tokens.Models;
 
 namespace UseCases.Common.Security.Authentication.Tokens.Services;
+
 /// <summary>
-/// Combined service for complete token management operations.
+/// High-level service for managing user authentication and session tokens.
+/// Provides comprehensive token lifecycle management with security features.
 /// </summary>
 public interface ITokenManagementService
 {
     /// <summary>
-    /// Performs complete login flow: generates access and refresh tokens.
+    /// Authenticates a user and generates both access and refresh tokens.
     /// </summary>
-    /// <param name="user">The authenticated user</param>
-    /// <param name="ipAddress">Client IP address</param>
-    /// <param name="rememberMe">Remember me option</param>
-    /// <param name="isSystemUser">Is system user</param>"
+    /// <param name="user">User to authenticate</param>
+    /// <param name="ipAddress">IP address of the authentication request</param>
+    /// <param name="rememberMe">Whether to extend token lifetime</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Complete authentication result or error</returns>
+    /// <returns>Authentication result with tokens or error</returns>
     Task<ErrorOr<AuthenticationResult>> AuthenticateAsync(
         User user,
         string ipAddress,
@@ -26,14 +27,13 @@ public interface ITokenManagementService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Refreshes access token using refresh token.
+    /// Refreshes an access token using a valid refresh token.
     /// </summary>
     /// <param name="refreshToken">Current refresh token</param>
-    /// <param name="ipAddress">Client IP address</param>
-    /// <param name="isSystemUser">Is system user</param>
-    /// <param name="rememberMe">Remember me option</param>
+    /// <param name="ipAddress">IP address of the refresh request</param>
+    /// <param name="rememberMe">Whether to extend token lifetime</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>New authentication result or error</returns>
+    /// <returns>New authentication result with fresh tokens or error</returns>
     Task<ErrorOr<AuthenticationResult>> RefreshAsync(
         string refreshToken,
         string ipAddress,
@@ -41,10 +41,10 @@ public interface ITokenManagementService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Performs complete logout: revokes refresh token.
+    /// Logs out a user by revoking their refresh token.
     /// </summary>
     /// <param name="refreshToken">Refresh token to revoke</param>
-    /// <param name="ipAddress">Client IP address</param>
+    /// <param name="ipAddress">IP address of the logout request</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Success or error</returns>
     Task<ErrorOr<Deleted>> LogoutAsync(
@@ -53,11 +53,11 @@ public interface ITokenManagementService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Logs out from all devices: revokes all user tokens.
+    /// Logs out a user from all devices by revoking all their refresh tokens.
     /// </summary>
-    /// <param name="userId">User ID</param>
-    /// <param name="ipAddress">Client IP address</param>
-    /// <param name="currentToken">Current session token to exclude</param>
+    /// <param name="userId">User ID to logout from all devices</param>
+    /// <param name="ipAddress">IP address of the logout request</param>
+    /// <param name="currentToken">Current token to optionally preserve</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Number of revoked tokens or error</returns>
     Task<ErrorOr<int>> LogoutFromAllDevicesAsync(
@@ -65,4 +65,61 @@ public interface ITokenManagementService
         string ipAddress,
         string? currentToken = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the count of active sessions for a user.
+    /// </summary>
+    /// <param name="userId">User ID to get session count for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of active sessions or error</returns>
+    Task<ErrorOr<int>> GetActiveSessionCountAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets detailed information about all active sessions for a user.
+    /// </summary>
+    /// <param name="userId">User ID to get sessions for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of active session information or error</returns>
+    Task<ErrorOr<List<ActiveSessionInfo>>> GetActiveSessionsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revokes a specific session for a user.
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="tokenId">ID of the token/session to revoke</param>
+    /// <param name="ipAddress">IP address performing the revocation</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success or error</returns>
+    Task<ErrorOr<Success>> RevokeSessionAsync(
+        Guid userId,
+        Guid tokenId,
+        string ipAddress,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates if a refresh token is currently valid.
+    /// </summary>
+    /// <param name="refreshToken">Refresh token to validate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if valid, false otherwise, or error</returns>
+    Task<ErrorOr<bool>> IsTokenValidAsync(
+        string refreshToken,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Information about an active user session.
+/// </summary>
+public record ActiveSessionInfo
+{
+    public Guid TokenId { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset ExpiresAt { get; init; }
+    public string CreatedByIp { get; init; } = string.Empty;
+    public bool IsCurrentSession { get; init; }
+    public TimeSpan RemainingTime => ExpiresAt > DateTimeOffset.UtcNow ? ExpiresAt - DateTimeOffset.UtcNow : TimeSpan.Zero;
 }
