@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using UseCases.Common.Security.Authentication.Externals;
 
 namespace Infrastructure.Security.Authentication.Externals.Validators;
+
 public sealed class CompositeExternalTokenValidator : IExternalTokenValidator
 {
     private readonly IServiceProvider _serviceProvider;
@@ -27,7 +28,15 @@ public sealed class CompositeExternalTokenValidator : IExternalTokenValidator
         string? redirectUri,
         CancellationToken cancellationToken = default)
     {
-        var validator = provider.ToLowerInvariant() switch
+        // Validate input
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            return Error.Validation("Provider.Required", "Provider is required");
+        }
+
+        var normalizedProvider = provider.ToLowerInvariant();
+        
+        var validator = normalizedProvider switch
         {
             "google" => _serviceProvider.GetService<GoogleTokenValidator>() as IExternalTokenValidator,
             "facebook" => _serviceProvider.GetService<FacebookTokenValidator>() as IExternalTokenValidator,
@@ -37,9 +46,36 @@ public sealed class CompositeExternalTokenValidator : IExternalTokenValidator
         if (validator == null)
         {
             _logger.LogWarning("No validator found for provider: {Provider}", provider);
-            return Error.NotFound("Provider.ValidatorNotFound", $"No validator configured for provider '{provider}'");
+            return Error.NotFound("Provider.ValidatorNotFound", $"No validator configured for provider '{provider}'. Supported providers: google, facebook");
         }
 
-        return await validator.ValidateTokenAsync(provider, accessToken, idToken, authorizationCode, redirectUri, cancellationToken);
+        try
+        {
+            _logger.LogDebug("Validating token for provider: {Provider}", provider);
+            var result = await validator.ValidateTokenAsync(provider, accessToken, idToken, authorizationCode, redirectUri, cancellationToken);
+            
+            if (result.IsError)
+            {
+                _logger.LogWarning("Token validation failed for provider {Provider}: {Errors}", 
+                    provider, string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+            else
+            {
+                _logger.LogDebug("Token validation successful for provider {Provider}, user: {Email}", 
+                    provider, result.Value.Email);
+            }
+            
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Token validation cancelled for provider {Provider}", provider);
+            return Error.Failure("Token.ValidationCancelled", "Token validation was cancelled");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "External token validation failed for provider {Provider}", provider);
+            return Error.Failure("Token.ValidationError", $"Token validation failed for provider '{provider}': {ex.Message}");
+        }
     }
 }

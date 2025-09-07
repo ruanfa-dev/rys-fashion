@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using SharedKernel.Messaging.Abstracts;
 
 namespace UseCases.Accounts.Authentication.Login.External.Providers;
+
 public record ExternalProvider
 {
     public string Name { get; init; } = null!;
@@ -17,6 +18,8 @@ public record ExternalProvider
     public string LoginUrl { get; init; } = null!;
     public string? IconUrl { get; init; }
     public bool IsEnabled { get; init; } = true;
+    public string[] RequiredScopes { get; init; } = Array.Empty<string>();
+    public string ConfigurationUrl { get; init; } = null!;
 }
 
 public static partial class GetExternalProviders
@@ -31,6 +34,13 @@ public static partial class GetExternalProviders
         ILogger<Handler> logger
     ) : IQueryHandler<Query, List<Result>>
     {
+        // Supported providers for production e-commerce (removed Microsoft)
+        private static readonly HashSet<string> SupportedProviders = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "google",
+            "facebook"
+        };
+
         public async Task<ErrorOr<List<Result>>> Handle(Query request, CancellationToken cancellationToken)
         {
             try
@@ -43,6 +53,15 @@ public static partial class GetExternalProviders
 
                 foreach (var scheme in schemes)
                 {
+                    var providerName = scheme.Name.ToLowerInvariant();
+                    
+                    // Security: Only include supported providers
+                    if (!SupportedProviders.Contains(providerName))
+                    {
+                        logger.LogDebug("Skipping unsupported provider: {Provider}", scheme.Name);
+                        continue;
+                    }
+
                     if (!IsProviderConfigured(scheme.Name))
                     {
                         logger.LogDebug("Skipping unconfigured provider: {Provider}", scheme.Name);
@@ -51,17 +70,21 @@ public static partial class GetExternalProviders
 
                     var provider = new Result
                     {
-                        Name = scheme.Name.ToLowerInvariant(),
-                        DisplayName = GetProviderDisplayName(scheme.Name),
-                        LoginUrl = BuildLoginUrl(baseUrl, externalRoute, scheme.Name),
-                        IconUrl = GetProviderIconUrl(scheme.Name),
+                        Name = providerName,
+                        DisplayName = GetProviderDisplayName(providerName),
+                        LoginUrl = BuildTokenExchangeUrl(baseUrl, externalRoute, providerName),
+                        IconUrl = GetProviderIconUrl(providerName),
+                        RequiredScopes = GetProviderRequiredScopes(providerName),
+                        ConfigurationUrl = BuildConfigurationUrl(baseUrl, externalRoute, providerName),
                         IsEnabled = true
                     };
 
                     providers.Add(provider);
                 }
 
-                logger.LogInformation("Retrieved {Count} configured external authentication providers", providers.Count);
+                logger.LogInformation("Retrieved {Count} configured external authentication providers: {Providers}", 
+                    providers.Count, string.Join(", ", providers.Select(p => p.Name)));
+                
                 return providers;
             }
             catch (Exception ex)
@@ -95,46 +118,72 @@ public static partial class GetExternalProviders
             return "https://localhost:5001";
         }
 
-        private static string BuildLoginUrl(string baseUrl, string externalRoute, string providerName)
+        private static string BuildTokenExchangeUrl(string baseUrl, string externalRoute, string providerName)
         {
-            return $"{baseUrl}/{externalRoute}/token/exchange/{providerName.ToLowerInvariant()}";
+            return $"{baseUrl}{externalRoute}/token/exchange/{providerName}";
+        }
+
+        private static string BuildConfigurationUrl(string baseUrl, string externalRoute, string providerName)
+        {
+            return $"{baseUrl}{externalRoute}/config/{providerName}";
         }
 
         private static string GetProviderDisplayName(string providerName) =>
-            providerName.ToLowerInvariant() switch
+            providerName switch
             {
                 "google" => "Google",
                 "facebook" => "Facebook",
-                "github" => "GitHub",
-                _ => providerName
+                _ => char.ToUpperInvariant(providerName[0]) + providerName[1..].ToLowerInvariant()
             };
 
         private static string? GetProviderIconUrl(string providerName) =>
-            providerName.ToLowerInvariant() switch
+            providerName switch
             {
                 "google" => "https://developers.google.com/identity/images/g-logo.png",
                 "facebook" => "https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg",
-                "github" => "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
                 _ => null
+            };
+
+        private static string[] GetProviderRequiredScopes(string providerName) =>
+            providerName switch
+            {
+                "google" => new[] { "openid", "email", "profile" },
+                "facebook" => new[] { "email", "public_profile" },
+                _ => Array.Empty<string>()
             };
 
         private bool IsProviderConfigured(string providerName)
         {
             try
             {
-                var section = configuration.GetSection($"Authentication:{providerName}");
-                if (!section.Exists())
+                var normalizedName = providerName.ToLowerInvariant();
+                
+                // Only check configuration for supported providers
+                if (!SupportedProviders.Contains(normalizedName))
                 {
                     return false;
                 }
 
-                return providerName.ToLowerInvariant() switch
+                var section = configuration.GetSection($"Authentication:{providerName}");
+                if (!section.Exists())
+                {
+                    logger.LogDebug("Configuration section not found for provider: {Provider}", providerName);
+                    return false;
+                }
+
+                var isConfigured = normalizedName switch
                 {
                     "google" => HasRequiredGoogleConfig(section),
                     "facebook" => HasRequiredFacebookConfig(section),
-                    "github" => HasRequiredGenericOAuthConfig(section, "ClientId", "ClientSecret"),
-                    _ => HasRequiredGenericOAuthConfig(section, "ClientId", "ClientSecret")
+                    _ => false
                 };
+
+                if (!isConfigured)
+                {
+                    logger.LogDebug("Provider {Provider} is not properly configured", providerName);
+                }
+
+                return isConfigured;
             }
             catch (Exception ex)
             {
@@ -155,13 +204,6 @@ public static partial class GetExternalProviders
             var appId = section["AppId"];
             var appSecret = section["AppSecret"];
             return !string.IsNullOrWhiteSpace(appId) && !string.IsNullOrWhiteSpace(appSecret);
-        }
-
-        private static bool HasRequiredGenericOAuthConfig(IConfigurationSection section, string clientIdKey, string clientSecretKey)
-        {
-            var clientId = section[clientIdKey];
-            var clientSecret = section[clientSecretKey];
-            return !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret);
         }
     }
 }

@@ -13,11 +13,15 @@ using Microsoft.Extensions.Options;
 using UseCases.Common.Security.Authentication.Externals;
 
 namespace Infrastructure.Security.Authentication.Externals.Validators;
+
 public sealed class GoogleTokenValidator : IExternalTokenValidator
 {
     private readonly GoogleOption? _googleOptions;
     private readonly ILogger<GoogleTokenValidator> _logger;
     private readonly HttpClient _httpClient;
+
+    // Cache for validation settings to avoid recreating
+    private readonly Lazy<GoogleJsonWebSignature.ValidationSettings?> _validationSettings;
 
     public GoogleTokenValidator(
         IOptions<GoogleOption> googleSettings,
@@ -27,6 +31,17 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
         _googleOptions = googleSettings.Value;
         _logger = logger;
         _httpClient = httpClient;
+        
+        _validationSettings = new Lazy<GoogleJsonWebSignature.ValidationSettings?>(() =>
+        {
+            if (string.IsNullOrWhiteSpace(_googleOptions?.ClientId))
+                return null;
+                
+            return new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new[] { _googleOptions.ClientId }
+            };
+        });
     }
 
     public async Task<ErrorOr<ExternalUserInfo>> ValidateTokenAsync(
@@ -42,11 +57,19 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
             return Error.Validation("Provider.NotSupported", "This validator only supports Google");
         }
 
+        // Validate configuration
+        if (_googleOptions == null)
+        {
+            _logger.LogError("Google configuration is not available");
+            return Error.NotFound("Google.Configuration.Missing", "Google OAuth configuration is not available");
+        }
+
         try
         {
             // If we have an authorization code, exchange it for tokens first
             if (!string.IsNullOrWhiteSpace(authorizationCode))
             {
+                _logger.LogDebug("Exchanging Google authorization code for tokens");
                 var tokenExchangeResult = await ExchangeAuthorizationCodeAsync(authorizationCode, redirectUri, cancellationToken);
                 if (tokenExchangeResult.IsError)
                 {
@@ -57,19 +80,26 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
                 idToken = tokenExchangeResult.Value.IdToken;
             }
 
-            // Validate ID token using Google.Apis.Auth SDK (preferred method)
+            // Prefer ID token validation (more secure and reliable)
             if (!string.IsNullOrWhiteSpace(idToken))
             {
+                _logger.LogDebug("Validating Google ID token");
                 return await ValidateIdTokenWithSdkAsync(idToken, cancellationToken);
             }
 
             // Fallback to access token validation
             if (!string.IsNullOrWhiteSpace(accessToken))
             {
+                _logger.LogDebug("Validating Google access token");
                 return await ValidateAccessTokenAsync(accessToken, cancellationToken);
             }
 
-            return Error.Validation("Token.Invalid", "No valid token provided");
+            return Error.Validation("Token.Invalid", "No valid token provided for Google authentication");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Google token validation was cancelled");
+            return Error.Failure("Token.ValidationCancelled", "Google token validation was cancelled");
         }
         catch (Exception ex)
         {
@@ -82,32 +112,45 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
     {
         try
         {
-            var expectedClientId = _googleOptions?.ClientId;
-            if (string.IsNullOrWhiteSpace(expectedClientId))
+            var validationSettings = _validationSettings.Value;
+            if (validationSettings == null)
             {
                 return Error.NotFound("Google.Configuration.Missing", "Google ClientId is not configured");
             }
 
-            // Use Google.Apis.Auth SDK to validate ID token
-            var payload = await GoogleJsonWebSignature.ValidateAsync(
-                idToken,
-                new GoogleJsonWebSignature.ValidationSettings()
-                {
-                    Audience = new[] { expectedClientId }
-                });
+            // Use Google.Apis.Auth SDK to validate ID token with proper signature verification
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
+
+            // Additional security validations
+            if (string.IsNullOrWhiteSpace(payload.Email))
+            {
+                _logger.LogWarning("Google ID token does not contain email claim");
+                return Error.Validation("Google.IdToken.MissingEmail", "Email is required for authentication");
+            }
+
+            // Ensure email is verified for security
+            if (!payload.EmailVerified)
+            {
+                _logger.LogWarning("Google account email is not verified: {Email}", payload.Email);
+                return Error.Unauthorized("Google.Email.NotVerified", "Email must be verified to authenticate");
+            }
+
+            _logger.LogDebug("Successfully validated Google ID token for user: {Email}", payload.Email);
 
             return new ExternalUserInfo
             {
                 ProviderId = payload.Subject,
                 Email = payload.Email,
-                FirstName = payload.GivenName,
-                LastName = payload.FamilyName,
+                FirstName = payload.GivenName ?? "",
+                LastName = payload.FamilyName ?? "",
                 ProfilePictureUrl = payload.Picture,
                 EmailVerified = payload.EmailVerified,
                 AdditionalClaims = new Dictionary<string, string>
                 {
                     ["locale"] = payload.Locale ?? "",
-                    ["name"] = payload.Name ?? ""
+                    ["name"] = payload.Name ?? "",
+                    ["iss"] = payload.Issuer ?? "",
+                    ["aud"] = payload.Audience?.ToString() ?? ""
                 }
             };
         }
@@ -115,6 +158,11 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
         {
             _logger.LogWarning("Invalid Google ID token: {Error}", ex.Message);
             return Error.Unauthorized("Google.IdToken.Invalid", "Invalid Google ID token");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error parsing Google ID token");
+            return Error.Failure("Google.IdToken.ParseError", "Failed to parse Google ID token");
         }
     }
 
@@ -144,68 +192,101 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
             tokenRequest["redirect_uri"] = redirectUri;
         }
 
-        var response = await _httpClient.PostAsync(
-            "https://oauth2.googleapis.com/token",
-            new FormUrlEncodedContent(tokenRequest),
-            cancellationToken
-        );
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogWarning("Google token exchange failed: {StatusCode} - {Content}",
-                response.StatusCode, errorContent);
-            return Error.Failure("Google.TokenExchange.Failed", "Failed to exchange authorization code");
+            var response = await _httpClient.PostAsync(
+                "https://oauth2.googleapis.com/token",
+                new FormUrlEncodedContent(tokenRequest),
+                cancellationToken
+            );
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Google token exchange failed: {StatusCode} - {Content}",
+                    response.StatusCode, responseContent);
+                return Error.Failure("Google.TokenExchange.Failed", "Failed to exchange authorization code with Google");
+            }
+
+            var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(responseContent);
+
+            if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken))
+            {
+                _logger.LogError("Invalid token response from Google: {Content}", responseContent);
+                return Error.Failure("Google.TokenExchange.InvalidResponse", "Invalid token response from Google");
+            }
+
+            return (tokenData.AccessToken, tokenData.IdToken);
         }
-
-        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-        var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(responseContent);
-
-        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken))
+        catch (HttpRequestException ex)
         {
-            return Error.Failure("Google.TokenExchange.InvalidResponse", "Invalid token response from Google");
+            _logger.LogError(ex, "Network error during Google token exchange");
+            return Error.Failure("Google.TokenExchange.NetworkError", "Network error during token exchange");
         }
-
-        return (tokenData.AccessToken, tokenData.IdToken);
     }
 
     private async Task<ErrorOr<ExternalUserInfo>> ValidateAccessTokenAsync(string accessToken, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.GetAsync(
-            $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}",
-            cancellationToken
-        );
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            _logger.LogWarning("Google access token validation failed: {StatusCode}", response.StatusCode);
-            return Error.Unauthorized("Google.AccessToken.Invalid", "Invalid Google access token");
-        }
+            var response = await _httpClient.GetAsync(
+                $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={Uri.EscapeDataString(accessToken)}",
+                cancellationToken
+            );
 
-        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-        var userInfo = JsonSerializer.Deserialize<GoogleUserInfo>(responseContent);
-
-        if (userInfo == null || string.IsNullOrWhiteSpace(userInfo.Email))
-        {
-            return Error.Unauthorized("Google.AccessToken.InvalidUserInfo", "Invalid user info from access token");
-        }
-
-        return new ExternalUserInfo
-        {
-            ProviderId = userInfo.Id,
-            Email = userInfo.Email,
-            FirstName = userInfo.GivenName,
-            LastName = userInfo.FamilyName,
-            ProfilePictureUrl = userInfo.Picture,
-            EmailVerified = userInfo.VerifiedEmail,
-            AdditionalClaims = new Dictionary<string, string>
+            if (!response.IsSuccessStatusCode)
             {
-                ["locale"] = userInfo.Locale ?? "",
-                ["name"] = userInfo.Name ?? ""
+                _logger.LogWarning("Google access token validation failed: {StatusCode}", response.StatusCode);
+                return Error.Unauthorized("Google.AccessToken.Invalid", "Invalid Google access token");
             }
-        };
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var userInfo = JsonSerializer.Deserialize<GoogleUserInfo>(responseContent);
+
+            if (userInfo == null || string.IsNullOrWhiteSpace(userInfo.Email))
+            {
+                _logger.LogError("Invalid user info from Google access token: {Content}", responseContent);
+                return Error.Unauthorized("Google.AccessToken.InvalidUserInfo", "Invalid user info from Google access token");
+            }
+
+            // Require verified email for security
+            if (!userInfo.VerifiedEmail)
+            {
+                _logger.LogWarning("Google account email is not verified: {Email}", userInfo.Email);
+                return Error.Unauthorized("Google.Email.NotVerified", "Email must be verified to authenticate");
+            }
+
+            _logger.LogDebug("Successfully validated Google access token for user: {Email}", userInfo.Email);
+
+            return new ExternalUserInfo
+            {
+                ProviderId = userInfo.Id,
+                Email = userInfo.Email,
+                FirstName = userInfo.GivenName ?? "",
+                LastName = userInfo.FamilyName ?? "",
+                ProfilePictureUrl = userInfo.Picture,
+                EmailVerified = userInfo.VerifiedEmail,
+                AdditionalClaims = new Dictionary<string, string>
+                {
+                    ["locale"] = userInfo.Locale ?? "",
+                    ["name"] = userInfo.Name ?? ""
+                }
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error during Google access token validation");
+            return Error.Failure("Google.AccessToken.NetworkError", "Network error during token validation");
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Error parsing Google user info response");
+            return Error.Failure("Google.UserInfo.ParseError", "Error parsing user information");
+        }
     }
 
+    // Google API response models with proper validation
     private sealed record GoogleTokenResponse
     {
         [JsonPropertyName("access_token")]
@@ -222,6 +303,9 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
 
         [JsonPropertyName("refresh_token")]
         public string? RefreshToken { get; init; }
+
+        [JsonPropertyName("scope")]
+        public string? Scope { get; init; }
     }
 
     private sealed record GoogleUserInfo
