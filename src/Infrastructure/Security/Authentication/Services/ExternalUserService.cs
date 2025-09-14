@@ -255,15 +255,12 @@ public sealed class ExternalUserService : IExternalUserService
         CancellationToken cancellationToken)
     {
         // Create new user with external information
-        var newUser = new User
-        {
-            Email = externalUserInfo.Email,
-            UserName = GenerateUsername(externalUserInfo),
-            EmailConfirmed = externalUserInfo.EmailVerified,
-            FirstName = externalUserInfo.FirstName ?? ExtractFirstNameFromEmail(externalUserInfo.Email),
-            LastName = externalUserInfo.LastName,
-            SecurityStamp = Guid.NewGuid().ToString()
-        };
+        var newUser = User.Create(
+            email: externalUserInfo.Email,
+            userName: GenerateUsername(externalUserInfo),
+            emailConfirmed: externalUserInfo.EmailVerified,
+            firstName: externalUserInfo.FirstName ?? ExtractFirstNameFromEmail(externalUserInfo.Email),
+            lastName: externalUserInfo.LastName);
 
         // Create the user
         var createResult = await _userManager.CreateAsync(newUser);
