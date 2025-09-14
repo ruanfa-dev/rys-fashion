@@ -10,5 +10,5 @@ public record QueryParams
     public SearchParams Search { get; set; } = new();
     public QueryFilterParams Filter { get; set; } = new();
     public SortParams Sort { get; set; } = new();
-    public PagingParams Pagination { get; set; } = new();
+    public PagingParams Paging { get; set; } = new();
 }
