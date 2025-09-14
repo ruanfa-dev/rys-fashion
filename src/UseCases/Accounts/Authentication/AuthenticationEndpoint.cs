@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using UseCases.Accounts.Authentication.LogAllOut;
 using UseCases.Accounts.Authentication.Login.Password;
 using UseCases.Accounts.Authentication.LogOut;
@@ -38,14 +39,29 @@ public sealed class AuthenticationEndpoint : ICarterModule
         {
             var command = new LoginWithPassword.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("User logged in successfully");
+            
+            // Add authentication-related metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("profile", "/api/account/profile")
+                    .WithLink("logout", $"{Route}/logout")
+                    .WithLink("session", $"{Route}/session")
+                    .WithMetadata("loginMethod", "password")
+                    .WithMetadata("loginTime", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(LoginWithPassword.Name)
         .WithSummary(LoginWithPassword.Summary)
         .WithDescription(LoginWithPassword.Description)
-        .Produces<LoginWithPassword.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<LoginWithPassword.Result>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         // Customer registration
@@ -53,12 +69,25 @@ public sealed class AuthenticationEndpoint : ICarterModule
         {
             var command = new CustomerRegister.Command(param);
             var result = await sender.Send(command);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponseCreated("Account created successfully");
+            
+            // Add registration-related metadata and links
+            if (apiResponse.IsSuccess)
+            {
+                apiResponse
+                    .WithLink("login", $"{Route}/login")
+                    .WithLink("confirm-email", "/api/account/email/confirm")
+                    .WithMetadata("registrationMethod", "email")
+                    .WithMetadata("registrationTime", DateTime.UtcNow)
+                    .WithMetadata("requiresEmailConfirmation", true);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(CustomerRegister.Name)
         .WithSummary(CustomerRegister.Summary)
         .WithDescription(CustomerRegister.Description)
-        .Produces(StatusCodes.Status200OK)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
@@ -69,12 +98,25 @@ public sealed class AuthenticationEndpoint : ICarterModule
         {
             var query = new GetSession.Query();
             var result = await mediator.Send(query);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Session information retrieved successfully");
+            
+            // Add session-related metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("profile", "/api/account/profile")
+                    .WithLink("logout", $"{Route}/logout")
+                    .WithLink("logout-all", $"{Route}/logout-all")
+                    .WithMetadata("sessionType", "active")
+                    .WithMetadata("retrievedAt", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetSession.Name)
         .WithSummary(GetSession.Summary)
         .WithDescription(GetSession.Description)
-        .Produces<AccountSessionResult>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<AccountSessionResult>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequireAuthorization();
@@ -84,13 +126,24 @@ public sealed class AuthenticationEndpoint : ICarterModule
         {
             var command = new Logout.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResultDeleted();
+            var apiResponse = result.ToApiResponseDeleted("Successfully logged out");
+            
+            // Add logout metadata and links
+            apiResponse
+                .WithLink("login", $"{Route}/login")
+                .WithLink("register", $"{Route}/register")
+                .WithMetadata("logoutTime", DateTime.UtcNow)
+                .WithMetadata("logoutType", "single-session")
+                .WithMetadata("operation", "logout");
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(Logout.Name)
         .WithSummary(Logout.Summary)
         .WithDescription(Logout.Description)
-        .Produces(StatusCodes.Status204NoContent)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequireAuthorization();
@@ -100,13 +153,24 @@ public sealed class AuthenticationEndpoint : ICarterModule
         {
             var command = new LogoutFromAll.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResultDeleted();
+            var apiResponse = result.ToApiResponseDeleted("Successfully logged out from all devices");
+            
+            // Add logout-all metadata and links
+            apiResponse
+                .WithLink("login", $"{Route}/login")
+                .WithLink("register", $"{Route}/register")
+                .WithMetadata("logoutTime", DateTime.UtcNow)
+                .WithMetadata("logoutType", "all-sessions")
+                .WithMetadata("operation", "logout-all");
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(LogoutFromAll.Name)
         .WithSummary(LogoutFromAll.Summary)
         .WithDescription(LogoutFromAll.Description)
-        .Produces(StatusCodes.Status204NoContent)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequireAuthorization();

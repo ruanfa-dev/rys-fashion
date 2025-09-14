@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using UseCases.Accounts.Profile.Common;
 using UseCases.Accounts.Profile.Get;
 using UseCases.Accounts.Profile.Update;
@@ -27,18 +28,34 @@ public sealed class ProfileEndpoint : ICarterModule
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, Tag)
             .WithSummary(Summary)
-            .WithDescription(Description);
+            .WithDescription(Description)
+            .RequireAuthorization(); // All profile endpoints require authentication
 
         group.MapGet(GetProfile.Route, async ([FromServices] ISender mediator) =>
         {
             var query = new GetProfile.Query();
             var result = await mediator.Send(query);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Profile retrieved successfully");
+            
+            // Add profile-related metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("self", Route)
+                    .WithLink("update", Route)
+                    .WithLink("change-email", "/api/account/email/change")
+                    .WithLink("change-password", "/api/account/password/change")
+                    .WithLink("session", "/api/account/auth/session")
+                    .WithMetadata("profileType", "personal")
+                    .WithMetadata("retrievedAt", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetProfile.Name)
         .WithSummary(GetProfile.Summary)
         .WithDescription(GetProfile.Description)
-        .Produces<AccountProfileResult>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<AccountProfileResult>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -46,12 +63,27 @@ public sealed class ProfileEndpoint : ICarterModule
         {
             var command = new UpdateProfile.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResultNoContent();
+            var apiResponse = result.ToApiResponse("Profile updated successfully");
+            
+            // Add profile update metadata and links
+            if (apiResponse.IsSuccess)
+            {
+                apiResponse
+                    .WithLink("self", Route)
+                    .WithLink("get-profile", Route)
+                    .WithLink("change-email", "/api/account/email/change")
+                    .WithLink("change-password", "/api/account/password/change")
+                    .WithMetadata("profileUpdate", "successful")
+                    .WithMetadata("updatedAt", DateTime.UtcNow)
+                    .WithMetadata("operation", "profile-update");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(UpdateProfile.Name)
         .WithSummary(UpdateProfile.Summary)
         .WithDescription(UpdateProfile.Description)
-        .Produces(StatusCodes.Status204NoContent)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)

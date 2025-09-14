@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using UseCases.Accounts.Password.Change;
 using UseCases.Accounts.Password.Forgot;
 using UseCases.Accounts.Password.Reset;
@@ -33,45 +34,88 @@ public sealed class PasswordEndpoint : ICarterModule
         {
             var command = new ChangePassword.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Password changed successfully");
+            
+            // Add password change metadata and links
+            if (apiResponse.IsSuccess)
+            {
+                apiResponse
+                    .WithLink("profile", "/api/account/profile")
+                    .WithLink("login", "/api/account/auth/login")
+                    .WithLink("logout", "/api/account/auth/logout")
+                    .WithMetadata("passwordChange", "successful")
+                    .WithMetadata("changedAt", DateTime.UtcNow)
+                    .WithMetadata("securityAction", true);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(ChangePassword.Name)
         .WithSummary(ChangePassword.Summary)
         .WithDescription(ChangePassword.Description)
-        .Produces(StatusCodes.Status200OK)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status500InternalServerError);
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
+        .RequireAuthorization();
 
         group.MapPost(ForgotPassword.Route, async ([FromBody] ForgotPassword.Param param, [FromServices] ISender mediator) =>
         {
             var command = new ForgotPassword.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Password reset email sent successfully");
+            
+            // Add forgot password metadata and links
+            if (apiResponse.IsSuccess)
+            {
+                apiResponse
+                    .WithLink("reset-password", "/api/account/password/reset")
+                    .WithLink("login", "/api/account/auth/login")
+                    .WithMetadata("passwordReset", "email-sent")
+                    .WithMetadata("requestedAt", DateTime.UtcNow)
+                    .WithMetadata("operation", "forgot-password");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(ForgotPassword.Name)
         .WithSummary(ForgotPassword.Summary)
         .WithDescription(ForgotPassword.Description)
-        .Produces(StatusCodes.Status200OK)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost(ResetPassword.Route, async ([FromBody] ResetPassword.Param param, [FromServices] ISender mediator) =>
         {
             var command = new ResetPassword.Command(param);
             var result = await mediator.Send(command);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Password reset successfully");
+            
+            // Add password reset metadata and links
+            if (apiResponse.IsSuccess)
+            {
+                apiResponse
+                    .WithLink("login", "/api/account/auth/login")
+                    .WithLink("profile", "/api/account/profile")
+                    .WithMetadata("passwordReset", "successful")
+                    .WithMetadata("resetAt", DateTime.UtcNow)
+                    .WithMetadata("securityAction", true)
+                    .WithMetadata("operation", "password-reset");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(ResetPassword.Name)
         .WithSummary(ResetPassword.Summary)
         .WithDescription(ResetPassword.Description)
-        .Produces(StatusCodes.Status200OK)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 }

@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using SharedKernel.Models.Filter;
-using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -55,13 +55,50 @@ public sealed class PermissionManagementEndpoint : ICarterModule
             };
             var query = new ListAvailablePermissions.Query(param);
             var result = await mediator.Send(query, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponsePaged("Available permissions retrieved successfully");
+
+            // Add pagination and admin management links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                // Add pagination links
+                var currentPage = (pagination.PageIndex ?? 0) + 1;
+                var pageSize = pagination.PageSize ?? 10;
+
+                apiResponse.WithLink("self", $"{Route}/available?page_index={currentPage}&page_size={pageSize}");
+
+                if (apiResponse.Pagination?.HasPrevious == true)
+                {
+                    apiResponse.WithLink("prev", $"{Route}/available?page_index={currentPage - 1}&page_size={pageSize}");
+                }
+
+                if (apiResponse.Pagination?.HasNext == true)
+                {
+                    apiResponse.WithLink("next", $"{Route}/available?page_index={currentPage + 1}&page_size={pageSize}");
+                }
+
+                apiResponse.WithLink("first", $"{Route}/available?page_index=1&page_size={pageSize}");
+
+                if (apiResponse.Pagination?.TotalPages > 0)
+                {
+                    apiResponse.WithLink("last", $"{Route}/available?page_index={apiResponse.Pagination.TotalPages}&page_size={pageSize}");
+                }
+
+                // Add admin management links for cross-navigation
+                apiResponse
+                    .WithLink("all-users", "/api/admin/users")
+                    .WithLink("all-roles", "/api/admin/roles")
+                    .WithMetadata("adminContext", "permission-discovery")
+                    .WithMetadata("permissionType", "available")
+                    .WithMetadata("filterApplied", !string.IsNullOrEmpty(search.SearchTerm) || (filter.Filters?.Any() == true));
+            }
+
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(ListAvailablePermissions.Name)
         .WithSummary(ListAvailablePermissions.Summary)
         .WithDescription(ListAvailablePermissions.Description)
         .WithTags(ListAvailablePermissions.Tag)
-        .Produces<PagedList<ListAvailablePermissions.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<List<ListAvailablePermissions.Result>>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status500InternalServerError)

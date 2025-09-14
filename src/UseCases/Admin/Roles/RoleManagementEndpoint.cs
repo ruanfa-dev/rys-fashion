@@ -1,4 +1,4 @@
-using Carter;
+﻿using Carter;
 
 using MediatR;
 
@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using SharedKernel.Models.Filter;
 using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
@@ -53,15 +54,31 @@ public sealed class RoleManagementEndpoint : ICarterModule
         {
             var command = new CreateRole.Command(param);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponseCreated("Role created successfully");
+            
+            // Add admin role management HATEOAS links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
+                    .WithLink("update", $"{Route}/{apiResponse.Data.Id}")
+                    .WithLink("delete", $"{Route}/{apiResponse.Data.Id}")
+                    .WithLink("assign-users", $"{Route}/{apiResponse.Data.Id}/users/batch")
+                    .WithLink("assign-permissions", $"{Route}/{apiResponse.Data.Id}/permissions/batch")
+                    .WithLink("all-roles", Route)
+                    .WithLink("all-users", "/api/admin/users")
+                    .WithMetadata("adminAction", "role-creation")
+                    .WithMetadata("roleType", param.IsSystemRole ? "system" : "custom");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(CreateRole.Name)
         .WithSummary(CreateRole.Summary)
         .WithDescription(CreateRole.Description)
         .WithTags(Tag)
-        .Produces<CreateRole.Result>(StatusCodes.Status201Created)
+        .Produces<ApiResponse<CreateRole.Result>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status409Conflict)
@@ -90,13 +107,50 @@ public sealed class RoleManagementEndpoint : ICarterModule
             };
             var query = new ListRoles.Query(param);
             var result = await mediator.Send(query, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponsePaged("Roles retrieved successfully");
+            
+            // Add pagination and admin management links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                // Add pagination links
+                var currentPage = (pagination.PageIndex ?? 0) + 1;
+                var pageSize = pagination.PageSize ?? 10;
+                
+                apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
+                
+                if (apiResponse.Pagination?.HasPrevious == true)
+                {
+                    apiResponse.WithLink("prev", $"{Route}?page_index={currentPage - 1}&page_size={pageSize}");
+                }
+                
+                if (apiResponse.Pagination?.HasNext == true)
+                {
+                    apiResponse.WithLink("next", $"{Route}?page_index={currentPage + 1}&page_size={pageSize}");
+                }
+                
+                apiResponse.WithLink("first", $"{Route}?page_index=1&page_size={pageSize}");
+                
+                if (apiResponse.Pagination?.TotalPages > 0)
+                {
+                    apiResponse.WithLink("last", $"{Route}?page_index={apiResponse.Pagination.TotalPages}&page_size={pageSize}");
+                }
+                
+                // Add admin management links
+                apiResponse
+                    .WithLink("create-role", Route)
+                    .WithLink("all-users", "/api/admin/users")
+                    .WithLink("all-permissions", "/api/admin/permissions")
+                    .WithMetadata("adminContext", "role-listing")
+                    .WithMetadata("filterApplied", IsSystemRole != null || IsDefault != null || !string.IsNullOrEmpty(search.SearchTerm));
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(ListRoles.Name)
         .WithSummary(ListRoles.Summary)
         .WithDescription(ListRoles.Description)
         .WithTags(ListRoles.Tag)
-        .Produces<PagedList<ListRoles.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<List<ListRoles.Result>>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
@@ -121,13 +175,30 @@ public sealed class RoleManagementEndpoint : ICarterModule
             };
             var query = new GetRoleById.Query(id, param);
             var result = await mediator.Send(query, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Role details retrieved successfully");
+            
+            // Add role-specific admin management links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("self", $"{Route}/{id}")
+                    .WithLink("update", $"{Route}/{id}")
+                    .WithLink("delete", $"{Route}/{id}")
+                    .WithLink("assign-users", $"{Route}/{id}/users/batch")
+                    .WithLink("assign-permissions", $"{Route}/{id}/permissions/batch")
+                    .WithLink("all-roles", Route)
+                    .WithLink("all-users", "/api/admin/users")
+                    .WithMetadata("adminContext", "role-details")
+                    .WithMetadata("roleId", id);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetRoleById.Name)
         .WithSummary(GetRoleById.Summary)
         .WithDescription(GetRoleById.Description)
         .WithTags(Tag)
-        .Produces<GetRoleById.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<GetRoleById.Result>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -143,13 +214,29 @@ public sealed class RoleManagementEndpoint : ICarterModule
         {
             var command = new UpdateRole.Command(id, param);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Role updated successfully");
+            
+            // Add role management links and update metadata
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("self", $"{Route}/{id}")
+                    .WithLink("delete", $"{Route}/{id}")
+                    .WithLink("assign-users", $"{Route}/{id}/users/batch")
+                    .WithLink("assign-permissions", $"{Route}/{id}/permissions/batch")
+                    .WithLink("all-roles", Route)
+                    .WithMetadata("adminAction", "role-update")
+                    .WithMetadata("updatedAt", DateTime.UtcNow)
+                    .WithMetadata("operation", "update");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(UpdateRole.Name)
         .WithSummary(UpdateRole.Summary)
         .WithDescription(UpdateRole.Description)
         .WithTags(UpdateRole.Tag)
-        .Produces<UpdateRole.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<UpdateRole.Result>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -165,17 +252,31 @@ public sealed class RoleManagementEndpoint : ICarterModule
             CancellationToken cancellationToken) =>
         {
             var command = new DeleteRole.Command(id);
-            ErrorOr.ErrorOr<ErrorOr.Deleted> result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResultDeleted();
+            var result = await mediator.Send(command, cancellationToken);
+            var apiResponse = result.ToApiResponseDeleted("Role deleted successfully");
+            
+            // Add admin audit metadata and navigation links
+            apiResponse
+                .WithLink("all-roles", Route)
+                .WithLink("create-role", Route)
+                .WithLink("all-users", "/api/admin/users")
+                .WithMetadata("adminAction", "role-deletion")
+                .WithMetadata("deletedAt", DateTime.UtcNow)
+                .WithMetadata("deletedRoleId", id)
+                .WithMetadata("operation", "delete");
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(DeleteRole.Name)
         .WithSummary(DeleteRole.Summary)
         .WithDescription(DeleteRole.Description)
         .WithTags(Tag)
-        .Produces<NoContent>(StatusCodes.Status204NoContent)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequirePermission(Feature.Admin.Role.Delete);
 
@@ -188,13 +289,29 @@ public sealed class RoleManagementEndpoint : ICarterModule
         {
             var command = new AssignRoleToBatchUsers.Command(id, param);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Users assigned to role successfully");
+            
+            // Add user assignment metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("role-details", $"{Route}/{id}")
+                    .WithLink("assign-permissions", $"{Route}/{id}/permissions/batch")
+                    .WithLink("all-users", "/api/admin/users")
+                    .WithLink("all-roles", Route)
+                    .WithMetadata("adminAction", "user-assignment")
+                    .WithMetadata("assignedAt", DateTime.UtcNow)
+                    .WithMetadata("targetRoleId", id)
+                    .WithMetadata("operation", "batch-user-assign");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(AssignRoleToBatchUsers.Name)
         .WithSummary(AssignRoleToBatchUsers.Summary)
         .WithDescription(AssignRoleToBatchUsers.Description)
         .WithTags(AssignRoleToBatchUsers.Tag, Tag)
-        .Produces<AssignRoleToBatchUsers.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<AssignRoleToBatchUsers.Result>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -213,13 +330,29 @@ public sealed class RoleManagementEndpoint : ICarterModule
         {
             var command = new AssignBatchPermissionsToRole.Command(id, param);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Permissions assigned to role successfully");
+            
+            // Add permission assignment metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("role-details", $"{Route}/{id}")
+                    .WithLink("assign-users", $"{Route}/{id}/users/batch")
+                    .WithLink("all-permissions", "/api/admin/permissions")
+                    .WithLink("all-roles", Route)
+                    .WithMetadata("adminAction", "permission-assignment")
+                    .WithMetadata("assignedAt", DateTime.UtcNow)
+                    .WithMetadata("targetRoleId", id)
+                    .WithMetadata("operation", "batch-permission-assign");
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(AssignBatchPermissionsToRole.Name)
         .WithSummary(AssignBatchPermissionsToRole.Summary)
         .WithDescription(AssignBatchPermissionsToRole.Description)
         .WithTags(PermissionManagementEndpoint.Tag, AssignBatchPermissionsToRole.Tag, Tag)
-        .Produces<AssignBatchPermissionsToRole.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<AssignBatchPermissionsToRole.Result>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)

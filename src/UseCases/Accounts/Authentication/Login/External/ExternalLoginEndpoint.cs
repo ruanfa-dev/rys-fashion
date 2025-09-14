@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using UseCases.Accounts.Authentication.Login.External.Exchange;
 using UseCases.Accounts.Authentication.Login.External.GetConfig;
 using UseCases.Accounts.Authentication.Login.External.Providers;
@@ -37,13 +38,26 @@ public sealed class ExternalLoginEndpoint : ICarterModule
         {
             var query = new GetExternalProviders.Query();
             var result = await mediator.Send(query);
-
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("External providers retrieved successfully");
+            
+            // Add external auth related links and metadata
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("google-config", $"{Route}/config/google")
+                    .WithLink("facebook-config", $"{Route}/config/facebook")
+                    .WithLink("health-check", $"{Route}/health")
+                    .WithMetadata("authenticationMethod", "external")
+                    .WithMetadata("providersCount", apiResponse.Data.Count)
+                    .WithMetadata("retrievedAt", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetExternalProviders.Name)
         .WithSummary(GetExternalProviders.Summary)
         .WithDescription(GetExternalProviders.Description)
-        .Produces<List<GetExternalProviders.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<List<GetExternalProviders.Result>>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .AllowAnonymous(); // Allow anonymous access to discover providers
 
@@ -56,7 +70,14 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Validate provider parameter
             if (string.IsNullOrWhiteSpace(provider))
             {
-                return Results.BadRequest(new { error = "Provider parameter is required" });
+                var errorResponse = new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Provider parameter is required",
+                    Status = 400,
+                    Timestamp = DateTime.UtcNow
+                };
+                return Results.Ok(errorResponse);
             }
 
             // Normalize provider name for security
@@ -65,18 +86,38 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
-                return Results.BadRequest(new { error = $"Provider '{provider}' is not supported" });
+                var errorResponse = new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = $"Provider '{provider}' is not supported",
+                    Status = 400,
+                    Timestamp = DateTime.UtcNow
+                };
+                return Results.Ok(errorResponse);
             }
 
             var query = new GetOAuthConfig.Query(normalizedProvider);
             var result = await mediator.Send(query, cancellationToken);
-
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse($"OAuth configuration for {provider} retrieved successfully");
+            
+            // Add OAuth-specific metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("providers", $"{Route}/providers")
+                    .WithLink("token-exchange", $"{Route}/token/exchange/{normalizedProvider}")
+                    .WithLink("token-verify", $"{Route}/token/verify/{normalizedProvider}")
+                    .WithMetadata("provider", normalizedProvider)
+                    .WithMetadata("configType", "oauth")
+                    .WithMetadata("retrievedAt", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetOAuthConfig.Name)
         .WithSummary(GetOAuthConfig.Summary)
         .WithDescription(GetOAuthConfig.Description)
-        .Produces<GetOAuthConfig.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<GetOAuthConfig.Result>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
@@ -92,7 +133,14 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Validate provider parameter
             if (string.IsNullOrWhiteSpace(provider))
             {
-                return Results.BadRequest(new { error = "Provider parameter is required" });
+                var errorResponse = new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Provider parameter is required",
+                    Status = 400,
+                    Timestamp = DateTime.UtcNow
+                };
+                return Results.Ok(errorResponse);
             }
 
             // Normalize provider name for security
@@ -101,19 +149,39 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
-                return Results.BadRequest(new { error = $"Provider '{provider}' is not supported" });
+                var errorResponse = new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = $"Provider '{provider}' is not supported",
+                    Status = 400,
+                    Timestamp = DateTime.UtcNow
+                };
+                return Results.Ok(errorResponse);
             }
 
             // Create command with validated provider
             var commandWithProvider = command with { Provider = normalizedProvider };
             var result = await mediator.Send(commandWithProvider, cancellationToken);
-
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse($"External token exchanged successfully for {provider}");
+            
+            // Add authentication-related metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("profile", "/api/account/profile")
+                    .WithLink("session", "/api/account/auth/session")
+                    .WithLink("logout", "/api/account/auth/logout")
+                    .WithMetadata("provider", normalizedProvider)
+                    .WithMetadata("authenticationMethod", "external-token-exchange")
+                    .WithMetadata("exchangedAt", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(ExchangeExternalToken.Name)
         .WithSummary(ExchangeExternalToken.Summary)
         .WithDescription(ExchangeExternalToken.Description)
-        .Produces<ExchangeExternalToken.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<ExchangeExternalToken.Result>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -131,7 +199,14 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Validate provider parameter
             if (string.IsNullOrWhiteSpace(provider))
             {
-                return Results.BadRequest(new { error = "Provider parameter is required" });
+                var errorResponse = new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Provider parameter is required",
+                    Status = 400,
+                    Timestamp = DateTime.UtcNow
+                };
+                return Results.Ok(errorResponse);
             }
 
             // Normalize provider name for security
@@ -140,19 +215,38 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
-                return Results.BadRequest(new { error = $"Provider '{provider}' is not supported" });
+                var errorResponse = new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = $"Provider '{provider}' is not supported",
+                    Status = 400,
+                    Timestamp = DateTime.UtcNow
+                };
+                return Results.Ok(errorResponse);
             }
 
             // Create command with validated provider
             var commandWithProvider = command with { Provider = normalizedProvider };
             var result = await mediator.Send(commandWithProvider, cancellationToken);
-
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse($"External token verified successfully for {provider}");
+            
+            // Add verification metadata and links
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("token-exchange", $"{Route}/token/exchange/{normalizedProvider}")
+                    .WithLink("providers", $"{Route}/providers")
+                    .WithMetadata("provider", normalizedProvider)
+                    .WithMetadata("operation", "token-verification")
+                    .WithMetadata("verifiedAt", DateTime.UtcNow);
+            }
+            
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(VerifyExternalToken.Name)
         .WithSummary(VerifyExternalToken.Summary)
         .WithDescription(VerifyExternalToken.Description)
-        .Produces<VerifyExternalToken.Result>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<VerifyExternalToken.Result>>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -163,17 +257,31 @@ public sealed class ExternalLoginEndpoint : ICarterModule
         // Health check endpoint for external authentication status
         group.MapGet("/health", () =>
         {
-            return Results.Ok(new 
-            { 
-                status = "healthy",
-                timestamp = DateTimeOffset.UtcNow,
-                supportedProviders = GetSupportedProviders()
-            });
+            var healthResponse = new ApiResponse<object>
+            {
+                IsSuccess = true,
+                Data = new 
+                { 
+                    status = "healthy",
+                    timestamp = DateTimeOffset.UtcNow,
+                    supportedProviders = GetSupportedProviders()
+                },
+                Message = "External authentication service is healthy",
+                Status = 200,
+                Timestamp = DateTime.UtcNow
+            };
+            
+            healthResponse
+                .WithLink("providers", $"{Route}/providers")
+                .WithMetadata("serviceType", "external-authentication")
+                .WithMetadata("healthCheck", "passed");
+                
+            return Results.Ok(healthResponse);
         })
         .WithName("ExternalAuthHealth")
         .WithSummary("External authentication health check")
         .WithDescription("Check the health status of external authentication services")
-        .Produces<object>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<object>>(StatusCodes.Status200OK)
         .AllowAnonymous()
         .ExcludeFromDescription(); // Hide from Swagger for internal use
     }

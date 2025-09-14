@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using SharedKernel.Models;
 using SharedKernel.Models.Filter;
-using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -46,13 +46,30 @@ public sealed class TodoListEndpoint : ICarterModule
         {
             var command = new CreateTodoList.Command(param);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResultCreated($"{Route}/{result.Value?.Id}");
+            var apiResponse = result.ToApiResponseCreated("Todo list created successfully");
+
+            // Add HATEOAS links for the created todo list
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
+                    .WithLink("update", $"{Route}/{apiResponse.Data.Id}")
+                    .WithLink("delete", $"{Route}/{apiResponse.Data.Id}")
+                    .WithLink("items", $"{TodoEndpoint.Route}/items?listId={apiResponse.Data.Id}")
+                    .WithLink("all-lists", Route);
+            }
+
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(CreateTodoList.Name)
         .WithSummary(CreateTodoList.Summary)
         .WithDescription(CreateTodoList.Description)
-        .Produces<TodoListResult>(StatusCodes.Status201Created)
+        .Produces<ApiResponse<TodoListResult>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequirePermission(Feature.Testing.TodoLists.Create);
 
         group.MapGet("/", async (
@@ -72,52 +89,129 @@ public sealed class TodoListEndpoint : ICarterModule
             };
             var query = new GetTodoListPagedList.Query(param);
             var result = await mediator.Send(query, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponsePaged("Todo lists retrieved successfully");
+
+            // Add HATEOAS links for pagination
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                // Use PageIndex instead of PageNumber (based on PagingParams structure)
+                var currentPage = (pagination.PageIndex ?? 0) + 1; // Convert 0-based index to 1-based page number
+                var pageSize = pagination.PageSize ?? 10;
+
+                apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
+
+                if (apiResponse.Pagination?.HasPrevious == true)
+                {
+                    apiResponse.WithLink("prev", $"{Route}?page_index={currentPage - 1}&page_size={pageSize}");
+                }
+
+                if (apiResponse.Pagination?.HasNext == true)
+                {
+                    apiResponse.WithLink("next", $"{Route}?page_index={currentPage + 1}&page_size={pageSize}");
+                }
+
+                apiResponse.WithLink("first", $"{Route}?page_index=1&page_size={pageSize}");
+
+                if (apiResponse.Pagination?.TotalPages > 0)
+                {
+                    apiResponse.WithLink("last", $"{Route}?page_index={apiResponse.Pagination.TotalPages}&page_size={pageSize}");
+                }
+            }
+
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetTodoListPagedList.Name)
         .WithSummary(GetTodoListPagedList.Summary)
         .WithDescription(GetTodoListPagedList.Description)
-        .Produces<PagedList<GetTodoListPagedList.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<List<GetTodoListPagedList.Result>>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequirePermission(Feature.Testing.TodoLists.List);
 
         group.MapGet("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
             var query = new GetTodoListById.Query(id);
             var result = await mediator.Send(query, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Todo list retrieved successfully");
+
+            // Add HATEOAS links for the todo list
+            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            {
+                apiResponse
+                    .WithLink("self", $"{Route}/{id}")
+                    .WithLink("update", $"{Route}/{id}")
+                    .WithLink("delete", $"{Route}/{id}")
+                    .WithLink("items", $"{TodoEndpoint.Route}/items?listId={id}")
+                    .WithLink("all-lists", Route);
+            }
+
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(GetTodoListById.Name)
         .WithSummary(GetTodoListById.Summary)
         .WithDescription(GetTodoListById.Description)
-        .Produces<TodoListResult>(StatusCodes.Status200OK)
-        .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+        .Produces<ApiResponse<TodoListResult>>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequirePermission(Feature.Testing.TodoLists.View);
 
         group.MapPut("/{id:int}", async (int id, TodoListParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
             var command = new UpdateTodoList.Command(id, param);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResult();
+            var apiResponse = result.ToApiResponse("Todo list updated successfully");
+
+            // Add HATEOAS links for the updated todo list - use the id parameter since Updated doesn't have properties
+            if (apiResponse.IsSuccess)
+            {
+                apiResponse
+                    .WithLink("self", $"{Route}/{id}")
+                    .WithLink("delete", $"{Route}/{id}")
+                    .WithLink("items", $"{TodoEndpoint.Route}/items?listId={id}")
+                    .WithLink("all-lists", Route);
+            }
+
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(UpdateTodoList.Name)
         .WithSummary(UpdateTodoList.Summary)
         .WithDescription(UpdateTodoList.Description)
-        .Produces<TodoListResult>(StatusCodes.Status200OK)
-        .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+        .Produces<ApiResponse<TodoListResult>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequirePermission(Feature.Testing.TodoLists.Update);
 
         group.MapDelete("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
             var command = new DeleteTodoList.Command(id);
             var result = await mediator.Send(command, cancellationToken);
-            return result.ToTypedResultDeleted();
+            var apiResponse = result.ToApiResponseDeleted("Todo list deleted successfully");
+
+            // Add metadata for audit purposes
+            apiResponse
+                .WithMetadata("deletedAt", DateTime.UtcNow)
+                .WithMetadata("deletedListId", id)
+                .WithMetadata("operation", "delete")
+                .WithLink("all-lists", Route);
+
+            return TypedResults.Ok(apiResponse);
         })
         .WithName(DeleteTodoList.Name)
         .WithSummary(DeleteTodoList.Summary)
         .WithDescription(DeleteTodoList.Description)
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+        .Produces<ApiResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .RequirePermission(Feature.Testing.TodoLists.Delete);
     }
 }
