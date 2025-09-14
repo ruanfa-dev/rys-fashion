@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 using UseCases.Common.Extensions;
+using UseCases.Common.Security.Authorization.Attributes;
 using UseCases.Common.Security.Authorization.Permissions;
 using UseCases.Todos.Items.Common;
 using UseCases.Todos.Items.Complete;
@@ -31,14 +32,14 @@ public sealed class TodoItemEndpoint : ICarterModule
     {
         var group = app.MapGroup(Route)
             .WithName(Name)
-            .WithTags(Tag)
+            .WithTags(TodoEndpoint.Tag, Tag)
             .WithSummary(Summary)
             .WithDescription(Description);
 
-        group.MapPost("", async (TodoItemParam param, ISender mediator) =>
+        group.MapPost("", async (TodoItemParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
             var command = new CreateTodoItem.Command(param);
-            var result = await mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
             return result.ToTypedResultCreated($"{Route}/{result.Value}");
         })
         .WithName(CreateTodoItem.Name)
@@ -46,12 +47,12 @@ public sealed class TodoItemEndpoint : ICarterModule
         .WithDescription(CreateTodoItem.Description)
         .Produces<TodoItemResult>(StatusCodes.Status201Created)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-        .RequireAuthorization(Feature.Testing.Todo.Items.Create);
+        .RequirePermission(Feature.Testing.TodoItems.Create);
 
-        group.MapGet("/{id:int}", async (int id, ISender mediator) =>
+        group.MapGet("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
             var query = new GetTodoItemById.Query(id);
-            var result = await mediator.Send(query);
+            var result = await mediator.Send(query, cancellationToken);
             return result.ToTypedResult();
         })
         .WithName(GetTodoItemById.Name)
@@ -59,12 +60,12 @@ public sealed class TodoItemEndpoint : ICarterModule
         .WithDescription(GetTodoItemById.Description)
         .Produces<TodoItemResult>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-        .RequireAuthorization(Feature.Testing.Todo.Items.View);
+        .RequirePermission(Feature.Testing.TodoItems.View);
 
-        group.MapPut("/{id:int}", async (int id, TodoItemParam param, ISender mediator) =>
+        group.MapPut("/{id:int}", async (int id, TodoItemParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
             var command = new UpdateTodoItem.Command(id, param);
-            var result = await mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
             return result.ToTypedResult();
         })
         .WithName(UpdateTodoItem.Name)
@@ -73,12 +74,12 @@ public sealed class TodoItemEndpoint : ICarterModule
         .Produces<TodoItemResult>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-        .RequireAuthorization(Feature.Testing.Todo.Items.Update);
+        .RequirePermission(Feature.Testing.TodoItems.Update);
 
-        group.MapPatch("/{id:int}/complete", async (int id, ISender mediator) =>
+        group.MapPatch("/{id:int}/complete", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
             var command = new CompleteTodoItem.Command(id);
-            var result = await mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
 
             return result.ToTypedResult();
         })
@@ -89,13 +90,13 @@ public sealed class TodoItemEndpoint : ICarterModule
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
-        .RequireAuthorization(Feature.Testing.Todo.Items.Track);
+        .RequirePermission(Feature.Testing.TodoItems.Track);
 
 
-        group.MapDelete("/{id:int}", async (int id, ISender mediator) =>
+        group.MapDelete("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
             var command = new DeleteTodoItem.Command(id);
-            var result = await mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
             return result.ToTypedResultDeleted();
         })
         .WithName(DeleteTodoItem.Name)
@@ -103,6 +104,6 @@ public sealed class TodoItemEndpoint : ICarterModule
         .WithDescription(DeleteTodoItem.Description)
         .Produces(StatusCodes.Status204NoContent)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-        .RequireAuthorization(Feature.Testing.Todo.Items.Delete);
+        .RequirePermission(Feature.Testing.TodoItems.Delete);
     }
 }
