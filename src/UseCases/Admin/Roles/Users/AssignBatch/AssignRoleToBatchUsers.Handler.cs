@@ -227,7 +227,7 @@ public static partial class AssignRoleToBatchUsers
                 (> 0, 0) => $"Successfully assigned role '{roleName}' to {assignedCount} user(s)",
                 (0, > 0) => $"All {skippedCount} user(s) already have role '{roleName}' - no changes needed",
                 (> 0, > 0) => $"Role '{roleName}' assignment completed: {assignedCount} assigned, {skippedCount} already had role",
-                _ => $"Role '{roleName}' assignment completed with unexpected counts: {assignedCount} assigned, {skippedCount} skipped"
+                _ => $"Role '{roleName}' assignment completed: {assignedCount} assigned, {skippedCount} skipped"
             };
         }
     }

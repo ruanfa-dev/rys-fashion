@@ -82,7 +82,7 @@ public interface ITokenManagementService
     /// <param name="userId">User ID to get sessions for</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of active session information or error</returns>
-    Task<ErrorOr<List<ActiveSessionInfo>>> GetActiveSessionsAsync(
+    Task<ErrorOr<List<ActiveSessionResult>>> GetActiveSessionsAsync(
         Guid userId,
         CancellationToken cancellationToken = default);
 
@@ -109,17 +109,4 @@ public interface ITokenManagementService
     Task<ErrorOr<bool>> IsTokenValidAsync(
         string refreshToken,
         CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Information about an active user session.
-/// </summary>
-public record ActiveSessionInfo
-{
-    public Guid TokenId { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset ExpiresAt { get; init; }
-    public string CreatedByIp { get; init; } = string.Empty;
-    public bool IsCurrentSession { get; init; }
-    public TimeSpan RemainingTime => ExpiresAt > DateTimeOffset.UtcNow ? ExpiresAt - DateTimeOffset.UtcNow : TimeSpan.Zero;
 }

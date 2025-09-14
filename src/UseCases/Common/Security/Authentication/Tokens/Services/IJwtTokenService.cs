@@ -1,13 +1,11 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
+using Core.Identity;
+
 using ErrorOr;
 
-using Microsoft.IdentityModel.Tokens;
-
 using UseCases.Common.Security.Authentication.Tokens.Models;
-
-using Core.Identity;
 
 namespace UseCases.Common.Security.Authentication.Tokens.Services;
 
@@ -70,16 +68,4 @@ public interface IJwtTokenService
     /// <param name="token">JWT token</param>
     /// <returns>Dictionary of claims or error</returns>
     ErrorOr<Dictionary<string, object>> GetTokenClaims(string token);
-}
-
-/// <summary>
-/// Result of JWT token validation.
-/// </summary>
-public record JwtTokenValidationResult
-{
-    public bool IsValid { get; init; }
-    public ClaimsIdentity? ClaimsIdentity { get; init; }
-    public SecurityToken? SecurityToken { get; init; }
-    public string? Issuer { get; init; }
-    public Exception? Exception { get; init; }
 }

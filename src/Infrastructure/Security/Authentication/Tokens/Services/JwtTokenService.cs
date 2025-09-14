@@ -185,7 +185,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
             // Try to read the token structure
             var jwtToken = _tokenHandler.ReadJwtToken(token);
-            
+
             // Basic header validation
             if (string.IsNullOrEmpty(jwtToken.Header.Alg))
             {
@@ -232,7 +232,7 @@ public sealed class JwtTokenService : IJwtTokenService
         }
     }
 
-    public ErrorOr<JwtTokenValidationResult> ValidateToken(
+    public ErrorOr<UseCases.Common.Security.Authentication.Tokens.Models.JwtTokenValidationResult> ValidateToken(
         string token,
         bool validateLifetime = true)
     {
@@ -249,7 +249,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
             var principal = _tokenHandler.ValidateToken(token, validationParams, out var validatedToken);
 
-            var result = new JwtTokenValidationResult
+            var result = new UseCases.Common.Security.Authentication.Tokens.Models.JwtTokenValidationResult
             {
                 IsValid = true,
                 ClaimsIdentity = principal.Identities.FirstOrDefault(),
@@ -261,7 +261,7 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (SecurityTokenExpiredException ex)
         {
-            var result = new JwtTokenValidationResult
+            var result = new UseCases.Common.Security.Authentication.Tokens.Models.JwtTokenValidationResult
             {
                 IsValid = false,
                 Exception = ex
