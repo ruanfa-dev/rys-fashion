@@ -483,3 +483,4 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 /src/Web.Api/appsettings.Sercet.json
+/src/Web.Api/keys
