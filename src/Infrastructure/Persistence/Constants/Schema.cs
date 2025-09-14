@@ -16,6 +16,7 @@ public static class Schema
     public const string UserLogins = "user_logins";
     public const string UserTokens = "user_tokens";
     public const string RefreshTokens = "refresh_tokens";
+    public const string Permissions = "permissions";
     
     // Customer Management - Extended for fashion retail
     public const string Customers = "customers";

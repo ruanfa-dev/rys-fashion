@@ -98,7 +98,7 @@ public static class PersistenceConfiguration
     private static IServiceCollection AddInterceptors(this IServiceCollection services)
     {
         // Register: Interceptors into DI
-        services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
+        services.AddScoped<ISaveChangesInterceptor, ActionTrackingEntityInterceptor>();
         services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
         return services;
