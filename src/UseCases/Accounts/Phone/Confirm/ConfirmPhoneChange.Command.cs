@@ -52,7 +52,7 @@ public static partial class ConfirmPhoneChange
             var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.NewPhone && u.Id != user.Id);
             var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
             if (existingUser != null)
-                return User.Errors.PhoneNumberAlreadyExists;
+                return User.Errors.PhoneNumberAlreadyExists(param.NewPhone);
 
             // Verify: confirmation code and change phone number
             var changeResult = await userManager.ChangePhoneNumberAsync(user, param.NewPhone, param.Code);

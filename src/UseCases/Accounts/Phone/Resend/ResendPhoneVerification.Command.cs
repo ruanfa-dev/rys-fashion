@@ -55,7 +55,7 @@ public static partial class ResendPhoneVerification
             var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.PhoneNumber && u.Id != user.Id);
             var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
             if (existingUser != null)
-                return User.Errors.PhoneNumberAlreadyExists;
+                return User.Errors.PhoneNumberAlreadyExists(param.PhoneNumber);
 
             // Send: phone verification SMS
             var sendSmsResult = await userManager.GenerateAndSendConfirmationSmsAsync(

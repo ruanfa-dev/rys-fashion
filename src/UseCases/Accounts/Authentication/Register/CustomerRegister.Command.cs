@@ -50,7 +50,8 @@ public static partial class CustomerRegister
                 if (existingUserByPhone != null)
                 {
                     Log.Warning("User with phone number {PhoneNumber} already exists", param.PhoneNumber);
-                    return Error.Conflict("Register.PhoneNumberAlreadyExists", "A user with this phone number already exists.");
+                    return User.Errors.PhoneNumberAlreadyExists(param.PhoneNumber);
+
                 }
             }
 
@@ -62,14 +63,14 @@ public static partial class CustomerRegister
             }
 
             // Create: new user
-            var user = new User
-            {
-                UserName = param.UserName ?? param.Email,
-                Email = param.Email,
-                FirstName = param.FirstName,
-                LastName = param.LastName,
-                PhoneNumber = param.PhoneNumber,
-            };
+            var user = User.Create(
+                email: param.Email,
+                userName: param.UserName,
+                emailConfirmed: false,
+                firstName: param.FirstName,
+                lastName: param.LastName,
+                phoneNumber: param.PhoneNumber,
+                phoneNumberConfirmed: false);
 
             // Set: password
             var passwordResult = await userManager.CreateAsync(user, param.Password);

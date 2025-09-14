@@ -51,7 +51,7 @@ public static partial class ChangePhone
             var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.NewPhone && u.Id != user.Id);
             var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
             if (existingUser != null)
-                return User.Errors.PhoneNumberAlreadyExists;
+                return User.Errors.PhoneNumberAlreadyExists(param.NewPhone);
 
             // Generate verification code for the new phone number
             var code = await userManager.GenerateChangePhoneNumberTokenAsync(user, param.NewPhone);
