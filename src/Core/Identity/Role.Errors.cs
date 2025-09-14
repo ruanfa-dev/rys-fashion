@@ -11,6 +11,10 @@ public partial class Role
             code: $"Role.RoleIdRequired",
             description: "Role ID is required.");
 
+        public static Error RoleIdsRequired => Error.Validation(
+            code: "UserRole.RoleIdsRequired",
+            description: "Role IDs are required for operation");
+
         // Name validation errors
         public static Error NameRequired => Error.Validation(
             code: $"Role.NameRequired",
@@ -25,15 +29,34 @@ public partial class Role
             code: $"Role.NameInvalidFormat",
             description: "Role name contains invalid characters. Only alphanumeric characters, spaces, underscores, and hyphens are allowed.");
 
+
+        // Display Name validation errors
+        public static Error DisplayNameTooLong => Error.Validation(
+            code: $"Role.DisplayNameTooLong",
+            description: $"Role display name must be at most {Constraints.MaxDisplayNameLength} characters long.");
+
+        public static Error DisplayNameInvalidFormat => Error.Validation(
+            code: $"Role.DisplayNameInvalidFormat",
+            description: "Role display name contains invalid characters.");
+
         // Description validation errors
         public static Error DescriptionTooLong => Error.Validation(
             code: $"Role.DescriptionTooLong",
             description: $"Role description must be at most {Constraints.MaxDescriptionLength} characters long.");
 
+        // Priority validation errors
+        public static Error PriorityMaxExceeded => Error.Validation(
+            code: $"Role.PriorityMaxExceeded",
+            description: $"Role priority must be less than or equal to {Constraints.MaxPriority}.");
+        public static Error PriorityMinExceeded => Error.Validation(
+            code: $"Role.PriorityMinExceeded",
+            description: $"Role priority must be greater than or equal to {Constraints.MinPriority}.");
+
         // Business logic errors
-        public static Error RoleNotFound => Error.NotFound(
+        public static Error RoleNotFound(string roleName) => Error.NotFound(
             code: $"Role.RoleNotFound",
-            description: "Role not found.");
+            description: $"Role '{roleName}' not found.");
+
         public static Error DefaultRoleNotFound => Error.NotFound(
             code: $"Role.RoleNotFound",
             description: "The default user role is not configured in the system.");
@@ -49,5 +72,9 @@ public partial class Role
         public static Error RoleInUse(string roleName) => Error.Validation(
             code: $"Role.RoleInUse",
             description: $"Cannot delete role '{roleName}' because it is assigned to one or more users.");
+
+        public static Error UnexpectedError(string operation) => Error.Unexpected(
+            code: "Role.UnexpectedError", 
+            description: $"An unexpected error occurred while {operation} the role");
     }
 }
