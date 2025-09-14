@@ -109,9 +109,14 @@ public static class DependencyInjection
     {
         Log.Debug(LogTemplate.ComponentStarted, "Error handling services registration");
 
+        //// Register: Global exception interceptor
+        //services.AddExceptionHandler<GlobalExceptionHandler>();
+        //Log.Debug(LogTemplate.RegisterService, nameof(GlobalExceptionHandler));
+
         // Register: Global exception interceptor
-        services.AddExceptionHandler<GlobalExceptionHandler>();
-        Log.Debug(LogTemplate.RegisterService, nameof(GlobalExceptionHandler));
+        services.AddExceptionHandler<ApiResponseGlobalExceptionHandler>();
+        Log.Debug(LogTemplate.RegisterService, nameof(ApiResponseGlobalExceptionHandler));
+
 
         // Register: Standardized problem details formatter
         services.AddProblemDetails(ConfigureProblemDetails);
