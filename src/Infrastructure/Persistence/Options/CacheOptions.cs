@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Persistence.Options;
 
-public class CacheOptions : IValidateOptions<CacheOptions>
+public sealed class CacheOptions : IValidateOptions<CacheOptions>
 {
     public const string SectionName = "Cache";
 

@@ -1,8 +1,17 @@
-﻿namespace UseCases.Common.Security.Authorization.Permissions;
+﻿using Core.Identity;
+
+namespace UseCases.Common.Security.Authorization.Permissions;
+
 public static partial class Feature
 {
     public static partial class Admin
     {
-        public static readonly string[] All = [];
+        public static readonly Permission[] All =
+        [
+            .. User.All,
+            .. Role.All,
+            .. AccessPermission.All,
+            .. AuditLog.All
+        ];
     }
 }

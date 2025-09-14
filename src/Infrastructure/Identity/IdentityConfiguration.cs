@@ -1,4 +1,5 @@
-﻿using Infrastructure.Identity.Models;
+﻿using Core.Identity;
+
 using Infrastructure.Persistence.Contexts;
 
 using Microsoft.AspNetCore.Identity;
@@ -68,9 +69,9 @@ public static class IdentityConfiguration
                 options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
                 options.Password.RequireUppercase = true;
-                options.Password.RequireNonAlphanumeric = false;  // don't frustrate customers
+                options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequiredLength = 8;
-                options.Password.RequiredUniqueChars = 1;
+                options.Password.RequiredUniqueChars = 4;
 
                 // Lockout — stops brute-force
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
@@ -94,26 +95,6 @@ public static class IdentityConfiguration
         {
             o.TokenLifespan = TimeSpan.FromHours(2); // common practice for shops
         });
-
-        // Configure cookie settings for fashion e-shop
-        services.ConfigureApplicationCookie(options =>
-        {
-            options.LoginPath = "/Account/Login";
-            options.LogoutPath = "/Account/Logout";
-            options.AccessDeniedPath = "/Account/AccessDenied";
-            options.ReturnUrlParameter = "returnUrl";
-
-            // Cookie settings
-            options.Cookie.Name = "RysFashion.Auth";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
-            options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
-
-            // Expiration settings
-            options.ExpireTimeSpan = TimeSpan.FromDays(30); // Remember me for 30 days
-            options.SlidingExpiration = true; // Extend session on activity
-        });
-
 
         return services;
     }

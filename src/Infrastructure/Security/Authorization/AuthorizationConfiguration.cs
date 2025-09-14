@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using UseCases.Common.Security.Authorization.Providers;
+
 namespace Infrastructure.Security.Authorization;
 public static class AuthorizationConfiguration
 {

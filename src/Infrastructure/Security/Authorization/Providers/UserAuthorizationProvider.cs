@@ -3,7 +3,8 @@ using System.Text.Json;
 
 using AsyncKeyedLock;
 
-using Infrastructure.Identity.Models;
+using Core.Identity;
+
 using Infrastructure.Security.Authorization.Options;
 
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 
 using UseCases.Common.Security.Authorization.Claims;
+using UseCases.Common.Security.Authorization.Providers;
 
 namespace Infrastructure.Security.Authorization.Providers;
 
@@ -120,13 +122,13 @@ public sealed class UserAuthorizationProvider(
         if (roleClaimsMap is null)
         {
             var roles = await roleManager.Roles.AsNoTracking().ToListAsync();
-            var claimsTasks = roles.ToDictionary(r => r.Name!, r => roleManager.GetClaimsAsync(r));
-            await Task.WhenAll(claimsTasks.Values);
+            roleClaimsMap = new Dictionary<string, List<Claim>>(roles.Count);
 
-            roleClaimsMap = claimsTasks.ToDictionary(
-                kv => kv.Key,
-                kv => kv.Value.Result.ToList()
-            );
+            foreach (var role in roles)
+            {
+                var claimsForRole = await roleManager.GetClaimsAsync(role); // Renamed variable
+                roleClaimsMap[role.Name!] = [.. claimsForRole];
+            }
 
             try
             {
@@ -144,17 +146,26 @@ public sealed class UserAuthorizationProvider(
             }
         }
 
-        var claims = roleNames
+        // Collect all claims from roles
+        var roleClaims = roleNames
             .Where(roleClaimsMap.ContainsKey)
             .SelectMany(r => roleClaimsMap[r])
             .ToList();
 
-        return (roleNames, claims);
+        // Collect claims directly assigned to the user
+        var userClaims = await userManager.GetClaimsAsync(user);
+
+        // Combine role claims and user claims
+        var allClaims = new List<Claim>(roleClaims.Count + userClaims.Count);
+        allClaims.AddRange(roleClaims);
+        allClaims.AddRange(userClaims);
+
+        return (roleNames, allClaims);
     }
 
     private static IReadOnlyList<string> GetDistinctValues(IEnumerable<Claim> claims, string claimType) =>
         claims
-            .Where(c => c.Type == claimType && !string.IsNullOrEmpty(c.Value))
+            .Where(c => c.Type.ToLower() == claimType && !string.IsNullOrEmpty(c.Value))
             .Select(c => c.Value!)
             .Distinct()
             .ToList()

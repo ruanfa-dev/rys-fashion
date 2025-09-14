@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Security.Authorization.Options;
 
-public class AuthUserCacheOption : IValidateOptions<AuthUserCacheOption>
+public sealed class AuthUserCacheOption : IValidateOptions<AuthUserCacheOption>
 {
     public const string Section = "Authorization:AuthUserCache";
 

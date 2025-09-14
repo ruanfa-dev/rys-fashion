@@ -4,7 +4,7 @@ using Mapster;
 
 namespace UseCases.Todos.Lists.Common;
 
-public class TodoListMapping : IRegister
+public sealed class TodoListMapping : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {

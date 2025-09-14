@@ -16,7 +16,7 @@ using UseCases.Common.Storage.Services;
 
 namespace Infrastructure.Storage.Services;
 
-public class AzureStorageService : IStorageService
+public sealed class AzureStorageService : IStorageService
 {
     private readonly IBlobStorage _storage;
     private readonly StorageOptions _options;

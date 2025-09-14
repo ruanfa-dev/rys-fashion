@@ -1,8 +1,14 @@
-﻿namespace UseCases.Common.Security.Authorization.Permissions;
+﻿using Core.Identity;
+
+namespace UseCases.Common.Security.Authorization.Permissions;
 public static partial class Feature
 {
     public static partial class Testing
     {
-        public static readonly string[] All = [.. Todo.All];
+        public static readonly Permission[] All =
+        [
+            .. TodoLists.All,
+            .. TodoItems.All
+        ];
     }
 }

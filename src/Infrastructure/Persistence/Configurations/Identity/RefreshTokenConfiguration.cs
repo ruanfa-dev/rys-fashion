@@ -1,4 +1,5 @@
-﻿using Infrastructure.Identity.Models;
+﻿using Core.Identity;
+
 using Infrastructure.Persistence.Constants;
 
 using Microsoft.EntityFrameworkCore;
@@ -11,17 +12,17 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
     public void Configure(EntityTypeBuilder<RefreshToken> builder)
     {
         // Table name
-        builder.ToTable(Schema.Roles);
+        builder.ToTable(Schema.RefreshTokens);
 
         // Primary key
         builder.HasKey(e => e.Id);
 
         // Indexes
-        builder.HasIndex(e => e.Token).IsUnique();
+        builder.HasIndex(e => e.TokenHash).IsUnique();
         builder.HasIndex(e => e.UserId);
 
         // Properties
-        builder.Property(e => e.Token)
+        builder.Property(e => e.TokenHash)
             .IsRequired()
             .HasMaxLength(RefreshToken.Constraints.TokenLength);
 
@@ -31,9 +32,6 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
 
         builder.Property(e => e.RevokedByIp)
             .HasMaxLength(RefreshToken.Constraints.IpAddressLength);
-
-        builder.Property(e => e.ReplacedByToken)
-            .HasMaxLength(RefreshToken.Constraints.TokenLength);
 
         builder.HasOne(e => e.User)
             .WithMany(u => u.RefreshTokens)

@@ -7,13 +7,13 @@ public enum TestStatus
     Inactive
 }
 
-public class TestAddress
+public sealed class TestAddress
 {
     public required string City { get; set; }
     public string? PostalCode { get; set; }
 }
 
-public class TestEntity
+public sealed class TestEntity
 {
     public int Id { get; set; }
     public required string StringProperty { get; set; }

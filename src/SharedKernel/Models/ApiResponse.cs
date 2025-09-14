@@ -248,7 +248,7 @@ public class ApiResponse<T>
 /// <summary>
 /// Non-generic version of ApiResponse for responses without data
 /// </summary>
-public class ApiResponse : ApiResponse<object>
+public sealed class ApiResponse : ApiResponse<object>
 {
     /// <summary>
     /// Creates an error response with multiple error messages
@@ -284,7 +284,7 @@ public class ApiResponse : ApiResponse<object>
 /// <summary>
 /// Pagination metadata for paginated responses
 /// </summary>
-public class PaginationMetadata
+public sealed class PaginationMetadata
 {
     /// <summary>
     /// Current page number (1-based)

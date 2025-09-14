@@ -6,7 +6,7 @@ using UseCases.Todos.Lists.Common;
 
 namespace UseCases.Todos.Items.Common;
 
-public class TodoItemMappings : IRegister
+public sealed class TodoItemMappings : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {

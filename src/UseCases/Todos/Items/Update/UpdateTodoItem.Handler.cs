@@ -16,7 +16,7 @@ namespace UseCases.Todos.Items.Update;
 public static partial class UpdateTodoItem
 {
     public record Command(int Id, TodoItemParam Param) : ICommand<Updated>;
-    public class Validator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
         {

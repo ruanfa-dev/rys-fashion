@@ -11,7 +11,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     private readonly ITestOutputHelper _output = output;
 
     // Test data class
-    public class User
+    public sealed class User
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -23,7 +23,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         public Address? Address { get; set; }
     }
 
-    public class Address
+    public sealed class Address
     {
         public string City { get; set; } = string.Empty;
         public string PostalCode { get; set; } = string.Empty;

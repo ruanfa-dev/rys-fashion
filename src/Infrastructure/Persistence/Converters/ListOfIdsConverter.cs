@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Converters;
 
-public class ListOfIdsConverter(ConverterMappingHints? mappingHints = null)
+public sealed class ListOfIdsConverter(ConverterMappingHints? mappingHints = null)
     : ValueConverter<List<Guid>, string>(
         v => string.Join(',', v),
         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(Guid.Parse).ToList(),
@@ -11,7 +11,7 @@ public class ListOfIdsConverter(ConverterMappingHints? mappingHints = null)
 {
 }
 
-public class ListOfIdsComparer : ValueComparer<List<Guid>>
+public sealed class ListOfIdsComparer : ValueComparer<List<Guid>>
 {
     public ListOfIdsComparer()
         : base(

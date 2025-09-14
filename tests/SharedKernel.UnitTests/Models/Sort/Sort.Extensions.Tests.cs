@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace SharedKernel.UnitTests.Models.Sort;
 
-public class SortParamExtensionsTests
+public sealed class SortParamExtensionsTests
 {
     private readonly List<TestEntity> _testData;
 

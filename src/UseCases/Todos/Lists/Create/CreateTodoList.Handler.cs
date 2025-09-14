@@ -18,7 +18,7 @@ namespace UseCases.Todos.Lists.Create;
 public static partial class CreateTodoList
 {
     public record Command(TodoListParam Param) : ICommand<TodoListResult>;
-    public class Validator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
         {

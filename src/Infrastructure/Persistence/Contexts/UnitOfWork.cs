@@ -11,7 +11,7 @@ using UseCases.Common.Persistence.Context;
 
 namespace Infrastructure.Persistence.Contexts;
 
-public sealed class UnitOfWork : IUnitOfWork, IDisposable
+public sealed class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
 {
     private readonly IApplicationDbContext _context;
     private readonly SemaphoreSlim _transactionSemaphore;
@@ -85,6 +85,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
             _transactionSemaphore.Release();
         }
     }
+
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
@@ -111,11 +112,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         }
         finally
         {
-            if (_transaction != null)
-            {
-                await _transaction.DisposeAsync();
-                _transaction = null;
-            }
+            await CleanupTransactionAsync();
             _transactionSemaphore.Release();
         }
     }
@@ -130,7 +127,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
             if (_transaction == null)
             {
                 Log.Warning("Attempted to rollback transaction when no transaction is in progress");
-                throw new InvalidOperationException("No transaction is in progress.");
+                return; // Don't throw - just return if no transaction
             }
 
             var transactionId = _transaction.TransactionId;
@@ -146,11 +143,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         }
         finally
         {
-            if (_transaction != null)
-            {
-                await _transaction.DisposeAsync();
-                _transaction = null;
-            }
+            await CleanupTransactionAsync();
             _transactionSemaphore.Release();
         }
     }
@@ -179,9 +172,17 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         }
     }
 
-    // Add transaction state properties
     public bool HasActiveTransaction => _transaction != null;
     public Guid? CurrentTransactionId => _transaction?.TransactionId;
+
+    private async Task CleanupTransactionAsync()
+    {
+        if (_transaction != null)
+        {
+            await _transaction.DisposeAsync();
+            _transaction = null;
+        }
+    }
 
     private void ThrowIfDisposed()
     {
@@ -198,6 +199,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsync(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
     private void Dispose(bool disposing)
     {
         if (!_disposed && disposing)
@@ -207,6 +214,31 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
             try
             {
                 _transaction?.Dispose();
+                _transactionSemaphore?.Dispose();
+
+                Log.Debug("UnitOfWork resources disposed successfully");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error occurred while disposing UnitOfWork resources");
+            }
+
+            _disposed = true;
+        }
+    }
+
+    private async ValueTask DisposeAsync(bool disposing)
+    {
+        if (!_disposed && disposing)
+        {
+            Log.Information("Disposing UnitOfWork resources asynchronously");
+
+            try
+            {
+                if (_transaction != null)
+                {
+                    await _transaction.DisposeAsync();
+                }
                 _transactionSemaphore?.Dispose();
 
                 Log.Debug("UnitOfWork resources disposed successfully");

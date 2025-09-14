@@ -25,7 +25,6 @@ public partial class GetTodoListById
             // Check: todo list existence
             var todoList = await context.TodoLists
                 .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
-
             if (todoList == null)
                 return TodoList.Errors.TodoListNotFound;
 

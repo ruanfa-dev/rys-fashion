@@ -11,7 +11,7 @@ public static partial class NotificationSendMethods
         WhatsApp = 4         // Popular for fashion brands in certain regions
     }
 
-    public class SendMethodDescription
+    public sealed class SendMethodDescription
     {
         public NotificationSendMethod Method { get; set; }
         public string Name { get; set; } = default!;

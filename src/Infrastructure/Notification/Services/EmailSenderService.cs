@@ -24,67 +24,75 @@ public sealed class EmailSenderService(
     public async Task<ErrorOr<Success>> AddEmailNotificationAsync(EmailNotificationData notificationData,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = notificationData.Validate();
-        if (validationResult.IsError)
-            return validationResult.Errors;
-
-        foreach (var recipient in notificationData.Receivers)
+        try
         {
-            if (!IsValidEmail(recipient))
-                return Errors.InvalidEmail(recipient);
-        }
+            var validationResult = notificationData.Validate();
+            if (validationResult.IsError)
+                return validationResult.Errors;
 
-        if (notificationData.Attachments.Count != 0)
-        {
-            var maxSizeInBytes = _emailOption.MaxAttachmentSize ?? 25 * 1024 * 1024; // Default to 25MB
-            var missingAttachments = notificationData.Attachments.Where(a => !File.Exists(a)).ToList();
-            if (missingAttachments.Any())
-                return Errors.InvalidAttachments(missingAttachments);
-
-            foreach (var attachment in notificationData.Attachments)
+            foreach (var recipient in notificationData.Receivers)
             {
-                var fileInfo = new FileInfo(attachment);
-                if (fileInfo.Length > maxSizeInBytes)
-                    return Errors.AttachmentSize(attachment, maxSizeInBytes);
+                if (!IsValidEmail(recipient))
+                    return Errors.InvalidEmail(recipient);
             }
-        }
 
-        var email = fluentEmail
-            .SetFrom(_emailOption.FromEmail, _emailOption.FromName)
-            .To(notificationData.Receivers.Select(m => new FluentEmail.Core.Models.Address(m)))
-            .Subject(notificationData.Title)
-            .PlaintextAlternativeBody(notificationData.Content)
-            .Body(notificationData.HtmlContent, isHtml: true);
-
-        if (notificationData.Attachments.Count != 0)
-        {
-            var contentTypeProvider = new FileExtensionContentTypeProvider();
-            foreach (var attachmentPath in notificationData.Attachments)
+            if (notificationData.Attachments.Count != 0)
             {
-                var attachmentBytes = await File.ReadAllBytesAsync(attachmentPath, cancellationToken);
-                email.Attach(new FluentEmail.Core.Models.Attachment
+                var maxSizeInBytes = _emailOption.MaxAttachmentSize ?? 25 * 1024 * 1024; // Default to 25MB
+                var missingAttachments = notificationData.Attachments.Where(a => !File.Exists(a)).ToList();
+                if (missingAttachments.Any())
+                    return Errors.InvalidAttachments(missingAttachments);
+
+                foreach (var attachment in notificationData.Attachments)
                 {
-                    Filename = Path.GetFileName(attachmentPath),
-                    Data = new MemoryStream(attachmentBytes),
-                    ContentType = contentTypeProvider.TryGetContentType(attachmentPath, out var contentType)
-                        ? contentType
-                        : "application/octet-stream"
-                });
+                    var fileInfo = new FileInfo(attachment);
+                    if (fileInfo.Length > maxSizeInBytes)
+                        return Errors.AttachmentSize(attachment, maxSizeInBytes);
+                }
             }
+
+            var email = fluentEmail
+                .SetFrom(_emailOption.FromEmail, _emailOption.FromName)
+                .To(notificationData.Receivers.Select(m => new FluentEmail.Core.Models.Address(m)))
+                .Subject(notificationData.Title)
+                .PlaintextAlternativeBody(notificationData.Content)
+                .Body(notificationData.HtmlContent, isHtml: true);
+
+            if (notificationData.Attachments.Count != 0)
+            {
+                var contentTypeProvider = new FileExtensionContentTypeProvider();
+                foreach (var attachmentPath in notificationData.Attachments)
+                {
+                    var attachmentBytes = await File.ReadAllBytesAsync(attachmentPath, cancellationToken);
+                    email.Attach(new FluentEmail.Core.Models.Attachment
+                    {
+                        Filename = Path.GetFileName(attachmentPath),
+                        Data = new MemoryStream(attachmentBytes),
+                        ContentType = contentTypeProvider.TryGetContentType(attachmentPath, out var contentType)
+                            ? contentType
+                            : "application/octet-stream"
+                    });
+                }
+            }
+
+            Log.Information("Sending email notification with UseCase: {UseCase}, Priority: {Priority}, Language: {Language} to {Receivers}",
+                notificationData.UseCase, notificationData.Priority, notificationData.Language, notificationData.Receivers);
+
+            var sendResult = await email.SendAsync(cancellationToken);
+            if (!sendResult.Successful)
+            {
+                Log.Error("Failed to send email notification. Errors: {Errors}", sendResult.ErrorMessages);
+                return Errors.SendFailed(sendResult.ErrorMessages);
+            }
+
+            Log.Information("Email notification sent successfully to {Receivers}", notificationData.Receivers);
+            return Result.Success;
         }
-
-        Log.Information("Sending email notification with UseCase: {UseCase}, Priority: {Priority}, Language: {Language} to {Receivers}",
-            notificationData.UseCase, notificationData.Priority, notificationData.Language, notificationData.Receivers);
-
-        var sendResult = await email.SendAsync(cancellationToken);
-        if (!sendResult.Successful)
+        catch (Exception ex)
         {
-            Log.Error("Failed to send email notification. Errors: {Errors}", sendResult.ErrorMessages);
-            return Errors.SendFailed(sendResult.ErrorMessages);
+            Log.Error(ex, "Exception occurred while sending email notification.");
+            return Errors.ExceptionOccurred(ex);
         }
-
-        Log.Information("Email notification sent successfully to {Receivers}", notificationData.Receivers);
-        return Result.Success;
     }
 
     private static bool IsValidEmail(string email)
@@ -113,5 +121,8 @@ public sealed class EmailSenderService(
 
         public static Error SendFailed(IList<string> errorMessages) => Error.Unexpected(
             "EmailNotification.SendFailed", $"Failed to send email: {string.Join(", ", errorMessages)}");
+
+        public static Error ExceptionOccurred(Exception ex) => Error.Unexpected(
+            "EmailNotification.ExceptionOccurred", $"An exception occurred while sending email: {ex.Message}");
     }
 }

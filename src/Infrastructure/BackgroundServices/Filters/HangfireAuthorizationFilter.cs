@@ -2,7 +2,7 @@
 
 namespace Infrastructure.BackgroundServices.Filters;
 
-public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
+public sealed class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
 {
     public bool Authorize(DashboardContext context)
     {

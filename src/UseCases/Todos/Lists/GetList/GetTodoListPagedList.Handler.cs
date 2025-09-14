@@ -20,22 +20,25 @@ namespace UseCases.Todos.Lists.GetList;
 
 public static partial class GetTodoListPagedList
 {
-    public sealed record Query : QueryParams, IQuery<PagedList<TodoListResult>>;
+    public sealed record Param : QueryParams;
+    public sealed record Result : TodoListResult;
+    public sealed record Query(Param Param): IQuery<PagedList<Result>>;
 
     internal sealed class Handler(IApplicationDbContext context, IMapper mapper)
-        : IQueryHandler<Query, PagedList<TodoListResult>>
+        : IQueryHandler<Query, PagedList<Result>>
     {
-        public async Task<ErrorOr<PagedList<TodoListResult>>> Handle(Query param, CancellationToken cancellationToken)
+        public async Task<ErrorOr<PagedList<Result>>> Handle(Query query, CancellationToken cancellationToken)
         {
+            var param = query.Param;
             var paginatedList = await context.TodoLists
               .AsQueryable()
               .AsNoTracking()
               .ApplyFilters(param.Filter)
               .ApplySearch(param.Search)
               .ApplySort(param.Sort)
-              .ProjectToType<TodoListResult>(mapper.Config)
+              .ProjectToType<Result>(mapper.Config)
               .ToPagedListAsync(
-                  param.Pagination,
+                  param.Paging,
                   cancellationToken: cancellationToken);
 
             return paginatedList;

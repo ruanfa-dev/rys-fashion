@@ -4,7 +4,7 @@
 /// Represents a paginated list of items with metadata about pagination state.
 /// </summary>
 /// <typeparam name="T">The type of items in the list.</typeparam>
-public class PagedList<T>
+public sealed class PagedList<T>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="PagedList{T}"/> class.

@@ -16,7 +16,7 @@ using UseCases.Common.Storage.Services;
 
 namespace Infrastructure.Storage.Services;
 
-public class LocalStorageService : IStorageService
+public sealed class LocalStorageService : IStorageService
 {
     private readonly IBlobStorage _storage;
     private readonly StorageOptions _options;

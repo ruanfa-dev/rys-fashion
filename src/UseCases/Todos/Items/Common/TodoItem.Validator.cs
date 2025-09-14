@@ -5,7 +5,7 @@ using static Core.Todos.TodoItem.Errors;
 
 namespace UseCases.Todos.Items.Common;
 
-public class TodoItemParamValidator : AbstractValidator<TodoItemParam>
+public sealed class TodoItemParamValidator : AbstractValidator<TodoItemParam>
 {
     public TodoItemParamValidator()
     {

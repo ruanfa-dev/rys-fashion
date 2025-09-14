@@ -2,7 +2,7 @@
 
 namespace Infrastructure.Storage.Options;
 
-public class StorageOptions
+public sealed class StorageOptions
 {
     public const string Section = "Storage";
 

@@ -79,7 +79,7 @@ public sealed class Colour(string code) : ValueObject
 }
 public static class Color
 {
-    public class Errors
+    public sealed class Errors
     {
         public static readonly Error EmptyCode = Error.Validation(
             code: "Colour.EmptyCode",

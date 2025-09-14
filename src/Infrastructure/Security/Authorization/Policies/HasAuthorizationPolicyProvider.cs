@@ -49,63 +49,99 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
         return Task.FromResult<AuthorizationPolicy?>(policy);
     }
 
+    /// <summary>
+    /// Parses a policy name into its component permissions, policies, and roles.
+    /// Format: "permission:perm1,perm2;policy:pol1,pol2;role:role1,role2"
+    /// </summary>
+    /// <param name="policyName">The policy name to parse</param>
+    /// <returns>Tuple containing lists of permissions, policies, and roles</returns>
     private static (List<string> permissions, List<string> policies, List<string> roles) ParsePolicyName(string policyName)
     {
         var permissions = new List<string>();
         var policies = new List<string>();
         var roles = new List<string>();
 
-        var policyParts = policyName.AsSpan();
-        var separator = ';';
-
-        while (!policyParts.IsEmpty)
+        try
         {
-            var nextSeparator = policyParts.IndexOf(separator);
-            var part = nextSeparator >= 0 ? policyParts[..nextSeparator] : policyParts;
+            var policyParts = policyName.AsSpan();
+            const char partSeparator = ';';
 
-            if (!part.IsEmpty)
+            while (!policyParts.IsEmpty)
             {
-                ProcessPolicyPart(part.ToString(), permissions, policies, roles);
-            }
+                var nextSeparator = policyParts.IndexOf(partSeparator);
+                var part = nextSeparator >= 0 ? policyParts[..nextSeparator] : policyParts;
 
-            policyParts = nextSeparator >= 0 ? policyParts[(nextSeparator + 1)..] : ReadOnlySpan<char>.Empty;
+                if (!part.IsEmpty)
+                {
+                    ProcessPolicyPart(part.ToString(), permissions, policies, roles);
+                }
+
+                policyParts = nextSeparator >= 0 ? policyParts[(nextSeparator + 1)..] : ReadOnlySpan<char>.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new ArgumentException($"Invalid policy format: {policyName}", nameof(policyName), ex);
         }
 
         return (permissions, policies, roles);
     }
 
+    /// <summary>
+    /// Processes a single policy part and adds values to the appropriate collection.
+    /// </summary>
+    /// <param name="part">Policy part to process</param>
+    /// <param name="permissions">Collection to add permissions to</param>
+    /// <param name="policies">Collection to add policies to</param>
+    /// <param name="roles">Collection to add roles to</param>
     private static void ProcessPolicyPart(string part, List<string> permissions, List<string> policies, List<string> roles)
     {
-        if (part.StartsWith(CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
+        var colonIndex = part.IndexOf(':');
+        if (colonIndex <= 0 || colonIndex >= part.Length - 1)
         {
-            var values = part.AsSpan(CustomClaim.Permission.Length);
-            AddValues(values, permissions);
+            return; // Invalid format, skip this part
         }
-        else if (part.StartsWith(CustomClaim.Policy, StringComparison.OrdinalIgnoreCase))
+
+        var claimType = part[..colonIndex];
+        var valuesSpan = part.AsSpan(colonIndex + 1);
+
+        if (string.Equals(claimType, CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
         {
-            var values = part.AsSpan(CustomClaim.Policy.Length);
-            AddValues(values, policies);
+            AddValuesToList(valuesSpan, permissions);
         }
-        else if (part.StartsWith(CustomClaim.Role, StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(claimType, CustomClaim.Policy, StringComparison.OrdinalIgnoreCase))
         {
-            var values = part.AsSpan(CustomClaim.Role.Length);
-            AddValues(values, roles);
+            AddValuesToList(valuesSpan, policies);
+        }
+        else if (string.Equals(claimType, CustomClaim.Role, StringComparison.OrdinalIgnoreCase))
+        {
+            AddValuesToList(valuesSpan, roles);
         }
     }
 
-    private static void AddValues(ReadOnlySpan<char> values, List<string> targetList)
+    /// <summary>
+    /// Adds comma-separated values to the target list.
+    /// </summary>
+    /// <param name="values">Span containing comma-separated values</param>
+    /// <param name="targetList">List to add values to</param>
+    private static void AddValuesToList(ReadOnlySpan<char> values, List<string> targetList)
     {
         if (values.IsEmpty) return;
 
-        var separator = ';';
+        const char valueSeparator = ',';
+        
         while (!values.IsEmpty)
         {
-            var nextSeparator = values.IndexOf(separator);
+            var nextSeparator = values.IndexOf(valueSeparator);
             var value = nextSeparator >= 0 ? values[..nextSeparator] : values;
 
             if (!value.IsEmpty)
             {
-                targetList.Add(value.ToString());
+                var trimmedValue = value.ToString().Trim();
+                if (!string.IsNullOrEmpty(trimmedValue))
+                {
+                    targetList.Add(trimmedValue);
+                }
             }
 
             values = nextSeparator >= 0 ? values[(nextSeparator + 1)..] : ReadOnlySpan<char>.Empty;

@@ -59,7 +59,7 @@ public static partial class NotificationParameters
         LoyaltyPoints,             // User's current loyalty points balance (e.g., "150 points")
         LoyaltyRewardUrl           // URL to redeem loyalty rewards (e.g., "https://trendythreads.com/rewards")
     }
-    public class ParameterDescription
+    public sealed class ParameterDescription
     {
         public NotificationParameter Parameter { get; init; }
         public required string Name { get; init; }

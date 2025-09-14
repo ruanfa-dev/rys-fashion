@@ -1,9 +1,12 @@
-﻿using Infrastructure.BackgroundServices;
+﻿using Core.Identity;
+
+using Infrastructure.BackgroundServices;
 using Infrastructure.Identity;
 using Infrastructure.Notification;
 using Infrastructure.Persistence;
 using Infrastructure.Security;
 using Infrastructure.Storage;
+using Infrastructure.Systems;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -30,6 +33,10 @@ public static class DependencyInjection
         IWebHostEnvironment environment)
     {
         Log.Information(LogTemplate.ComponentStarted, "Infrastructure layer configuration");
+
+        // Add: System configuration options
+        services.AddSystems(configuration);
+        Log.Information(LogTemplate.AddFeature, "System configuration options");
 
         // Add: Data persistence and database context
         services.AddPersistence(configuration, environment);
