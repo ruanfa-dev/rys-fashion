@@ -105,9 +105,9 @@ public partial class User
             Error.Validation($"User.PhoneNumberInvalidFormat",
                 "Phone number must be in valid E.164 format (e.g., +123456789).");
 
-        public static Error PhoneNumberAlreadyExists =>
+        public static Error PhoneNumberAlreadyExists(string phoneNumber) =>
             Error.Conflict($"User.PhoneNumberAlreadyExists",
-                "A user with this phone number already exists.");
+                $"A user with this phone number '{phoneNumber}' already exists.");
 
         public static Error SamePhoneNumberNotAllowed =>
             Error.Conflict($"User.SamePhoneNumberNotAllowed",
@@ -185,6 +185,16 @@ public partial class User
             WeakPassword =>
             Error.Validation($"User.WeakPassword",
                 "Password is too weak. Please choose a stronger password.");
+        #endregion
+
+        #region Profile Image
+        public static Error ProfileImagePathTooLong =>
+            Error.Validation($"User.ProfileImagePathTooLong",
+                $"Profile image path must be at most {Constraints.ProfileImagePathMaxLength} characters long.");
+
+        public static Error ProfileImagePathInvalidFormat =>
+            Error.Validation($"User.ProfileImagePathInvalidFormat",
+                "Profile image path format is invalid.");
         #endregion
 
         #region Two-Factor Authentication errors
@@ -347,10 +357,6 @@ public partial class User
         #endregion
 
         #region Profile & Account Management errors
-        public static Error ProfileUpdateFailed => Error.Validation(
-            code: $"User.ProfileUpdateFailed",
-            description: "Failed to update user profile.");
-
         public static Error AvatarUploadFailed => Error.Validation(
             code: $"User.AvatarUploadFailed",
             description: "Failed to upload avatar image.");

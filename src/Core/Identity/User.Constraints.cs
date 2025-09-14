@@ -59,12 +59,13 @@ public partial class User
         // Pattern: URL-safe Base64 (alphanumeric, '-', '_', '=', '.')
         public const string ResetPasswordCodePattern = @"^[A-Za-z0-9\-_]";
 
+        // Image profile URL: Max length and basic URL pattern
+        public const int ProfileImagePathMaxLength = 2048;
+        public const string ProfileImagePathFormat = @"^https?:\/\/[^\s/$.?#].[^\s]*$";
 
         // External Authentication: Provider names and constraints
         public const string GoogleProvider = "Google";
-        public const string MicrosoftProvider = "Microsoft";
         public const string FacebookProvider = "Facebook";
-        public const string GitHubProvider = "Github";
 
         public const int ExternalProviderNameMaxLength = 50;
         public const int ExternalProviderIdMaxLength = 256;
@@ -78,5 +79,9 @@ public partial class User
         public const int IpAddressMaxLength = 45; // IPv6 max length (IPv4 fits in this too)
         public const string IpAddressPattern =
             @"^((25[0-5]|(2[0-4]\d|1\d{2}|[1-9]?\d))\.){3}(25[0-5]|(2[0-4]\d|1\d{2}|[1-9]?\d))$|^([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$";
+
+        // Assignable Users: Minimum 1, Maximum 1000 assignable users per operation
+        public const int MinUsersPerOperation = 1;
+        public const int MaxUsersPerOperation = 1000;
     }
 }
