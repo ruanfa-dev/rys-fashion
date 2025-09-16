@@ -11,6 +11,7 @@ public sealed class RoleConfigurations : IEntityTypeConfiguration<Role>
 {
     public void Configure(EntityTypeBuilder<Role> builder)
     {
+        // Table name
         builder.ToTable(Schema.Roles);
 
         // Identity properties

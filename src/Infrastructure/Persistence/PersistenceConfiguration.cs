@@ -66,17 +66,22 @@ public static class PersistenceConfiguration
             else if (environment.IsDevelopment())
             {
                 // Development: Use PostgreSQL with detailed logging
-                // Temporarily: using In-Memory for Development as well
-                //options.UseNpgsql(connectionString, npgsqlOptions =>
-                //{
-                //    npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schema.Default);
-                //    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                //})
-                options.UseInMemoryDatabase("TestDb")
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schema.Default);
+                    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                })
                 .EnableSensitiveDataLogging()
                 .EnableDetailedErrors()
                 .UseSnakeCaseNamingConvention()
                 .LogTo(Console.WriteLine, LogLevel.Information);
+
+                // Temporarily: using In-Memory for Development as well
+                //options.UseInMemoryDatabase("TestDb")
+                //.EnableSensitiveDataLogging()
+                //.EnableDetailedErrors()
+                //.UseSnakeCaseNamingConvention()
+                //.LogTo(Console.WriteLine, LogLevel.Information);
                 Log.Information("Using PostgreSQL for Development environment");
             }
             else
