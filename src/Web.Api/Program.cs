@@ -22,9 +22,9 @@ builder.Services.AddPresentation(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseUseCases();
 app.UseInfrastructure(app.Environment);
 app.UsePresentation();
+app.UseUseCases();
 
 Log.Information(LogTemplate.ComponentStarted, "Application");
 

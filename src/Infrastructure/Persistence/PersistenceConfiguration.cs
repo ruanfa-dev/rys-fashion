@@ -22,6 +22,10 @@ using UseCases.Common.Persistence.Context;
 
 namespace Infrastructure.Persistence;
 
+/// <summary>
+/// Persistence configuration - Updated for Keycloak migration
+/// Users and roles are now managed in Keycloak instead of EF Core Identity
+/// </summary>
 public static class PersistenceConfiguration
 {
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
@@ -29,7 +33,7 @@ public static class PersistenceConfiguration
         // Register: Interceptors into DI
         services.AddInterceptors();
 
-        // Register: DbContext into DI
+        // Register: DbContext into DI (no longer inherits from IdentityDbContext)
         services.AddDatabase(configuration, environment);
 
         // Register: Cache services into DI
@@ -38,9 +42,10 @@ public static class PersistenceConfiguration
         // Register: Unit of Work into DI
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // Register: Seeders into DI
+        // Register: Seeders into DI (updated for Keycloak)
         services.AddSeeders();
 
+        Log.Information("Persistence layer configured for Keycloak authentication");
         return services;
     }
 
@@ -76,19 +81,17 @@ public static class PersistenceConfiguration
                 .UseSnakeCaseNamingConvention()
                 .LogTo(Console.WriteLine, LogLevel.Information);
 
-                // Temporarily: using In-Memory for Development as well
-                //options.UseInMemoryDatabase("TestDb")
-                //.EnableSensitiveDataLogging()
-                //.EnableDetailedErrors()
-                //.UseSnakeCaseNamingConvention()
-                //.LogTo(Console.WriteLine, LogLevel.Information);
                 Log.Information("Using PostgreSQL for Development environment");
             }
             else
             {
                 // Production/Staging: Use PostgreSQL with minimal logging
-                options.UseNpgsql(connectionString)
-                       .UseSnakeCaseNamingConvention();
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schema.Default);
+                    npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                })
+                .UseSnakeCaseNamingConvention();
                 Log.Information("Using PostgreSQL for {Environment} environment", environment.EnvironmentName);
             }
         });
@@ -142,12 +145,13 @@ public static class PersistenceConfiguration
 
     private static IServiceCollection AddSeeders(this IServiceCollection services)
     {
-        // Register: seeders
-        services.AddTransient<IDataSeeder, IdentitySeedProvider>();
+        // Note: IdentitySeedProvider is removed as users/roles are managed in Keycloak
+        // You might want to create a KeycloakSeedProvider if you need to seed data in Keycloak
 
         // Register orchestrator as hosted service
         services.AddHostedService<SeedOrchestrator>();
 
+        Log.Information("Seeders configured for Keycloak-based authentication");
         return services;
     }
 }

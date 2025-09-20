@@ -1,5 +1,4 @@
 ﻿using Infrastructure.BackgroundServices;
-using Infrastructure.Identity;
 using Infrastructure.Notification;
 using Infrastructure.Persistence;
 using Infrastructure.Security;
@@ -40,17 +39,9 @@ public static class DependencyInjection
         services.AddPersistence(configuration, environment);
         Log.Information(LogTemplate.AddFeature, "Data persistence layer");
 
-        // Add: Caching services (e.g., Redis, in-memory)
-        // TODO: services.AddCaching(configuration, environment
-        Log.Information(LogTemplate.AddFeature, "Caching services");
-
-        // Add: Identity management and user services
-        services.AddShopIdentityCore();
-        Log.Information(LogTemplate.AddFeature, "Identity management and user services");
-
-        // Add: Authentication and authorization services
+        // Add: Authentication and authorization services (Keycloak-based)
         services.AddSecurity(configuration);
-        Log.Information(LogTemplate.AddFeature, "Security and authentication");
+        Log.Information(LogTemplate.AddFeature, "Keycloak security and authentication");
 
         // Add: Notification and messaging services
         services.AddNotificationServices(configuration, environment);
@@ -64,7 +55,7 @@ public static class DependencyInjection
         services.AddStorageServices(configuration, environment);
         Log.Information(LogTemplate.AddFeature, "Storage and file management");
 
-        Log.Information(LogTemplate.ComponentStarted, "Infrastructure layer services registration");
+        Log.Information(LogTemplate.ComponentStarted, "Infrastructure layer services registration - Keycloak migration complete");
         return services;
     }
 

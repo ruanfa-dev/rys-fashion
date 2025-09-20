@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "External OAuth Authentication API Tests",
+    "description": "Test external OAuth token exchange with Keycloak",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "?? External Authentication",
+      "item": [
+        {
+          "name": "1. Get Google Authorize URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/auth/external/authorize-url/google?redirectUri={{frontend_callback_url}}&state={{$randomUUID}}",
+              "host": ["{{api_url}}"],
+              "path": ["auth", "external", "authorize-url", "google"],
+              "query": [
+                {
+                  "key": "redirectUri",
+                  "value": "{{frontend_callback_url}}"
+                },
+                {
+                  "key": "state",
+                  "value": "{{$randomUUID}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains authorize URL', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.authorizeUrl).to.exist;",
+                  "    pm.expect(jsonData.provider).to.equal('google');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Get Facebook Authorize URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/auth/external/authorize-url/facebook?redirectUri={{frontend_callback_url}}&state={{$randomUUID}}",
+              "host": ["{{api_url}}"],
+              "path": ["auth", "external", "authorize-url", "facebook"],
+              "query": [
+                {
+                  "key": "redirectUri",
+                  "value": "{{frontend_callback_url}}"
+                },
+                {
+                  "key": "state",
+                  "value": "{{$randomUUID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Exchange Google Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"google\",\n  \"accessToken\": \"{{google_access_token}}\",\n  \"linkToExistingUser\": false\n}"
+            },
+            "url": {
+              "raw": "{{api_url}}/auth/external/exchange",
+              "host": ["{{api_url}}"],
+              "path": ["auth", "external", "exchange"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Token exchange successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.accessToken).to.exist;",
+                  "    pm.expect(jsonData.userInfo).to.exist;",
+                  "    ",
+                  "    // Store tokens for subsequent requests",
+                  "    pm.environment.set('external_access_token', jsonData.accessToken);",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.environment.set('external_refresh_token', jsonData.refreshToken);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Exchange Facebook Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"facebook\",\n  \"accessToken\": \"{{facebook_access_token}}\",\n  \"linkToExistingUser\": false\n}"
+            },
+            "url": {
+              "raw": "{{api_url}}/auth/external/exchange",
+              "host": ["{{api_url}}"],
+              "path": ["auth", "external", "exchange"]
+            }
+          }
+        },
+        {
+          "name": "5. Link Google Account to Existing User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"google\",\n  \"accessToken\": \"{{google_access_token}}\",\n  \"linkToExistingUser\": true,\n  \"existingUserId\": \"{{existing_user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{api_url}}/auth/external/exchange",
+              "host": ["{{api_url}}"],
+              "path": ["auth", "external", "exchange"]
+            }
+          }
+        },
+        {
+          "name": "6. Test with Invalid Provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"twitter\",\n  \"accessToken\": \"invalid_token\"\n}"
+            },
+            "url": {
+              "raw": "{{api_url}}/auth/external/exchange",
+              "host": ["{{api_url}}"],
+              "path": ["auth", "external", "exchange"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid provider returns 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "?? Test Authenticated Endpoints",
+      "item": [
+        {
+          "name": "Get User Profile with External Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{external_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api_url}/users/profile",
+              "host": ["{{api_url}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Test Protected Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{external_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api_url}}/products",
+              "host": ["{{api_url}}"],
+              "path": ["products"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "api_url",
+      "value": "https://localhost:7001/api"
+    },
+    {
+      "key": "frontend_callback_url",
+      "value": "http://localhost:3000/auth/callback"
+    },
+    {
+      "key": "google_access_token",
+      "value": "YOUR_GOOGLE_ACCESS_TOKEN_FOR_TESTING"
+    },
+    {
+      "key": "facebook_access_token",
+      "value": "YOUR_FACEBOOK_ACCESS_TOKEN_FOR_TESTING"
+    },
+    {
+      "key": "existing_user_id",
+      "value": "EXISTING_USER_GUID"
+    }
+  ]
+}

@@ -42,12 +42,19 @@ public static class DependencyInjection
         Log.Information(LogTemplate.ComponentStarted, "Use Cases layer services registration");
         return services;
     }
+    
     /// <summary>
-    /// Configures infrastructure middleware and background services for the application pipeline.
+    /// Configures use cases endpoints and middleware for the application pipeline.
+    /// Note: Existing endpoints have been migrated to use Keycloak instead of EF Core Identity
     /// </summary>
-    public static IApplicationBuilder UseUseCases(
-        this IApplicationBuilder app)
+    public static IApplicationBuilder UseUseCases(this WebApplication app)
     {
+        Log.Information(LogTemplate.ComponentStarted, "Use Cases middleware pipeline configuration");
+
+        // The existing UserManagementEndpoint and RoleManagementEndpoint have been migrated to use Keycloak
+        // No need to register separate Keycloak endpoints as they replace the existing ones
+        
+        Log.Information(LogTemplate.ConfigureMiddleware, "Migrated User and Role management endpoints to use Keycloak");
         Log.Information(LogTemplate.ComponentStarted, "Use Cases middleware pipeline");
         return app;
     }

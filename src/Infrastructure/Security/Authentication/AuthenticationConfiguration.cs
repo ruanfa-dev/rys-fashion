@@ -8,14 +8,16 @@ using Infrastructure.Security.Authentication.Options;
 using Infrastructure.Security.Authentication.Services;
 using Infrastructure.Security.Authentication.Tokens.Services;
 
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+
+using Serilog;
 
 using UseCases.Common.Security.Authentication.Contexts;
 using UseCases.Common.Security.Authentication.Externals;
@@ -24,229 +26,248 @@ using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication;
 
+/// <summary>
+/// Authentication configuration for Keycloak integration
+/// </summary>
 public static class AuthenticationConfiguration
 {
     public static IServiceCollection AddAuthenticationInternal(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAuthenticationOptions(configuration);
-        services.AddAuthenticationContext();
-        services.AddExternalTokenValidation();
-        return services;
-    }
-
-    public static IServiceCollection AddAuthenticationOptions(this IServiceCollection services, IConfiguration configuration)
-    {
-        // Configure JWT options (required)
-        services.AddOptions<JwtOptions>()
-            .BindConfiguration(JwtOptions.Section)
+        // Register Keycloak Options with validation
+        services.AddOptions<KeycloakOptions>()
+            .Bind(configuration.GetSection(KeycloakOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        // Configure external provider options (optional)
-        services.AddOptions<GoogleOption>()
-            .BindConfiguration(GoogleOption.Section)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        services.AddOptions<FacebookOption>()
-            .BindConfiguration(FacebookOption.Section)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        var jwtOptions = GetRequiredOptions<JwtOptions>(configuration, JwtOptions.Section);
-        var googleOptions = GetOptionalOptions<GoogleOption>(configuration, GoogleOption.Section);
-        var facebookOptions = GetOptionalOptions<FacebookOption>(configuration, FacebookOption.Section);
-
-        var authBuilder = services.AddAuthentication(options =>
+        // Add Authentication with JWT Bearer
+        services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-        {
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.SameSite = SameSiteMode.Strict; // More secure for production
-            options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Shorter session for security
-        })
-        .AddCookie(IdentityConstants.ExternalScheme, options =>
-        {
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.ExpireTimeSpan = TimeSpan.FromMinutes(15); // Short-lived external auth cookie
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
-            options.RequireHttpsMetadata = true;
-            options.SaveToken = false; // Don't store tokens in AuthenticationProperties for security
+            var serviceProvider = services.BuildServiceProvider();
+            var keycloakOptions = serviceProvider.GetRequiredService<IOptions<KeycloakOptions>>().Value;
+
+            if (string.IsNullOrEmpty(keycloakOptions.Authority))
+            {
+                Log.Warning("Keycloak Authority is not configured. JWT authentication may not work properly.");
+                return;
+            }
+
+            options.Authority = keycloakOptions.Authority;
+            options.Audience = keycloakOptions.Audience;
+            options.RequireHttpsMetadata = keycloakOptions.RequireHttpsMetadata;
+            options.SaveToken = keycloakOptions.SaveTokens;
+            options.IncludeErrorDetails = true;
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
+                ValidateIssuer = keycloakOptions.ValidateIssuer,
+                ValidateAudience = keycloakOptions.ValidateAudience,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtOptions.Issuer,
-                ValidAudience = jwtOptions.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
-                ClockSkew = TimeSpan.FromMinutes(2), // Reduced clock skew for tighter security
-                RequireExpirationTime = true,
-                RequireSignedTokens = true
+                ClockSkew = keycloakOptions.ClockSkew,
+
+                // Keycloak-specific claims mapping
+                RoleClaimType = "realm_access.roles",
+                NameClaimType = "preferred_username"
             };
 
             options.Events = new JwtBearerEvents
             {
                 OnAuthenticationFailed = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
-                    logger?.LogWarning("JWT authentication failed: {Exception}", context.Exception.Message);
-                    
-                    // Clear any existing authentication
-                    context.Response.Headers["Token-Expired"] = "true";
+                    Log.Warning("JWT Authentication failed: {Error}", context.Exception?.Message);
                     return Task.CompletedTask;
                 },
+
                 OnTokenValidated = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
-                    logger?.LogDebug("JWT token validated for user: {UserId}",
-                        context.Principal?.FindFirst("sub")?.Value ?? "Unknown");
+                    Log.Debug("JWT Token validated for user: {User}", 
+                        context.Principal?.Identity?.Name ?? "Unknown");
                     return Task.CompletedTask;
                 },
+
                 OnChallenge = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
-                    logger?.LogInformation("JWT authentication challenge triggered");
+                    Log.Debug("JWT Authentication challenge: {Error}", context.Error);
                     return Task.CompletedTask;
                 }
             };
+
+            Log.Information("JWT Bearer authentication configured with Keycloak authority: {Authority}", keycloakOptions.Authority);
         });
 
-        // Configure Google OAuth if credentials are available
-        if (googleOptions != null && IsProviderConfigurationValid(googleOptions.ClientId, googleOptions.ClientSecret))
+        // Register Keycloak Admin Service
+        RegisterKeycloakAdminService(services, configuration);
+
+        Log.Information("Authentication configuration completed successfully");
+        return services;
+    }
+
+    private static void RegisterKeycloakAdminService(IServiceCollection services, IConfiguration configuration)
+    {
+        try
         {
-            authBuilder.AddGoogle(options =>
+            var keycloakOptions = configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>();
+            
+            if (keycloakOptions != null && 
+                !string.IsNullOrEmpty(keycloakOptions.AdminApiUrl) && 
+                !string.IsNullOrEmpty(keycloakOptions.ClientSecret))
             {
-                options.ClientId = googleOptions.ClientId;
-                options.ClientSecret = googleOptions.ClientSecret;
-                
-                // Essential scopes for e-commerce
-                options.Scope.Clear();
-                options.Scope.Add("openid");
-                options.Scope.Add("profile");
-                options.Scope.Add("email");
-                
-                options.SignInScheme = IdentityConstants.ExternalScheme;
-                options.SaveTokens = false; // Don't persist tokens for security
-                
-                // Security settings
-                options.UsePkce = true; // Enable PKCE for better security
-                options.CallbackPath = "/signin-google";
-                
-                options.Events.OnRedirectToAuthorizationEndpoint = context =>
+                // Configure HttpClient for Keycloak Admin API
+                services.AddHttpClient<IKeycloakAdminService, KeycloakAdminService>(client =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger>();
-                    logger?.LogDebug("Redirecting to Google authorization endpoint");
-                    context.Response.Redirect(context.RedirectUri);
-                    return Task.CompletedTask;
-                };
-            });
-        }
+                    client.BaseAddress = new Uri(keycloakOptions.AdminApiUrl);
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    // For development - you might want to ignore SSL errors
+                    // ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                });
 
-        // Configure Facebook OAuth if credentials are available
-        if (facebookOptions != null && IsProviderConfigurationValid(facebookOptions.AppId, facebookOptions.AppSecret))
-        {
-            authBuilder.AddFacebook(options =>
+                Log.Information("Keycloak Admin Service registered for user management");
+            }
+            else
             {
-                options.AppId = facebookOptions.AppId;
-                options.AppSecret = facebookOptions.AppSecret;
-                
-                // Essential scopes for e-commerce
-                options.Scope.Clear();
-                options.Scope.Add("email");
-                options.Scope.Add("public_profile");
-                
-                options.SignInScheme = IdentityConstants.ExternalScheme;
-                options.SaveTokens = false; // Don't persist tokens for security
-                options.CallbackPath = "/signin-facebook";
-                
-                // Security fields
-                options.Fields.Clear();
-                options.Fields.Add("id");
-                options.Fields.Add("email");
-                options.Fields.Add("first_name");
-                options.Fields.Add("last_name");
-                options.Fields.Add("name");
-                options.Fields.Add("picture.width(200).height(200)"); // Standardized picture size
-                
-                options.Events.OnRedirectToAuthorizationEndpoint = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger>();
-                    logger?.LogDebug("Redirecting to Facebook authorization endpoint");
-                    context.Response.Redirect(context.RedirectUri);
-                    return Task.CompletedTask;
-                };
-            });
+                // Register a placeholder service that throws NotSupportedException
+                services.AddTransient<IKeycloakAdminService, UnsupportedKeycloakAdminService>();
+                Log.Warning("Keycloak configuration is invalid or missing. Admin service not registered.");
+            }
         }
-
-        return services;
-    }
-
-    private static T GetRequiredOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
-    {
-        var options = configuration.GetSection(sectionName).Get<T>();
-        Guard.Against.Null(options, nameof(options), $"{typeof(T).Name} options must be configured in appsettings at section '{sectionName}'.");
-        return options;
-    }
-
-    private static T? GetOptionalOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
-    {
-        var section = configuration.GetSection(sectionName);
-        return section.Exists() ? section.Get<T>() : null;
-    }
-
-    private static bool IsProviderConfigurationValid(string? clientId, string? clientSecret)
-    {
-        return !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret);
-    }
-
-    public static IServiceCollection AddAuthenticationContext(this IServiceCollection services)
-    {
-        services.AddHttpContextAccessor();
-        services.AddScoped<IUserContext, UserContext>();
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-        services.AddScoped<ITokenManagementService, TokenManagementService>();
-        
-        // Add enhanced external user service for Identity EF Core integration
-        services.AddScoped<IExternalUserService, ExternalUserService>();
-        
-        return services;
-    }
-
-    public static IServiceCollection AddExternalTokenValidation(this IServiceCollection services)
-    {
-        // Configure HTTP clients with security best practices
-        services.AddHttpClient<GoogleTokenValidator>(client =>
+        catch (Exception ex)
         {
-            client.Timeout = TimeSpan.FromSeconds(15); // Reduced timeout for better UX
-            client.DefaultRequestHeaders.Add("User-Agent", "RysFashion.Shop/1.0");
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-        });
-
-        services.AddHttpClient<FacebookTokenValidator>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(15); // Reduced timeout for better UX
-            client.DefaultRequestHeaders.Add("User-Agent", "RysFashion.Shop/1.0");
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-        });
-
-        // Register individual validators
-        services.AddScoped<GoogleTokenValidator>();
-        services.AddScoped<FacebookTokenValidator>();
-
-        // Register composite validator (production-ready)
-        services.AddScoped<IExternalTokenValidator, CompositeExternalTokenValidator>();
-
-        return services;
+            Log.Error(ex, "Failed to register Keycloak Admin Service");
+            services.AddTransient<IKeycloakAdminService, UnsupportedKeycloakAdminService>();
+        }
     }
+}
+
+/// <summary>
+/// Placeholder service for when Keycloak Admin API is not properly configured
+/// </summary>
+public class UnsupportedKeycloakAdminService : IKeycloakAdminService
+{
+    private static readonly NotSupportedException UnsupportedException = 
+        new("Keycloak Admin API is not configured. Please check your Keycloak settings.");
+
+    // All methods throw NotSupportedException
+    public Task<UseCases.Common.Security.Authentication.Models.TokenResponse> GetTokenAsync(UseCases.Common.Security.Authentication.Models.TokenRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.TokenResponse> RefreshTokenAsync(UseCases.Common.Security.Authentication.Models.TokenRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task LogoutAsync(string token, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.UserInfo> GetUserInfoAsync(string accessToken, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<string> CreateUserAsync(UseCases.Common.Security.Authentication.Models.CreateKeycloakUserRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakUser>> GetUsersAsync(CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakUser>> SearchUsersAsync(string? search = null, string? username = null, string? email = null, string? firstName = null, string? lastName = null, bool? enabled = null, int? first = null, int? max = null, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.KeycloakUser?> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.KeycloakUser?> GetUserByUsernameAsync(string username, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.KeycloakUser?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task UpdateUserAsync(string userId, UseCases.Common.Security.Authentication.Models.UpdateKeycloakUserRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task DeleteUserAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task SetUserPasswordAsync(string userId, string password, bool temporary = false, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task SetUserEnabledAsync(string userId, bool enabled, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task SendVerifyEmailAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<int> GetUserCountAsync(CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task CreateRoleAsync(UseCases.Common.Security.Authentication.Models.CreateKeycloakRoleRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakRole>> GetRolesAsync(CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.KeycloakRole?> GetRoleByNameAsync(string roleName, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task UpdateRoleAsync(string roleName, UseCases.Common.Security.Authentication.Models.UpdateKeycloakRoleRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task DeleteRoleAsync(string roleName, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakRole>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task AssignRolesToUserAsync(string userId, IEnumerable<string> roleNames, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task RemoveRolesFromUserAsync(string userId, IEnumerable<string> roleNames, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakRole>> GetAvailableRolesForUserAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<string> CreateGroupAsync(UseCases.Common.Security.Authentication.Models.CreateKeycloakGroupRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakGroup>> GetGroupsAsync(CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.KeycloakGroup?> GetGroupByIdAsync(string groupId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task UpdateGroupAsync(string groupId, UseCases.Common.Security.Authentication.Models.UpdateKeycloakGroupRequest request, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task DeleteGroupAsync(string groupId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task AddUserToGroupAsync(string userId, string groupId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task RemoveUserFromGroupAsync(string userId, string groupId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakGroup>> GetUserGroupsAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakSession>> GetUserSessionsAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task LogoutUserSessionsAsync(string userId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<UseCases.Common.Security.Authentication.Models.KeycloakRealmStats> GetRealmStatsAsync(CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakClient>> GetClientsAsync(CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
+
+    public Task<IEnumerable<UseCases.Common.Security.Authentication.Models.KeycloakRole>> GetClientRolesAsync(string clientId, CancellationToken cancellationToken = default)
+        => throw UnsupportedException;
 }
