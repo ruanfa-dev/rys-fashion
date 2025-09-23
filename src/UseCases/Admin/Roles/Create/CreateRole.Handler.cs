@@ -75,7 +75,7 @@ public static partial class CreateRole
             catch (Exception ex)
             {
                 logger.LogError(ex, "Unexpected error creating role with name {RoleName}", param.Name);
-                return Role.Errors.UnexpectedError("creating");
+                return Role.Errors.RoleUnexpected(nameof(CreateRole), ex.Message);
             }
         }
     }

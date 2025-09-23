@@ -86,7 +86,7 @@ public static partial class GetRoleById
                     PermissionCount = permissions.Length,
                     Permissions = permissions,
                     Users = usersInRole,
-                    
+
                 };
 
                 logger.LogDebug("Retrieved role {RoleId} with {UserCount} users and {PermissionCount} permissions",
@@ -97,7 +97,7 @@ public static partial class GetRoleById
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error retrieving role {RoleId}", request.Id);
-                return Error.Failure("Role.RetrievalFailed", "Failed to retrieve role details");
+                return Role.Errors.RoleUnexpected(nameof(GetRoleById), ex.Message);
             }
         }
     }

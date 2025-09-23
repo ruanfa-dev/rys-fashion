@@ -49,7 +49,12 @@ public static class Schema
     public const string Properties = "properties"; // Color, Material, Care Instructions
     public const string ProductProperties = "product_properties";
     public const string PropertyValues = "property_values"; // Predefined values
-    
+
+    // Prototype for dynamic attributes (if time permits)
+    public const string Prototypes = "prototypes"; // Templates for product types
+    public const string PrototypeProperties = "prototype_properties";
+
+
     // Product Options System - Size/Color/Style variations  
     public const string OptionTypes = "option_types"; // Size, Color, Material, Fit
     public const string OptionValues = "option_values"; // XS, Red, Cotton, Slim

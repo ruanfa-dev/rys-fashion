@@ -11,7 +11,12 @@ public static partial class Feature
             .. User.All,
             .. Role.All,
             .. AccessPermission.All,
-            .. AuditLog.All
+            .. AuditLog.All,
+            
+            // Catalog
+            .. Property.All,
+            .. OptionType.All,
+            .. OptionValue.All,
         ];
     }
 }

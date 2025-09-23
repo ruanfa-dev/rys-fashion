@@ -21,8 +21,8 @@ public partial class Role : IdentityRole<Guid>, IAuditable
     #endregion
 
     #region Relationships
-    public virtual ICollection<UserRole> UserRoles { get; set; } = default!;
-    public virtual ICollection<RoleClaim> RoleClaims { get; set; } = default!;
+    public ICollection<UserRole> UserRoles { get; set; } = default!;
+    public ICollection<RoleClaim> RoleClaims { get; set; } = default!;
     #endregion
 
     #region Contructors

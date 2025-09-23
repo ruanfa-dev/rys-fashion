@@ -2,15 +2,17 @@ using Core.Identity;
 
 using ErrorOr;
 
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using SharedKernel.Messaging.Abstracts;
+using SharedKernel.Models.Filter;
 using SharedKernel.Models.PagedLists;
+using SharedKernel.Models.Queries;
+using SharedKernel.Models.Search;
 
 using UseCases.Admin.Users.Common;
-using UseCases.Common.Security.Authorization.Permissions;
+using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Users.List;
 
@@ -22,19 +24,17 @@ public static partial class ListUsers
     internal const string Summary = "List users with pagination";
     internal const string Description = "Retrieves a paginated list of users with their basic information and roles";
 
-    public sealed record Query(
-        int Page = 1,
-        int PageSize = 20,
-        string? SearchTerm = null,
-        string? Role = null,
-        bool? IsActive = null,
-        bool? EmailConfirmed = null
-    ) : IQuery<PagedList<Result>>;
+    public record Param : QueryParams
+    {
+        public bool? EmailConfirmed { get; init; }
+        public string? Role { get; init; }
+    }
 
     public sealed record Result : UserListResult;
+    public sealed record Query(Param Param) : IQuery<PagedList<Result>>;
 
     public sealed class Handler(
-        UserManager<User> userManager,
+        IApplicationDbContext context,
         ILogger<Handler> logger
     ) : IQueryHandler<Query, PagedList<Result>>
     {
@@ -42,86 +42,49 @@ public static partial class ListUsers
         {
             try
             {
-                var query = userManager.Users.AsQueryable();
+                var param = request.Param;
 
-                // Apply filters
-                if (!string.IsNullOrWhiteSpace(request.SearchTerm))
-                {
-                    var searchTerm = request.SearchTerm.ToLower();
-                    query = query.Where(u => 
-                        u.Email!.ToLower().Contains(searchTerm) ||
-                        (u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm)) ||
-                        (u.LastName != null && u.LastName.ToLower().Contains(searchTerm)) ||
-                        (u.UserName != null && u.UserName.ToLower().Contains(searchTerm))
-                    );
-                }
+                var query = context.Set<User>()
+                    .AsQueryable()
+                    .AsNoTracking()
+                    .Where(u => !param.EmailConfirmed.HasValue || u.EmailConfirmed == param.EmailConfirmed.Value)
+                    .ApplySearch(param.Search)
+                    .ApplyFilters(param.Filter)
+                    // Apply role filter if specified (checks related Role name via UserRoles)
+                    .Where(u => string.IsNullOrWhiteSpace(param.Role) || u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == param.Role));
 
-                if (request.EmailConfirmed.HasValue)
-                {
-                    query = query.Where(u => u.EmailConfirmed == request.EmailConfirmed.Value);
-                }
-
-                // Get total count before pagination
-                var totalCount = await query.CountAsync(cancellationToken);
-
-                // Apply pagination
-                var users = await query
+                var projectedQuery = query
                     .OrderBy(u => u.Email)
-                    .Skip((request.Page - 1) * request.PageSize)
-                    .Take(request.PageSize)
-                    .ToListAsync(cancellationToken);
-
-                // Get roles for each user
-                var results = new List<Result>();
-                foreach (var user in users)
-                {
-                    var roles = await userManager.GetRolesAsync(user);
-                    
-                    // Apply role filter if specified
-                    if (!string.IsNullOrWhiteSpace(request.Role) && !roles.Contains(request.Role))
+                    .Select(u => new Result
                     {
-                        continue;
-                    }
-
-                    results.Add(new Result
-                    {
-                        Id = user.Id,
-                        Email = user.Email!,
-                        UserName = user.UserName,
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        PhoneNumber = user.PhoneNumber,
-                        ProfileImagePath = user.ProfileImagePath,
-                        EmailConfirmed = user.EmailConfirmed,
-                        CreatedAt = user.CreatedAt,
-                        CreatedBy = user.CreatedBy,
-                        Roles = roles.ToArray(),
-                        LastSignInAt = user.LastSignInAt,
-                        SignInCount = user.SignInCount
+                        Id = u.Id,
+                        Email = u.Email!,
+                        UserName = u.UserName,
+                        FirstName = u.FirstName,
+                        LastName = u.LastName,
+                        PhoneNumber = u.PhoneNumber,
+                        ProfileImagePath = u.ProfileImagePath,
+                        EmailConfirmed = u.EmailConfirmed,
+                        CreatedAt = u.CreatedAt,
+                        CreatedBy = u.CreatedBy,
+                        Roles = u.UserRoles.Select(ur => ur.Role!.Name!).ToArray(),
+                        LastSignInAt = u.LastSignInAt,
+                        SignInCount = u.SignInCount
                     });
-                }
 
-                // If role filter was applied, we need to recalculate total count
-                if (!string.IsNullOrWhiteSpace(request.Role))
-                {
-                    totalCount = results.Count;
-                }
+                var paginatedList = await projectedQuery
+                    .ToPagedListAsync(
+                        param.Paging,
+                        cancellationToken: cancellationToken);
 
-                var pagedResult = new PagedList<Result>(
-                    results,
-                    request.Page,
-                    request.PageSize,
-                    totalCount
-                );
+                logger.LogDebug("Retrieved {Count} users for page {Page}", paginatedList.Items.Count, param.Paging.PageSize);
 
-                logger.LogDebug("Retrieved {Count} users for page {Page}", results.Count, request.Page);
-
-                return pagedResult;
+                return paginatedList;
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error retrieving users list");
-                return Error.Failure("Users.RetrievalFailed", "Failed to retrieve users list");
+                return User.Errors.UserIdInvalidFormat
             }
         }
     }

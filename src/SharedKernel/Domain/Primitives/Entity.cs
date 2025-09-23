@@ -30,7 +30,7 @@ public abstract class Entity<TId> : IEntity<TId>, IEquatable<Entity<TId>>, IHasD
     #endregion
 
     #region Methods
-    public virtual bool IsTransient()
+    public bool IsTransient()
     {
         return EqualityComparer<TId>.Default.Equals(Id, default);
     }
@@ -58,7 +58,7 @@ public abstract class Entity<TId> : IEntity<TId>, IEquatable<Entity<TId>>, IHasD
     #endregion
 
     #region IEquatable Implementation
-    public virtual bool Equals(Entity<TId>? other)
+    public bool Equals(Entity<TId>? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;

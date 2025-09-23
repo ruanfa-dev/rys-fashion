@@ -1,4 +1,5 @@
-﻿using Core.Identity;
+﻿using Core.Catalogs;
+using Core.Identity;
 using Core.Todos;
 
 using Microsoft.AspNetCore.Identity;
@@ -20,6 +21,11 @@ public interface IApplicationDbContext
     DbSet<Role> Roles { get; }
     DbSet<UserRole> UserRoles { get; }
     DbSet<Permission> Permissions { get; }
+
+    // Catalogs
+    public DbSet<Property> Properties { get; }
+    public DbSet<ProductProperty> ProductProperties { get; }
+    public DbSet<PrototypeProperty> PrototypeProperties { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     DatabaseFacade Database { get; }

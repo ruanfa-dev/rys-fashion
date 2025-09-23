@@ -23,7 +23,7 @@ public abstract class ValueObject : IEquatable<ValueObject>, IComparable<ValueOb
     /// </summary>
     protected abstract IEnumerable<object?> GetEqualityComponents();
 
-    public virtual bool Equals(ValueObject? other)
+    public bool Equals(ValueObject? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
@@ -54,12 +54,12 @@ public abstract class ValueObject : IEquatable<ValueObject>, IComparable<ValueOb
         return _cachedHashCode.Value;
     }
 
-    public virtual int CompareTo(ValueObject? other)
+    public int CompareTo(ValueObject? other)
     {
         return CompareTo(other as object);
     }
 
-    public virtual int CompareTo(object? obj)
+    public int CompareTo(object? obj)
     {
         if (obj is null) return 1;
 

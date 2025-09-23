@@ -73,8 +73,9 @@ public partial class Role
             code: $"Role.RoleInUse",
             description: $"Cannot delete role '{roleName}' because it is assigned to one or more users.");
 
-        public static Error UnexpectedError(string operation) => Error.Unexpected(
-            code: "Role.UnexpectedError", 
-            description: $"An unexpected error occurred while {operation} the role");
+
+        public static Error RoleUnexpected(string operation, string reason) => Error.Failure(
+            code: $"Role.{operation}UnexpectedError",
+            description: $"An unexpected error occurred: {reason}");
     }
 }
