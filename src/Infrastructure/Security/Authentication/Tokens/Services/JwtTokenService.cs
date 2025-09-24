@@ -34,6 +34,7 @@ public sealed class JwtTokenService : IJwtTokenService
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            RequireSignedTokens = true,               
             ClockSkew = TimeSpan.FromMinutes(5), // Allow 5 minutes clock skew
             ValidIssuer = _jwtOptions.Issuer,
             ValidAudience = _jwtOptions.Audience,
@@ -58,9 +59,7 @@ public sealed class JwtTokenService : IJwtTokenService
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new(JwtRegisteredClaimNames.Aud, _jwtOptions.Audience),
-                new(JwtRegisteredClaimNames.Iss, _jwtOptions.Issuer)
+                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
 
             // Add: username only if needed (avoid email in JWT for privacy)
