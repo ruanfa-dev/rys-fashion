@@ -1,6 +1,8 @@
 using System.Reflection;
 
 using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 using Core.Todos;
 
 using Infrastructure.Persistence.Constants;
