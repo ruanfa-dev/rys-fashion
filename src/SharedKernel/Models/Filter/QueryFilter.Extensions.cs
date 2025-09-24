@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 namespace SharedKernel.Models.Filter;
 
@@ -12,6 +13,9 @@ public static class QueryFilterExtensions
 {
     // Cache for reflection lookups to improve performance
     private static readonly ConcurrentDictionary<string, MethodInfo> MethodCache = new();
+
+    // Cache for property mappings with flexible naming support
+    private static readonly ConcurrentDictionary<string, Dictionary<string, PropertyInfo>> PropertyMappingCache = new();
 
     // Cached method references
     private static readonly MethodInfo StringContainsMethod = GetCachedMethod(typeof(string), "Contains", typeof(string), typeof(StringComparison));
@@ -436,8 +440,8 @@ public static class QueryFilterExtensions
     {
         try
         {
-            // Use the existing nested property handling logic
-            var propertyExpression = GetPropertyExpression(parameter, filter.Field);
+            // Use the enhanced property handling with flexible naming
+            var propertyExpression = GetPropertyExpression<T>(parameter, filter.Field);
             var propertyType = propertyExpression.Type;
 
             // Handle nullable types
@@ -459,34 +463,245 @@ public static class QueryFilterExtensions
         }
     }
 
-    private static Expression GetPropertyExpression(Expression parameter, string propertyName)
+    /// <summary>
+    /// Creates a mapping of field names to properties, supporting multiple naming conventions.
+    /// </summary>
+    private static Dictionary<string, PropertyInfo> GetPropertyMapping<T>()
+    {
+        string cacheKey = typeof(T).FullName ?? typeof(T).Name;
+
+        return PropertyMappingCache.GetOrAdd(cacheKey, _ =>
+        {
+            var mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            PropertyInfo[] properties = typeof(T).GetProperties()
+                .Where(p => p.CanRead)
+                .ToArray();
+
+            foreach (PropertyInfo property in properties)
+            {
+                string propertyName = property.Name;
+
+                // Add original property name
+                mapping[propertyName] = property;
+
+                // Add lowercase version
+                mapping[propertyName.ToLower()] = property;
+
+                // Add snake_case version
+                string snakeCaseName = ToSnakeCase(propertyName);
+                mapping[snakeCaseName] = property;
+
+                // Add kebab-case version
+                string kebabCaseName = ToKebabCase(propertyName);
+                mapping[kebabCaseName] = property;
+            }
+
+            return mapping;
+        });
+    }
+
+    /// <summary>
+    /// Finds a property using flexible field name matching for nested properties.
+    /// Supports formats like: user.first_name, user.firstName, User.FirstName
+    /// </summary>
+    private static PropertyInfo? FindProperty<T>(string fieldPath, out Type? containerType)
+    {
+        containerType = typeof(T);
+        PropertyInfo? property = null;
+
+        var segments = fieldPath.Split('.');
+        var propertyMapping = GetPropertyMapping<T>();
+
+        // Handle single property (no nesting)
+        if (segments.Length == 1)
+        {
+            return FindSingleProperty(propertyMapping, segments[0]);
+        }
+
+        // Handle nested properties
+        Type currentType = typeof(T);
+        for (int i = 0; i < segments.Length; i++)
+        {
+            var segment = segments[i];
+            var currentMapping = GetPropertyMappingForType(currentType);
+            property = FindSingleProperty(currentMapping, segment);
+
+            if (property == null)
+                return null;
+
+            if (i < segments.Length - 1) // Not the last segment
+            {
+                currentType = property.PropertyType;
+                // Handle nullable types
+                currentType = Nullable.GetUnderlyingType(currentType) ?? currentType;
+                containerType = currentType;
+            }
+        }
+
+        return property;
+    }
+
+    private static Dictionary<string, PropertyInfo> GetPropertyMappingForType(Type type)
+    {
+        string cacheKey = type.FullName ?? type.Name;
+
+        return PropertyMappingCache.GetOrAdd(cacheKey, _ =>
+        {
+            var mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            PropertyInfo[] properties = type.GetProperties()
+                .Where(p => p.CanRead)
+                .ToArray();
+
+            foreach (PropertyInfo property in properties)
+            {
+                string propertyName = property.Name;
+
+                // Add original property name
+                mapping[propertyName] = property;
+
+                // Add lowercase version
+                mapping[propertyName.ToLower()] = property;
+
+                // Add snake_case version
+                string snakeCaseName = ToSnakeCase(propertyName);
+                mapping[snakeCaseName] = property;
+
+                // Add kebab-case version
+                string kebabCaseName = ToKebabCase(propertyName);
+                mapping[kebabCaseName] = property;
+            }
+
+            return mapping;
+        });
+    }
+
+    /// <summary>
+    /// Finds a property using flexible field name matching.
+    /// </summary>
+    private static PropertyInfo? FindSingleProperty(Dictionary<string, PropertyInfo> propertyMapping, string fieldName)
+    {
+        if (propertyMapping.TryGetValue(fieldName, out PropertyInfo? property))
+        {
+            return property;
+        }
+
+        // Try with normalized field name (remove underscores, hyphens, make lowercase)
+        string normalizedFieldName = fieldName.Replace("_", "").Replace("-", "").ToLower();
+
+        foreach (var kvp in propertyMapping)
+        {
+            string normalizedMappingKey = kvp.Key.Replace("_", "").Replace("-", "").ToLower();
+            if (normalizedMappingKey == normalizedFieldName)
+            {
+                return kvp.Value;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Converts PascalCase/camelCase to snake_case.
+    /// </summary>
+    private static string ToSnakeCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        var result = new StringBuilder();
+        result.Append(char.ToLower(input[0]));
+
+        for (int i = 1; i < input.Length; i++)
+        {
+            char c = input[i];
+            if (char.IsUpper(c))
+            {
+                result.Append('_');
+                result.Append(char.ToLower(c));
+            }
+            else
+            {
+                result.Append(c);
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// Converts PascalCase/camelCase to kebab-case.
+    /// </summary>
+    private static string ToKebabCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        var result = new StringBuilder();
+        result.Append(char.ToLower(input[0]));
+
+        for (int i = 1; i < input.Length; i++)
+        {
+            char c = input[i];
+            if (char.IsUpper(c))
+            {
+                result.Append('-');
+                result.Append(char.ToLower(c));
+            }
+            else
+            {
+                result.Append(c);
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// Enhanced property expression builder with flexible field name support.
+    /// </summary>
+    private static Expression GetPropertyExpression<T>(Expression parameter, string propertyName)
     {
         Expression body = parameter;
-        var members = propertyName.Split('.');
+        var segments = propertyName.Split('.');
+        Type currentType = typeof(T);
 
-        foreach (var member in members)
+        foreach (var segment in segments)
         {
             try
             {
-                var property = Expression.PropertyOrField(body, member);
+                var propertyMapping = GetPropertyMappingForType(currentType);
+                var property = FindSingleProperty(propertyMapping, segment);
+
+                if (property == null)
+                {
+                    throw new ArgumentException($"Property '{segment}' not found on type '{currentType.Name}'. Available properties: {string.Join(", ", propertyMapping.Keys)}");
+                }
+
+                var propertyAccess = Expression.Property(body, property);
 
                 // Add null check for reference types (except for the root parameter)
                 if (!body.Type.IsValueType && body != parameter)
                 {
                     // Create null check: body != null ? body.property : default(PropertyType)
                     var nullCheck = Expression.Equal(body, Expression.Constant(null, body.Type));
-                    var defaultValue = Expression.Default(property.Type);
+                    var defaultValue = Expression.Default(propertyAccess.Type);
 
-                    body = Expression.Condition(nullCheck, defaultValue, property);
+                    body = Expression.Condition(nullCheck, defaultValue, propertyAccess);
                 }
                 else
                 {
-                    body = property;
+                    body = propertyAccess;
                 }
+
+                // Update current type for next iteration
+                currentType = property.PropertyType;
+                currentType = Nullable.GetUnderlyingType(currentType) ?? currentType;
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                throw new ArgumentException($"Property '{propertyName}' not found on type '{body.Type.Name}'.", ex);
+                // Re-throw with enhanced error message
+                var availableProperties = GetPropertyMappingForType(currentType).Keys.Take(10);
+                throw new ArgumentException($"Property path '{propertyName}' is invalid. Segment '{segment}' not found on type '{currentType.Name}'. Available properties: {string.Join(", ", availableProperties)}...");
             }
         }
 

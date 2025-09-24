@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 namespace SharedKernel.Models.Search;
 
@@ -9,7 +10,7 @@ public static class SearchParamsExtensions
     // Cache compiled expressions for better performance
     private static readonly ConcurrentDictionary<string, Func<object, string?, bool>> CompiledSearchExpressions = new();
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> StringPropertiesCache = new();
-
+    private static readonly ConcurrentDictionary<string, Dictionary<string, PropertyInfo>> PropertyMappingCache = new();
 
     /// <summary>
     /// Applies search with configurable options for SPA scenarios.
@@ -119,10 +120,11 @@ public static class SearchParamsExtensions
         Expression? combinedExpression = null;
 
         Type entityType = typeof(T);
+        Dictionary<string, PropertyInfo> propertyMapping = GetPropertyMapping<T>();
 
         foreach (string fieldName in searchFields)
         {
-            PropertyInfo? property = entityType.GetProperty(fieldName);
+            PropertyInfo? property = FindProperty(propertyMapping, fieldName);
             if (property == null || property.PropertyType != typeof(string))
                 continue;
 
@@ -170,6 +172,124 @@ public static class SearchParamsExtensions
         }
 
         return query;
+    }
+
+    /// <summary>
+    /// Creates a mapping of field names to properties, supporting multiple naming conventions.
+    /// </summary>
+    private static Dictionary<string, PropertyInfo> GetPropertyMapping<T>()
+    {
+        string cacheKey = typeof(T).FullName ?? typeof(T).Name;
+
+        return PropertyMappingCache.GetOrAdd(cacheKey, _ =>
+        {
+            var mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            PropertyInfo[] properties = typeof(T).GetProperties()
+                .Where(p => p.PropertyType == typeof(string) && p.CanRead)
+                .ToArray();
+
+            foreach (PropertyInfo property in properties)
+            {
+                string propertyName = property.Name;
+
+                // Add original property name
+                mapping[propertyName] = property;
+
+                // Add lowercase version
+                mapping[propertyName.ToLower()] = property;
+
+                // Add snake_case version
+                string snakeCaseName = ToSnakeCase(propertyName);
+                mapping[snakeCaseName] = property;
+
+                // Add kebab-case version (bonus)
+                string kebabCaseName = ToKebabCase(propertyName);
+                mapping[kebabCaseName] = property;
+            }
+
+            return mapping;
+        });
+    }
+
+    /// <summary>
+    /// Finds a property using flexible field name matching.
+    /// </summary>
+    private static PropertyInfo? FindProperty(Dictionary<string, PropertyInfo> propertyMapping, string fieldName)
+    {
+        if (propertyMapping.TryGetValue(fieldName, out PropertyInfo? property))
+        {
+            return property;
+        }
+
+        // Try with normalized field name (remove underscores, hyphens, make lowercase)
+        string normalizedFieldName = fieldName.Replace("_", "").Replace("-", "").ToLower();
+
+        foreach (var kvp in propertyMapping)
+        {
+            string normalizedMappingKey = kvp.Key.Replace("_", "").Replace("-", "").ToLower();
+            if (normalizedMappingKey == normalizedFieldName)
+            {
+                return kvp.Value;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Converts PascalCase/camelCase to snake_case.
+    /// </summary>
+    private static string ToSnakeCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        var result = new StringBuilder();
+        result.Append(char.ToLower(input[0]));
+
+        for (int i = 1; i < input.Length; i++)
+        {
+            char c = input[i];
+            if (char.IsUpper(c))
+            {
+                result.Append('_');
+                result.Append(char.ToLower(c));
+            }
+            else
+            {
+                result.Append(c);
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// Converts PascalCase/camelCase to kebab-case.
+    /// </summary>
+    private static string ToKebabCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        var result = new StringBuilder();
+        result.Append(char.ToLower(input[0]));
+
+        for (int i = 1; i < input.Length; i++)
+        {
+            char c = input[i];
+            if (char.IsUpper(c))
+            {
+                result.Append('-');
+                result.Append(char.ToLower(c));
+            }
+            else
+            {
+                result.Append(c);
+            }
+        }
+
+        return result.ToString();
     }
 
     private static BinaryExpression CreateSearchCondition(Expression propertyExpression, ConstantExpression searchConstant, SearchOptions? options = null)
