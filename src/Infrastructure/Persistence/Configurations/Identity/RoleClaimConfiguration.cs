@@ -1,4 +1,4 @@
-﻿using Core.Identity;
+﻿using Core.Identity.Roles;
 
 using Infrastructure.Persistence.Constants;
 

@@ -2,7 +2,7 @@
 
 using SharedKernel.Domain.Attributes;
 
-namespace Core.Identity;
+namespace Core.Identity.Users;
 
 public sealed class UserClaim : IdentityUserClaim<Guid>, IAssignable
 {

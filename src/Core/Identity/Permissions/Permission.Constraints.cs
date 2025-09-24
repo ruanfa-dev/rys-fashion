@@ -2,8 +2,6 @@
 
 public partial class Permission
 {
-    #region Constants
-
     public static class Constraints
     {
         /// <summary>
@@ -46,11 +44,10 @@ public partial class Permission
         /// <summary>
         /// Regex pattern used to validate each segment.
         /// - Allows lowercase letters and digits.
-        /// - Allows internal hyphens or underscores between groups of alphanumerics.
+        /// - Allows internal hyphens or underscores between groups of alphanumeric.
         /// - Disallows leading/trailing hyphens/underscores and consecutive separators.
         /// Examples allowed: "user", "invoices-2023", "product_variant1"
         /// </summary>
         public const string SegmentAllowedPattern = "^[a-z0-9]+(?:[-_][a-z0-9]+)*$";
     }
-    #endregion
 }
