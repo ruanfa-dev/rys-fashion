@@ -1,4 +1,4 @@
-﻿using Core.Identity;
+using Core.Identity;
 
 using ErrorOr;
 
@@ -12,6 +12,9 @@ using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication.Tokens.Services;
 
+// TokenManagementService has been deprecated in favor of using IJwtTokenService and IRefreshTokenService directly.
+// Keep the file for backward compatibility (internal use) but mark as obsolete to surface in compile-time warnings.
+[Obsolete("Use IJwtTokenService and IRefreshTokenService directly instead of TokenManagementService")] 
 public sealed class TokenManagementService : ITokenManagementService
 {
     private readonly IJwtTokenService _jwtTokenService;
@@ -34,6 +37,9 @@ public sealed class TokenManagementService : ITokenManagementService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    // Implementation kept identical to previous one so existing call sites still work if they resolve TokenManagementService directly.
+    // Consumers are encouraged to call IJwtTokenService and IRefreshTokenService directly by refactoring call sites.
+
     public async Task<ErrorOr<AuthenticationResult>> AuthenticateAsync(
         User user,
         string ipAddress,
@@ -44,7 +50,7 @@ public sealed class TokenManagementService : ITokenManagementService
         if (user?.Id == Guid.Empty)
             return Error.Validation("Authentication.InvalidUser", "Valid user is required");
         
-        if (string.IsNullOrWhiteSpace(ipAddress) || ipAddress.Length > 45)
+        if (string.IsNullOrWhiteSpace(ipAddress) || ipAddress.Length > RefreshToken.Constraints.IpAddressLength)
             return Error.Validation("Authentication.InvalidIpAddress", "Valid IP address is required");
 
         await using var tx = await _unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
@@ -88,7 +94,7 @@ public sealed class TokenManagementService : ITokenManagementService
             return new AuthenticationResult
             {
                 AccessToken = accessResult.Value.Token,
-                AccessTokenExpiresAt = DateTimeOffset.FromUnixTimeSeconds(accessResult.Value.ExpiresAt),
+                AccessTokenExpiresAt = accessResult.Value.ExpiresAt,
                 RefreshToken = refreshResult.Value.Token,
                 RefreshTokenExpiresAt = refreshResult.Value.ExpiresAt,
                 TokenType = "Bearer"
@@ -112,7 +118,7 @@ public sealed class TokenManagementService : ITokenManagementService
         if (string.IsNullOrWhiteSpace(refreshToken))
             return Error.Validation("Refresh.InvalidToken", "Refresh token is required");
         
-        if (string.IsNullOrWhiteSpace(ipAddress) || ipAddress.Length > 45)
+        if (string.IsNullOrWhiteSpace(ipAddress) || ipAddress.Length > RefreshToken.Constraints.IpAddressLength)
             return Error.Validation("Refresh.InvalidIpAddress", "Valid IP address is required");
 
         await using var tx = await _unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
@@ -168,7 +174,7 @@ public sealed class TokenManagementService : ITokenManagementService
             return new AuthenticationResult
             {
                 AccessToken = accessResult.Value.Token,
-                AccessTokenExpiresAt = DateTimeOffset.FromUnixTimeSeconds(accessResult.Value.ExpiresAt),
+                AccessTokenExpiresAt = accessResult.Value.ExpiresAt,
                 RefreshToken = rotationResult.Value.Token,
                 RefreshTokenExpiresAt = rotationResult.Value.ExpiresAt,
                 TokenType = "Bearer"
