@@ -10,6 +10,7 @@ using SharedKernel.Models.Filter;
 using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Queries;
 using SharedKernel.Models.Search;
+using SharedKernel.Models.Sort;
 
 using UseCases.Admin.Roles.Common;
 using UseCases.Common.Persistence.Context;
@@ -37,33 +38,28 @@ public static partial class ListRoles
             try
             {
                 var param = request.Param;
-                var query = context.Set<Role>()
+                var paginatedList = await context.Set<Role>()
                     .AsQueryable()
                     .AsNoTracking()
                     .Where(r => !param.IsSystemRole.HasValue
                                 || r.IsSystemRole == param.IsSystemRole.Value)
                     .Where(r => !param.IsDefault.HasValue
                                 || r.IsDefault == param.IsDefault.Value)
+                     .Select(r => new Result
+                     {
+                         Id = r.Id,
+                         Name = r.Name!,
+                         Description = r.Description,
+                         IsDefault = r.IsDefault,
+                         IsSystemRole = r.IsSystemRole,
+                         CreatedAt = r.CreatedAt,
+                         CreatedBy = r.CreatedBy,
+                         PermissionCount = r.RoleClaims.Count(rc => rc.ClaimType == CustomClaim.Permission),
+                         UserCount = context.UserRoles.Count(ur => ur.RoleId == r.Id)
+                     })
                     .ApplySearch(param.Search)
-                    .ApplyFilters(param.Filter);
-
-                // Project to result with user count
-                var projectedQuery = query
-                    .OrderBy(r => r.Name)
-                    .Select(r => new Result
-                    {
-                        Id = r.Id,
-                        Name = r.Name!,
-                        Description = r.Description,
-                        IsDefault = r.IsDefault,
-                        IsSystemRole = r.IsSystemRole,
-                        CreatedAt = r.CreatedAt,
-                        CreatedBy = r.CreatedBy,
-                        PermissionCount = r.RoleClaims.Count(rc => rc.ClaimType == CustomClaim.Permission),
-                        UserCount = context.UserRoles.Count(ur => ur.RoleId == r.Id)
-                    });
-
-                var paginatedList = await projectedQuery
+                    .ApplyFilters(param.Filter)
+                    .ApplySort(param.Sort)
                     .ToPagedListAsync(
                         param.Paging,
                         cancellationToken: cancellationToken);
