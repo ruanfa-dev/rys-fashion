@@ -1,4 +1,6 @@
-﻿using Carter;
+﻿using System;
+
+using Carter;
 
 using Microsoft.AspNetCore.DataProtection;
 
@@ -67,6 +69,9 @@ public static class DependencyInjection
 
         app.UseRouting();
         Log.Information(LogTemplate.ConfigureMiddleware, "Request routing");
+
+        app.UseMiddleware<QueryKeyNormalizationMiddleware>();
+        Log.Debug(LogTemplate.UseMiddleware, "Query key normalization");
 
         app.UseStaticFiles();
         Log.Information(LogTemplate.ConfigureMiddleware, "Static file serving");
