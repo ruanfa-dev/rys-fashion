@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
+
 using UseCases.Accounts.Authentication.Login.External.Exchange;
 using UseCases.Accounts.Authentication.Login.External.GetConfig;
 using UseCases.Accounts.Authentication.Login.External.Providers;
@@ -39,7 +40,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             var query = new GetExternalProviders.Query();
             var result = await mediator.Send(query);
             var apiResponse = result.ToApiResponse("External providers retrieved successfully");
-            
+
             // Add external auth related links and metadata
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -51,7 +52,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
                     .WithMetadata("providersCount", apiResponse.Data.Count)
                     .WithMetadata("retrievedAt", DateTime.UtcNow);
             }
-            
+
             return TypedResults.Ok(apiResponse);
         })
         .WithName(GetExternalProviders.Name)
@@ -82,7 +83,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
 
             // Normalize provider name for security
             var normalizedProvider = provider.ToLowerInvariant().Trim();
-            
+
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
@@ -99,7 +100,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             var query = new GetOAuthConfig.Query(normalizedProvider);
             var result = await mediator.Send(query, cancellationToken);
             var apiResponse = result.ToApiResponse($"OAuth configuration for {provider} retrieved successfully");
-            
+
             // Add OAuth-specific metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -111,7 +112,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
                     .WithMetadata("configType", "oauth")
                     .WithMetadata("retrievedAt", DateTime.UtcNow);
             }
-            
+
             return TypedResults.Ok(apiResponse);
         })
         .WithName(GetOAuthConfig.Name)
@@ -126,7 +127,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
         // Exchange external provider token for application tokens
         group.MapPost("/token/exchange/{provider}", async (
             [FromRoute] string provider,
-            [FromBody] ExchangeExternalToken.Command command,
+            [FromBody] ExchangeExternalToken.Param param,
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
@@ -160,10 +161,10 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             }
 
             // Create command with validated provider
-            var commandWithProvider = command with { Provider = normalizedProvider };
-            var result = await mediator.Send(commandWithProvider, cancellationToken);
+            param = param with { Provider = normalizedProvider };
+            var result = await mediator.Send(new ExchangeExternalToken.Command(param), cancellationToken);
             var apiResponse = result.ToApiResponse($"External token exchanged successfully for {provider}");
-            
+
             // Add authentication-related metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -175,7 +176,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
                     .WithMetadata("authenticationMethod", "external-token-exchange")
                     .WithMetadata("exchangedAt", DateTime.UtcNow);
             }
-            
+
             return TypedResults.Ok(apiResponse);
         })
         .WithName(ExchangeExternalToken.Name)
@@ -229,7 +230,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             var commandWithProvider = command with { Provider = normalizedProvider };
             var result = await mediator.Send(commandWithProvider, cancellationToken);
             var apiResponse = result.ToApiResponse($"External token verified successfully for {provider}");
-            
+
             // Add verification metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -240,7 +241,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
                     .WithMetadata("operation", "token-verification")
                     .WithMetadata("verifiedAt", DateTime.UtcNow);
             }
-            
+
             return TypedResults.Ok(apiResponse);
         })
         .WithName(VerifyExternalToken.Name)
@@ -260,8 +261,8 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             var healthResponse = new ApiResponse<object>
             {
                 IsSuccess = true,
-                Data = new 
-                { 
+                Data = new
+                {
                     status = "healthy",
                     timestamp = DateTimeOffset.UtcNow,
                     supportedProviders = GetSupportedProviders()
@@ -270,12 +271,12 @@ public sealed class ExternalLoginEndpoint : ICarterModule
                 Status = 200,
                 Timestamp = DateTime.UtcNow
             };
-            
+
             healthResponse
                 .WithLink("providers", $"{Route}/providers")
                 .WithMetadata("serviceType", "external-authentication")
                 .WithMetadata("healthCheck", "passed");
-                
+
             return Results.Ok(healthResponse);
         })
         .WithName("ExternalAuthHealth")

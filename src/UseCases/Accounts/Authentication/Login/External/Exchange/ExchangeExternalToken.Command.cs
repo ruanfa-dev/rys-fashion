@@ -2,6 +2,8 @@
 
 using ErrorOr;
 
+using FluentValidation;
+
 using Mapster;
 
 using Microsoft.AspNetCore.Http;
@@ -19,13 +21,34 @@ namespace UseCases.Accounts.Authentication.Login.External.Exchange;
 
 public static partial class ExchangeExternalToken
 {
-    public sealed record Command(
-        string? Provider = null,
+    public sealed record Param(
+        string Provider,
         string? AccessToken = null,
         string? IdToken = null,
         string? AuthorizationCode = null,
-        string? RedirectUri = null
-    ) : ICommand<Result>;
+        string? RedirectUri = null,
+        bool RememberMe = false); 
+
+    public sealed class ParamValidator : AbstractValidator<Param>
+    {
+        public ParamValidator()
+        {
+            RuleFor(x => x.Provider)
+                .NotEmpty()
+                .WithErrorCode("Provider.Required")
+                .WithMessage("Provider is required");
+
+            RuleFor(x => x)
+                .Must(p =>
+                    !string.IsNullOrWhiteSpace(p.AccessToken) ||
+                    !string.IsNullOrWhiteSpace(p.IdToken) ||
+                    !string.IsNullOrWhiteSpace(p.AuthorizationCode))
+                .WithErrorCode("Token.Required")
+                .WithMessage("Either access token, ID token, or authorization code is required");
+        }
+    }
+
+    public sealed record Command(Param Param) : ICommand<Result>;
 
     public sealed record Result : AuthenticationResult
     {
@@ -48,7 +71,8 @@ public static partial class ExchangeExternalToken
 
     public sealed class Handler(
         UserManager<User> userManager,
-        ITokenManagementService tokenManagementService,
+        IJwtTokenService jwtTokenService,
+        IRefreshTokenService refreshTokenService,
         IExternalTokenValidator tokenValidator,
         IExternalUserService externalUserService,
         IHttpContextAccessor httpContextAccessor,
@@ -57,100 +81,93 @@ public static partial class ExchangeExternalToken
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            // Validate input parameters
-            if (string.IsNullOrWhiteSpace(request.Provider))
-            {
-                return Error.Validation("Provider.Required", "Provider is required");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.AccessToken) &&
-                string.IsNullOrWhiteSpace(request.IdToken) &&
-                string.IsNullOrWhiteSpace(request.AuthorizationCode))
-            {
-                return Error.Validation("Token.Required", "Either access token, ID token, or authorization code is required");
-            }
-
-            var provider = request.Provider.ToLowerInvariant().Trim();
+            var param = request.Param;
+            var ipAddress = GetClientIpAddress();
 
             try
             {
-                // Step 1: Validate the external token using official provider SDKs
-                logger.LogDebug("Validating external token for provider: {Provider}", provider);
+                logger.LogDebug("Validating external token for provider: {Provider}", param.Provider);
                 var validationResult = await tokenValidator.ValidateTokenAsync(
-                    provider,
-                    request.AccessToken,
-                    request.IdToken,
-                    request.AuthorizationCode,
-                    request.RedirectUri,
+                    provider: param.Provider,
+                    accessToken: param.AccessToken,
+                    idToken: param.IdToken,
+                    authorizationCode: param.AuthorizationCode,
+                    redirectUri: param.RedirectUri,
                     cancellationToken
                 );
 
                 if (validationResult.IsError)
                 {
                     logger.LogWarning("Token validation failed for provider {Provider}: {Errors}",
-                        provider, string.Join(", ", validationResult.Errors.Select(e => e.Description)));
+                        param.Provider, string.Join(", ", validationResult.Errors.Select(e => e.Description)));
                     return validationResult.Errors;
                 }
 
                 var externalUserInfo = validationResult.Value;
                 logger.LogDebug("Successfully validated token for user: {Email} from provider: {Provider}",
-                    externalUserInfo.Email, provider);
+                    externalUserInfo.Email, param.Provider);
 
-                // Step 2: Find or create user using enhanced external user service
                 var userResult = await externalUserService.FindOrCreateUserWithExternalLoginAsync(
                     externalUserInfo,
-                    provider,
+                    param.Provider,
                     cancellationToken);
 
                 if (userResult.IsError)
                 {
                     logger.LogError("Failed to find or create user for provider {Provider}: {Errors}",
-                        provider, string.Join(", ", userResult.Errors.Select(e => e.Description)));
+                        param.Provider, string.Join(", ", userResult.Errors.Select(e => e.Description)));
                     return userResult.Errors;
                 }
 
                 var (user, isNewUser, isNewLogin) = userResult.Value;
 
-                // Step 3: Record sign-in for tracking
-                user.RecordSignIn(GetClientIpAddress());
+                user.RecordSignIn(ipAddress);
                 await userManager.UpdateAsync(user);
 
-                // Step 4: Generate application tokens
-                var tokens = await tokenManagementService.AuthenticateAsync(
-                    user,
-                    GetClientIpAddress(),
-                    rememberMe: false,
-                    cancellationToken
-                );
-
-                if (tokens.IsError)
+                ErrorOr<AccessTokenResult> accessResult = await jwtTokenService.GenerateAccessTokenAsync(user!, cancellationToken);
+                if (accessResult.IsError)
                 {
-                    logger.LogError("Failed to generate tokens for user {UserId}: {Errors}",
-                        user.Id, string.Join(", ", tokens.Errors.Select(e => e.Description)));
-                    return tokens.Errors;
+                    logger.LogError("Access token generation failed for user {UserId}", user!.Id);
+                    return accessResult.Errors;
                 }
 
-                // Step 5: Build comprehensive user profile
+                ErrorOr<RefreshTokenResult> refreshResult = await refreshTokenService.GenerateRefreshTokenAsync(
+                    user!.Id, ipAddress, param.RememberMe, cancellationToken);
+                if (refreshResult.IsError)
+                {
+                    logger.LogError("Refresh token generation failed for user {UserId}", user.Id);
+                    return refreshResult.Errors;
+                }
+
+                var tokens = new AuthenticationResult
+                {
+                    AccessToken = accessResult.Value.Token,
+                    AccessTokenExpiresAt = accessResult.Value.ExpiresAt,
+                    RefreshToken = refreshResult.Value.Token,
+                    RefreshTokenExpiresAt = refreshResult.Value.ExpiresAt,
+                    TokenType = "Bearer"
+                };
+
                 var userProfile = await BuildUserProfileAsync(user, externalUserInfo, cancellationToken);
 
-                var result = tokens.Value.Adapt<Result>();
+                var result = tokens.Adapt<Result>();
                 result.IsNewUser = isNewUser;
                 result.IsNewLogin = isNewLogin;
                 result.UserProfile = userProfile;
 
                 logger.LogInformation("External token exchange successful for user {UserId} via {Provider}. NewUser: {IsNewUser}, NewLogin: {IsNewLogin}",
-                    user.Id, provider, isNewUser, isNewLogin);
+                    user.Id, param.Provider, isNewUser, isNewLogin);
 
                 return result;
             }
             catch (OperationCanceledException)
             {
-                logger.LogWarning("External token exchange was cancelled for provider: {Provider}", provider);
+                logger.LogWarning("External token exchange was cancelled for provider: {Provider}", param.Provider);
                 return Error.Failure("TokenExchange.Cancelled", "Token exchange operation was cancelled");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unexpected error during external token exchange for provider: {Provider}", provider);
+                logger.LogError(ex, "Unexpected error during external token exchange for provider: {Provider}", param.Provider);
                 return Error.Failure("TokenExchange.UnexpectedError", "An unexpected error occurred during token exchange");
             }
         }
@@ -162,7 +179,6 @@ public static partial class ExchangeExternalToken
         {
             try
             {
-                // Get all external logins for the user
                 var externalLogins = await externalUserService.GetExternalLoginsAsync(user.Id, cancellationToken);
                 var externalProviders = externalLogins.Select(l => l.LoginProvider.ToLowerInvariant()).ToArray();
 
@@ -189,7 +205,6 @@ public static partial class ExchangeExternalToken
             {
                 logger.LogWarning(ex, "Error building user profile for user {UserId}, using basic profile", user.Id);
 
-                // Fallback to basic profile if there's an error
                 return new UserProfile
                 {
                     Email = user.Email!,
@@ -197,7 +212,7 @@ public static partial class ExchangeExternalToken
                     LastName = user.LastName,
                     EmailVerified = user.EmailConfirmed,
                     ProfilePictureUrl = externalUserInfo.ProfilePictureUrl,
-                    HasExternalLogins = true, // Assume true since we just used external auth
+                    HasExternalLogins = true,
                     ExternalProviders = Array.Empty<string>(),
                     AdditionalClaims = new Dictionary<string, string>
                     {
@@ -213,22 +228,18 @@ public static partial class ExchangeExternalToken
             var context = httpContextAccessor.HttpContext;
             if (context == null) return "unknown";
 
-            // Check for forwarded IP (common in production behind load balancers)
             var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(forwardedFor))
             {
-                // Take the first IP if there are multiple (client -> proxy1 -> proxy2 -> server)
                 return forwardedFor.Split(',')[0].Trim();
             }
 
-            // Check for real IP header (some proxy configurations)
             var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(realIp))
             {
                 return realIp.Trim();
             }
 
-            // Fallback to connection remote IP
             var remoteIp = context.Connection.RemoteIpAddress?.ToString();
             return !string.IsNullOrWhiteSpace(remoteIp) ? remoteIp : "unknown";
         }
