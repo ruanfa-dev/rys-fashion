@@ -1,5 +1,4 @@
-﻿using SharedKernel.Domain.Attributes;
-using SharedKernel.Domain.Primitives;
+﻿using SharedKernel.Domain.Primitives;
 
 namespace Core.Identity;
 
@@ -195,7 +194,7 @@ public partial class Permission : AuditableEntity
 
             // Normalize to lowercase before validation since we store everything in lowercase
             var normalizedPart = p.ToLowerInvariant();
-            
+
             // Use System.Text.RegularExpressions.Regex to validate allowed characters
             if (!System.Text.RegularExpressions.Regex.IsMatch(normalizedPart, Constraints.SegmentAllowedPattern))
                 return false;

@@ -215,7 +215,6 @@ public static class AuthenticationConfiguration
         services.AddScoped<IUserContext, UserContext>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-        services.AddScoped<ITokenManagementService, TokenManagementService>();
         
         // Add enhanced external user service for Identity EF Core integration
         services.AddScoped<IExternalUserService, ExternalUserService>();

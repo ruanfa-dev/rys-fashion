@@ -16,12 +16,6 @@ public sealed class RoleConfigurations : IEntityTypeConfiguration<Role>
 
         // Identity properties
         builder.HasKey(r => r.Id);
-
-        // Index
-        builder.HasIndex(r => r.NormalizedName)
-            .IsUnique();
-
-        // Properties
         builder.Property(e => e.Name)
             .IsRequired()
             .HasMaxLength(Role.Constraints.MaxNameLength);
@@ -32,5 +26,13 @@ public sealed class RoleConfigurations : IEntityTypeConfiguration<Role>
 
         builder.Property(e => e.Description)
             .HasMaxLength(Role.Constraints.MaxDescriptionLength);
+
+
+        // Index
+        builder.HasIndex(r => r.NormalizedName)
+            .IsUnique();
+        builder.HasIndex(r => r.IsSystemRole);
+        builder.HasIndex(r => r.IsDefault);
+        builder.HasIndex(r => r.Priority);
     }
 }

@@ -4,7 +4,6 @@ namespace Core.Identity;
 
 public partial class Permission
 {
-    #region Constants
     public static class Errors
     {
         #region Basic Permission Errors
@@ -24,5 +23,4 @@ public partial class Permission
                          $"Each segment must be {Constraints.MinSegmentLength}-{Constraints.MaxSegmentLength} characters and match the pattern '{Constraints.SegmentAllowedPattern}'.");
         #endregion
     }
-    #endregion
 }

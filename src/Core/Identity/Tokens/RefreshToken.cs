@@ -1,17 +1,16 @@
-﻿using System.Security.Cryptography;
+﻿namespace Core.Identity;
+
+using System.Security.Cryptography;
 using System.Text;
 
-namespace Core.Identity;
-
 /// <summary>
-/// Represents a refresh token for a user, implementing rotation and reuse detection.
+/// Represents a refresh token for a user.
 /// </summary>
 public sealed partial class RefreshToken
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid UserId { get; private set; }
     public string TokenHash { get; private set; } = string.Empty;
-    public string? ReplacedByTokenHash { get; set; }
 
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public string CreatedByIp { get; private set; } = string.Empty;
@@ -36,19 +35,17 @@ public sealed partial class RefreshToken
             UserId = userId,
             TokenHash = Hash(rawToken),
             ExpiresAt = expiresAt,
-            CreatedAt = DateTimeOffset.UtcNow,
-            CreatedByIp = ipAddress,
+            CreatedByIp = ipAddress
         };
     }
 
-    public void Revoke(string ipAddress, string? reason = null, string? replacedByTokenHash = null)
+    public void Revoke(string ipAddress, string? reason = null)
     {
         if (IsRevoked) return;
 
         RevokedAt = DateTimeOffset.UtcNow;
         RevokedByIp = ipAddress;
         RevokedReason = reason;
-        ReplacedByTokenHash = replacedByTokenHash ?? ReplacedByTokenHash;
     }
 
     public static string Hash(string rawToken)

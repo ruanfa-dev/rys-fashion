@@ -1,22 +1,26 @@
-﻿using ErrorOr;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+using ErrorOr;
 
 using UseCases.Common.Security.Authentication.Tokens.Models;
 
 namespace UseCases.Common.Security.Authentication.Tokens.Services;
 
 /// <summary>
-/// Service for managing refresh tokens including generation, validation, and rotation.
+/// Service for managing refresh tokens including generation, validation, rotation and revocation.
 /// </summary>
 public interface IRefreshTokenService
 {
     /// <summary>
-    /// Generates a new refresh token.
+    /// Generates a new refresh token for the specified user.
     /// </summary>
-    /// <param name="userId">User ID for the token</param>
-    /// <param name="ipAddress">IP address where token is created</param>
-    /// <param name="rememberMe">Whether this is a "remember me" token with extended expiry</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Generated refresh token or error</returns>
+    /// <param name="userId">User ID for the token.</param>
+    /// <param name="ipAddress">IP address where the token is created.</param>
+    /// <param name="rememberMe">If true, uses extended expiry for "remember me".</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Generated refresh token result or error.</returns>
     Task<ErrorOr<RefreshTokenResult>> GenerateRefreshTokenAsync(
         Guid userId,
         string ipAddress,
@@ -24,25 +28,25 @@ public interface IRefreshTokenService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Validates a refresh token and returns the associated user ID.
+    /// Validates a refresh token and returns the stored token and associated user when valid.
     /// </summary>
-    /// <param name="token">The refresh token to validate</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Validation result or error</returns>
+    /// <param name="token">Raw refresh token to validate.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Validation result containing the stored token and user or an error.</returns>
     Task<ErrorOr<RefreshTokenValidationResult>> ValidateRefreshTokenAsync(
         string token,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Rotates a refresh token (revokes old, creates new).
+    /// Rotates a refresh token: revokes the provided token and issues a new one.
     /// </summary>
-    /// <param name="currentToken">Current refresh token</param>
-    /// <param name="ipAddress">IP address performing the rotation</param>
-    /// <param name="rememberMe">Whether this is a "remember me" token with extended expiry</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>New refresh token or error</returns>
+    /// <param name="rawCurrentToken">The current raw refresh token to rotate.</param>
+    /// <param name="ipAddress">IP address performing the rotation.</param>
+    /// <param name="rememberMe">If true, uses extended expiry for the new token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>New refresh token result or error.</returns>
     Task<ErrorOr<RefreshTokenResult>> RotateRefreshTokenAsync(
-        string currentToken,
+        string rawCurrentToken,
         string ipAddress,
         bool rememberMe = false,
         CancellationToken cancellationToken = default);
@@ -50,26 +54,26 @@ public interface IRefreshTokenService
     /// <summary>
     /// Revokes a specific refresh token.
     /// </summary>
-    /// <param name="token">Token to revoke</param>
-    /// <param name="ipAddress">IP address performing the revocation</param>
-    /// <param name="reason">Reason for revocation</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Success or error</returns>
+    /// <param name="rawToken">Raw token to revoke.</param>
+    /// <param name="ipAddress">IP address performing the revocation.</param>
+    /// <param name="reason">Optional reason for revocation.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Success or error.</returns>
     Task<ErrorOr<Success>> RevokeTokenAsync(
-        string token,
+        string rawToken,
         string ipAddress,
         string? reason = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Revokes all refresh tokens for a user.
+    /// Revokes all non-revoked refresh tokens for a user.
     /// </summary>
-    /// <param name="userId">User ID</param>
-    /// <param name="ipAddress">IP address performing the revocation</param>
-    /// <param name="reason">Reason for revocation</param>
-    /// <param name="exceptToken">Token to exclude from revocation (current session)</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Number of revoked tokens or error</returns>
+    /// <param name="userId">User ID whose tokens should be revoked.</param>
+    /// <param name="ipAddress">IP address performing the revocation.</param>
+    /// <param name="reason">Optional reason for revocation.</param>
+    /// <param name="exceptToken">Optional raw refresh token to exclude from revocation (keep session).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Number of revoked tokens or error.</returns>
     Task<ErrorOr<int>> RevokeAllUserTokensAsync(
         Guid userId,
         string ipAddress,
@@ -78,9 +82,9 @@ public interface IRefreshTokenService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cleans up expired and revoked tokens from storage.
+    /// Cleans up expired and aged revoked tokens from storage.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Number of tokens cleaned up or error</returns>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Number of tokens removed or error.</returns>
     Task<ErrorOr<int>> CleanupExpiredTokensAsync(CancellationToken cancellationToken = default);
 }

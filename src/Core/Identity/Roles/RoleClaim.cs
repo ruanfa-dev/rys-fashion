@@ -2,7 +2,7 @@
 
 using SharedKernel.Domain.Attributes;
 
-namespace Core.Identity;
+namespace Core.Identity.Roles;
 public sealed class RoleClaim : IdentityRoleClaim<Guid>, IAssignable
 {
     public DateTimeOffset? AssignedAt { get; set; }

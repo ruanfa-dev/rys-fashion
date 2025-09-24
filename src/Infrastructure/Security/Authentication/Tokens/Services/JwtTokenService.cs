@@ -34,6 +34,7 @@ public sealed class JwtTokenService : IJwtTokenService
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            RequireSignedTokens = true,               
             ClockSkew = TimeSpan.FromMinutes(5), // Allow 5 minutes clock skew
             ValidIssuer = _jwtOptions.Issuer,
             ValidAudience = _jwtOptions.Audience,
@@ -48,8 +49,7 @@ public sealed class JwtTokenService : IJwtTokenService
         try
         {
             if (user is null || user.Id == Guid.Empty)
-                return Task.FromResult<ErrorOr<AccessTokenResult>>(
-                    Error.Validation("JWT.InvalidUser", "Valid user is required"));
+                return Task.FromResult<ErrorOr<AccessTokenResult>>(Jwt.Errors.InvalidUser);
 
             var now = DateTimeOffset.UtcNow;
             var expires = now.AddMinutes(_jwtOptions.AccessTokenLifetimeMinutes);
@@ -59,9 +59,7 @@ public sealed class JwtTokenService : IJwtTokenService
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new(JwtRegisteredClaimNames.Aud, _jwtOptions.Audience),
-                new(JwtRegisteredClaimNames.Iss, _jwtOptions.Issuer)
+                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
 
             // Add: username only if needed (avoid email in JWT for privacy)
@@ -96,17 +94,13 @@ public sealed class JwtTokenService : IJwtTokenService
                 ExpiresAt = expires.ToUnixTimeSeconds()
             });
         }
-        catch (SecurityTokenException ex)
+        catch (SecurityTokenException)
         {
-            return Task.FromResult<ErrorOr<AccessTokenResult>>(
-                Error.Failure("JWT.SecurityTokenError", $"Security token error: {ex.Message}")
-            );
+            return Task.FromResult<ErrorOr<AccessTokenResult>>(Jwt.Errors.SecurityTokenError);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Task.FromResult<ErrorOr<AccessTokenResult>>(
-                Error.Failure("JWT.GenerationFailed", $"Failed to generate JWT token: {ex.Message}")
-            );
+            return Task.FromResult<ErrorOr<AccessTokenResult>>(Jwt.Errors.GenerationFailed);
         }
     }
 
@@ -114,7 +108,7 @@ public sealed class JwtTokenService : IJwtTokenService
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Error.Validation("JWT.EmptyToken", "Token cannot be empty");
+            return Jwt.Errors.EmptyToken;
         }
 
         try
@@ -127,11 +121,11 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (ArgumentException ex)
         {
-            return Error.Validation("JWT.InvalidFormat", $"Invalid token format: {ex.Message}");
+            return Error.Validation(Jwt.Errors.InvalidFormat.Code, $"Invalid token format: {ex.Message}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Error.Failure("JWT.PrincipalExtraction", $"Failed to extract principal: {ex.Message}");
+            return Jwt.Errors.PrincipalExtraction;
         }
     }
 
@@ -139,7 +133,7 @@ public sealed class JwtTokenService : IJwtTokenService
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Error.Validation("JWT.EmptyToken", "Token cannot be empty");
+            return Jwt.Errors.EmptyToken;
         }
 
         try
@@ -149,7 +143,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
             if (!exp.HasValue)
             {
-                return Error.Validation("JWT.NoExpiration", "Token does not have an expiration claim");
+                return Jwt.Errors.NoExpiration;
             }
 
             var expiration = DateTimeOffset.FromUnixTimeSeconds(exp.Value);
@@ -159,11 +153,11 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (ArgumentException ex)
         {
-            return Error.Validation("JWT.InvalidFormat", $"Invalid token format: {ex.Message}");
+            return Error.Validation(Jwt.Errors.InvalidFormat.Code, $"Invalid token format: {ex.Message}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Error.Failure("JWT.RemainingTime", $"Failed to get remaining time: {ex.Message}");
+            return Jwt.Errors.RemainingTime;
         }
     }
 
@@ -171,16 +165,16 @@ public sealed class JwtTokenService : IJwtTokenService
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Error.Validation("JWT.EmptyToken", "Token cannot be empty");
+            return Jwt.Errors.EmptyToken;
         }
 
         try
         {
             // Basic format validation - should have 3 parts separated by dots
             var parts = token.Split('.');
-            if (parts.Length != 3)
+            if (parts.Length != Jwt.Constraints.TokenParts)
             {
-                return Error.Validation("JWT.InvalidFormat", "JWT must have exactly 3 parts separated by dots");
+                return Error.Validation(Jwt.Errors.InvalidFormat.Code, "JWT must have exactly 3 parts separated by dots");
             }
 
             // Try to read the token structure
@@ -189,24 +183,24 @@ public sealed class JwtTokenService : IJwtTokenService
             // Basic header validation
             if (string.IsNullOrEmpty(jwtToken.Header.Alg))
             {
-                return Error.Validation("JWT.MissingAlgorithm", "JWT header missing algorithm");
+                return Jwt.Errors.MissingAlgorithm;
             }
 
             // Basic payload validation
             if (jwtToken.Payload.Count == 0)
             {
-                return Error.Validation("JWT.EmptyPayload", "JWT payload is empty");
+                return Jwt.Errors.EmptyPayload;
             }
 
             return true;
         }
         catch (ArgumentException ex)
         {
-            return Error.Validation("JWT.InvalidFormat", $"Invalid token format: {ex.Message}");
+            return Error.Validation(Jwt.Errors.InvalidFormat.Code, $"Invalid token format: {ex.Message}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Error.Failure("JWT.FormatValidation", $"Token format validation failed: {ex.Message}");
+            return Jwt.Errors.FormatValidation;
         }
     }
 
@@ -214,7 +208,7 @@ public sealed class JwtTokenService : IJwtTokenService
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Error.Validation("JWT.EmptyToken", "Token cannot be empty");
+            return Jwt.Errors.EmptyToken;
         }
 
         try
@@ -224,21 +218,21 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (ArgumentException ex)
         {
-            return Error.Validation("JWT.InvalidFormat", $"Invalid token format: {ex.Message}");
+            return Error.Validation(Jwt.Errors.InvalidFormat.Code, $"Invalid token format: {ex.Message}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Error.Failure("JWT.ParseFailed", $"Failed to parse token: {ex.Message}");
+            return Jwt.Errors.ParseFailed;
         }
     }
 
-    public ErrorOr<UseCases.Common.Security.Authentication.Tokens.Models.JwtTokenValidationResult> ValidateToken(
+    public ErrorOr<JwtTokenValidationResult> ValidateToken(
         string token,
         bool validateLifetime = true)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Error.Validation("JWT.EmptyToken", "Token cannot be empty");
+            return Jwt.Errors.EmptyToken;
         }
 
         try
@@ -249,7 +243,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
             var principal = _tokenHandler.ValidateToken(token, validationParams, out var validatedToken);
 
-            var result = new UseCases.Common.Security.Authentication.Tokens.Models.JwtTokenValidationResult
+            var result = new JwtTokenValidationResult
             {
                 IsValid = true,
                 ClaimsIdentity = principal.Identities.FirstOrDefault(),
@@ -261,24 +255,24 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (SecurityTokenExpiredException ex)
         {
-            var result = new UseCases.Common.Security.Authentication.Tokens.Models.JwtTokenValidationResult
+            var result = new JwtTokenValidationResult
             {
                 IsValid = false,
                 Exception = ex
             };
             return result;
         }
-        catch (SecurityTokenInvalidSignatureException ex)
+        catch (SecurityTokenInvalidSignatureException)
         {
-            return Error.Validation("JWT.InvalidSignature", $"Token signature is invalid: {ex.Message}");
+            return Jwt.Errors.InvalidSignature;
         }
-        catch (SecurityTokenValidationException ex)
+        catch (SecurityTokenValidationException)
         {
-            return Error.Validation("JWT.ValidationFailed", $"Token validation failed: {ex.Message}");
+            return Jwt.Errors.ValidationFailed;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Error.Failure("JWT.ValidationError", $"Unexpected error during token validation: {ex.Message}");
+            return Jwt.Errors.ValidationError;
         }
     }
 
@@ -286,7 +280,7 @@ public sealed class JwtTokenService : IJwtTokenService
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Error.Validation("JWT.EmptyToken", "Token cannot be empty");
+            return Jwt.Errors.EmptyToken;
         }
 
         try
@@ -297,11 +291,11 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (ArgumentException ex)
         {
-            return Error.Validation("JWT.InvalidFormat", $"Invalid token format: {ex.Message}");
+            return Error.Validation(Jwt.Errors.InvalidFormat.Code, $"Invalid token format: {ex.Message}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Error.Failure("JWT.ClaimsExtraction", $"Failed to extract claims: {ex.Message}");
+            return Jwt.Errors.ClaimsExtraction;
         }
     }
 }

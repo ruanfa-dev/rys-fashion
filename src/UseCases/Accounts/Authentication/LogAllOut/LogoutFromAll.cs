@@ -39,26 +39,31 @@ public static class LogoutFromAll
         }
     }
 
-    public sealed class Handler(ITokenManagementService tokenManagementService, IHttpContextAccessor accessor) : ICommandHandler<Command, Deleted>
+    public sealed class Handler(IRefreshTokenService refreshTokenService, IHttpContextAccessor accessor) : ICommandHandler<Command, Deleted>
     {
+        private readonly IRefreshTokenService _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
+        private readonly IHttpContextAccessor _accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
+
         public async Task<ErrorOr<Deleted>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var userId = accessor.HttpContext?.User.GetUserId();
-            var isAuthenticated = accessor.HttpContext?.User.IsAuthenticated() ?? false;
-            var ipAddress = accessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var userId = _accessor.HttpContext?.User.GetUserId();
+            var isAuthenticated = _accessor.HttpContext?.User.IsAuthenticated() ?? false;
+            var ipAddress = _accessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
-            var result = await tokenManagementService.LogoutFromAllDevicesAsync(
+            // Revoke: all tokens for user except the provided current token (keeps current session)
+            var revokeResult = await _refreshTokenService.RevokeAllUserTokensAsync(
                 userId: userId.Value,
                 ipAddress: ipAddress,
-                currentToken: request.Param.RefreshToken,
-                cancellationToken);
+                reason: "User requested logout from all devices",
+                exceptToken: request.Param.RefreshToken,
+                cancellationToken: cancellationToken);
 
-            if (result.IsError)
-                return result.Errors;
+            if (revokeResult.IsError)
+                return revokeResult.Errors;
 
             return Result.Deleted;
         }

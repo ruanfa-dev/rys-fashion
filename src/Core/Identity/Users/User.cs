@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Core.Identity.Users;
+
+using Microsoft.AspNetCore.Identity;
 
 using SharedKernel.Domain.Attributes;
 

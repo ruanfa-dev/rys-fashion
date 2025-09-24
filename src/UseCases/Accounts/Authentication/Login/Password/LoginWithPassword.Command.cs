@@ -31,7 +31,8 @@ public static partial class LoginWithPassword
     public sealed class Handler(
         SignInManager<User> signInManager,
         UserManager<User> userManager,
-        ITokenManagementService tokenManagementService,
+        IJwtTokenService jwtTokenService,
+        IRefreshTokenService refreshTokenService,
         IHttpContextAccessor httpContextAccessor) : ICommandHandler<Command, Result>
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
@@ -75,20 +76,34 @@ public static partial class LoginWithPassword
                 userAgent = "unknown";
 
             // Generate: tokens (access + refresh)
-            ErrorOr<AuthenticationResult> tokens = await tokenManagementService.AuthenticateAsync(
-                user: user,
-                ipAddress: ipAddress,
-                rememberMe: param.RememberMe,
-                cancellationToken);
+            user.RecordSignIn(ipAddress);
+            await userManager.UpdateAsync(user);
 
-            if (tokens.IsError)
+            ErrorOr<AccessTokenResult> accessResult = await jwtTokenService.GenerateAccessTokenAsync(user!, cancellationToken);
+            if (accessResult.IsError)
             {
-                return tokens.Errors;
+                Log.Error("Access token generation failed for user {UserId}", user!.Id);
+                return accessResult.Errors;
             }
 
+            ErrorOr<RefreshTokenResult> refreshResult = await refreshTokenService.GenerateRefreshTokenAsync(
+                user!.Id, ipAddress, param.RememberMe, cancellationToken);
+            if (refreshResult.IsError)
+            {
+                Log.Error("Refresh token generation failed for user {UserId}", user.Id);
+                return refreshResult.Errors;
+            }
 
-            return tokens.Value.Adapt<Result>();
+            var tokens = new AuthenticationResult
+            {
+                AccessToken = accessResult.Value.Token,
+                AccessTokenExpiresAt = accessResult.Value.ExpiresAt,
+                RefreshToken = refreshResult.Value.Token,
+                RefreshTokenExpiresAt = refreshResult.Value.ExpiresAt,
+                TokenType = "Bearer"
+            };
 
+            return tokens.Adapt<Result>();
         }
     }
 
