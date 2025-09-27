@@ -1,8 +1,6 @@
 ﻿using ErrorOr;
 
-using Microsoft.VisualBasic;
-
-namespace Core.Identity;
+namespace Core.Identity.Users;
 
 public partial class User
 {

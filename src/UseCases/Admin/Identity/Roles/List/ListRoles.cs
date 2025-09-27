@@ -1,8 +1,4 @@
-using SharedKernel.Messaging.Abstracts;
-using SharedKernel.Models.PagedLists;
-using SharedKernel.Models.Queries;
-
-namespace UseCases.Admin.Roles.List;
+namespace UseCases.Admin.Identity.Roles.List;
 
 public static partial class ListRoles
 {

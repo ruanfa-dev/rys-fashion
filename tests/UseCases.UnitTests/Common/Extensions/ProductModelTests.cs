@@ -1,6 +1,6 @@
 ﻿using Shouldly;
+
 using UseCases.Common.Extensions;
-using Xunit;
 
 namespace UseCases.UnitTests.Common.Extensions;
 

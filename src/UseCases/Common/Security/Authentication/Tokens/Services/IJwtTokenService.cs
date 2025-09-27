@@ -2,6 +2,7 @@
 using System.Security.Claims;
 
 using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 

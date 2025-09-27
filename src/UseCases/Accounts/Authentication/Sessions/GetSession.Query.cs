@@ -1,4 +1,4 @@
-﻿using Core.Identity;
+﻿using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -7,11 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 using SharedKernel.Messaging.Abstracts;
 
-using UseCases.Accounts.Authentication.Sessions;
 using UseCases.Common.Security.Authentication.Contexts;
 using UseCases.Common.Security.Authorization.Providers;
 
-namespace UseCases.Accounts.Sessions.Get;
+namespace UseCases.Accounts.Authentication.Sessions;
 public static partial class GetSession
 {
     public sealed record Query : IQuery<AccountSessionResult>;

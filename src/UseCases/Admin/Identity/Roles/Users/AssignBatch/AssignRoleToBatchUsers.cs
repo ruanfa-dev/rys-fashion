@@ -1,4 +1,4 @@
-﻿namespace UseCases.Admin.Roles.Users.AssignBatch;
+﻿namespace UseCases.Admin.Identity.Roles.Users.AssignBatch;
 public static partial class AssignRoleToBatchUsers
 {
     internal const string Tag = "Role User Management";

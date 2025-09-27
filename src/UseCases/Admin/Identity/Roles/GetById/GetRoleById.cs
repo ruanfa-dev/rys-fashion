@@ -1,8 +1,4 @@
-using SharedKernel.Messaging.Abstracts;
-
-using UseCases.Admin.Roles.Common;
-
-namespace UseCases.Admin.Roles.GetById;
+namespace UseCases.Admin.Identity.Roles.GetById;
 
 public static partial class GetRoleById
 {

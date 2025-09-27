@@ -1,6 +1,6 @@
 using ErrorOr;
 
-namespace Core.Identity;
+namespace Core.Identity.Roles;
 
 /// <summary>
 /// Predefined errors for role permission management operations

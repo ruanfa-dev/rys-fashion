@@ -1,6 +1,4 @@
-﻿using Core.Todos;
-
-using SharedKernel.Messaging;
+﻿using SharedKernel.Messaging;
 
 namespace Core.Todos;
 

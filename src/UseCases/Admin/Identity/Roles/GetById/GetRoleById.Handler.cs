@@ -1,4 +1,5 @@
-using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -17,12 +18,12 @@ using UseCases.Admin.Identity.Roles.Common;
 using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authorization.Claims;
 
-namespace UseCases.Admin.Roles.GetById;
+namespace UseCases.Admin.Identity.Roles.GetById;
 
 public static partial class GetRoleById
 {
     public sealed record Param : QueryParams;
-    public sealed record Result : RoleDetailedResult;
+    public sealed record Result : RoleResult.Detail;
 
     public sealed record Query(Guid Id, Param Param) : IQuery<Result>;
 

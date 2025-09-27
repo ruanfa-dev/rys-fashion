@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Roles.Delete;
+namespace UseCases.Admin.Identity.Roles.Delete;
 
 public static partial class DeleteRole
 {

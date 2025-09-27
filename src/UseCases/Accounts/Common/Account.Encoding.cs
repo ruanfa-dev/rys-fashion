@@ -1,6 +1,7 @@
 ﻿using System.Text;
 
 using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 

@@ -1,4 +1,6 @@
 ﻿using Core.Identity;
+using Core.Identity.Tokens;
+using Core.Identity.Users;
 
 using ErrorOr;
 

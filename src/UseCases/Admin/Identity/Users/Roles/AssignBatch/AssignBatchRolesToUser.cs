@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Users.Roles.AssignBatch;
+namespace UseCases.Admin.Identity.Users.Roles.AssignBatch;
 
 public static partial class AssignBatchRolesToUser
 {

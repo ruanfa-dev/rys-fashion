@@ -25,7 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Admin\Catalogs\Properties\" />
     <Folder Include="Common\Notification\Constants\" />
     <Folder Include="Users\" />
   </ItemGroup>

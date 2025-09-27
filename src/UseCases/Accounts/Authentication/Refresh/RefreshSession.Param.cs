@@ -1,8 +1,8 @@
-﻿using Core.Identity;
+﻿using Core.Identity.Tokens;
 
 using FluentValidation;
 
-namespace UseCases.Accounts.Authentication.Sessions.Refresh;
+namespace UseCases.Accounts.Authentication.Refresh;
 public static partial class RefreshSession
 {
     public sealed record Param(string RefreshToken, bool RememberMe = false);

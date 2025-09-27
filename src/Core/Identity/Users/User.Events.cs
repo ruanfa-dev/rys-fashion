@@ -1,6 +1,6 @@
 ﻿using SharedKernel.Messaging;
 
-namespace Core.Identity;
+namespace Core.Identity.Users;
 public partial class User
 {
     public record Events

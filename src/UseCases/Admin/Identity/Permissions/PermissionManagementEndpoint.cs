@@ -13,7 +13,7 @@ using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
 
-using UseCases.Admin.Permissions.List;
+using UseCases.Admin.Identity.Permissions.List;
 using UseCases.Common.Extensions;
 using UseCases.Common.Security.Authorization.Attributes;
 using UseCases.Common.Security.Authorization.Permissions;

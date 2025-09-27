@@ -1,4 +1,5 @@
 using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -10,7 +11,6 @@ using SharedKernel.Messaging.Abstracts;
 using SharedKernel.Models.PagedLists;
 
 using UseCases.Admin.Identity.Users.Common;
-using UseCases.Common.Security.Authorization.Permissions;
 
 namespace UseCases.Admin.Identity.Users.List;
 
@@ -31,7 +31,7 @@ public static partial class ListUsers
         bool? EmailConfirmed = null
     ) : IQuery<PagedList<Result>>;
 
-    public sealed record Result : UserListResult;
+    public sealed record Result : UserResult.ListItem;
 
     public sealed class Handler(
         UserManager<User> userManager,

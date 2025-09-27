@@ -1,4 +1,4 @@
-﻿namespace Core.Identity;
+﻿namespace Core.Identity.Users;
 public partial class UserRole
 {
     public static class Constraints

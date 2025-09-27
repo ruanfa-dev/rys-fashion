@@ -1,4 +1,5 @@
-using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -9,7 +10,7 @@ using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Accounts.Common;
 
-namespace UseCases.Admin.Roles.Delete;
+namespace UseCases.Admin.Identity.Roles.Delete;
 
 public static partial class DeleteRole
 {

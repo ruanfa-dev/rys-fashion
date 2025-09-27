@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Core.Identity.Roles;
+
+using Microsoft.AspNetCore.Identity;
 
 using SharedKernel.Domain.Attributes;
 
-namespace Core.Identity;
+namespace Core.Identity.Users;
 public partial class UserRole : IdentityUserRole<Guid>, IAssignable
 {
     #region Properties

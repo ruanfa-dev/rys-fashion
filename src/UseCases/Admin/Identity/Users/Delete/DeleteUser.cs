@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Users.Delete;
+namespace UseCases.Admin.Identity.Users.Delete;
 
 public static partial class DeleteUser
 {

@@ -1,12 +1,4 @@
-﻿using ErrorOr;
-
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
-using SharedKernel.Models;
-using SharedKernel.Models.PagedLists;
-
-namespace UseCases.Common.Extensions;
+﻿namespace UseCases.Common.Extensions;
 
 /// <summary>
 /// Main entry point for ErrorOr extensions. This class provides a unified API surface

@@ -2,48 +2,54 @@ using SharedKernel.Models.PagedLists;
 
 namespace UseCases.Admin.Identity.Roles.Common;
 
-/// <summary>
-/// Base result for role operations
-/// </summary>
-public record RoleResult : RoleParam
+
+public class RoleResult
 {
-    public required Guid Id { get; init; }
-    public bool IsDefault { get; init; } = false;
-    public DateTimeOffset CreatedAt { get; init; }
-    public string? CreatedBy { get; init; }
-    public int UserCount { get; init; } = 0;
-    public int PermissionCount { get; init; } = 0;
+    /// <summary>
+    /// Base result for role operations
+    /// </summary>
+    public record ListItem : RoleParam
+    {
+        public required Guid Id { get; init; }
+        public bool IsDefault { get; init; } = false;
+        public DateTimeOffset CreatedAt { get; init; }
+        public string? CreatedBy { get; init; }
+        public int UserCount { get; init; } = 0;
+        public int PermissionCount { get; init; } = 0;
+    }
+
+    /// <summary>
+    /// Detailed result for role operations with comprehensive information
+    /// </summary>
+    public record Detail : ListItem
+    {
+        #region Audit Information
+        public DateTimeOffset? UpdatedAt { get; init; }
+        public string? UpdatedBy { get; init; }
+        #endregion
+
+        #region Permissions and Users
+        public string[] Permissions { get; init; } = [];
+        public PagedList<UserInRoleListItemResult> Users { get; init; } = null!;
+        #endregion
+    }
+
+    /// <summary>
+    /// Select item result for dropdowns and selections
+    /// </summary>
+    public record OptionItem
+    {
+        public required Guid Id { get; init; }
+        public required string Name { get; init; }
+        public string? Description { get; init; }
+        public bool IsDefault { get; init; } = true;
+        public bool IsSystemRole { get; init; } = false;
+        public int UserCount { get; init; } = 0;
+    }
+
 }
 
-/// <summary>
-/// Detailed result for role operations with comprehensive information
-/// </summary>
-public record RoleDetailedResult : RoleResult
-{
-    #region Audit Information
-    public DateTimeOffset? UpdatedAt { get; init; }
-    public string? UpdatedBy { get; init; }
-    #endregion
 
-    #region Permissions and Users
-    public string[] Permissions { get; init; } = [];
-    public PagedList<UserInRoleListItemResult> Users { get; init; } = default!;
-    #endregion
-}
-
-
-/// <summary>
-/// Select item result for dropdowns and selections
-/// </summary>
-public record RoleSelectItemResult
-{
-    public required Guid Id { get; init; }
-    public required string Name { get; init; }
-    public string? Description { get; init; }
-    public bool IsDefault { get; init; } = true;
-    public bool IsSystemRole { get; init; } = false;
-    public int UserCount { get; init; } = 0;
-}
 
 
 /// <summary>

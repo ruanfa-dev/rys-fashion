@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using Ardalis.GuardClauses;
 
 using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 

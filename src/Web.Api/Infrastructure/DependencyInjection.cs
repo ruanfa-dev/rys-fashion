@@ -1,6 +1,4 @@
-﻿using System;
-
-using Carter;
+﻿using Carter;
 
 using Microsoft.AspNetCore.DataProtection;
 

@@ -1,4 +1,5 @@
-using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -11,11 +12,11 @@ using SharedKernel.Messaging.Abstracts;
 using UseCases.Admin.Identity.Users.Common;
 using UseCases.Common.Security.Authorization.Claims;
 
-namespace UseCases.Admin.Users.GetById;
+namespace UseCases.Admin.Identity.Users.GetById;
 
 public static partial class GetUserById
 {
-    public sealed record Result : UserDetailedResult;
+    public sealed record Result : UserResult.Detail;
 
     public sealed record Query(Guid Id) : IQuery<Result>;
 
@@ -98,7 +99,7 @@ public static partial class GetUserById
                     CurrentSignInIp = user.CurrentSignInIp,
                     SignInCount = user.SignInCount,
                     Roles = roles?.ToArray(),
-                    RolePermissions = rolePermissions?.ToArray(),
+                    RolePermissions = rolePermissions.ToArray(),
                     UserPermissions = userPermissions.ToArray(),
                     PhoneNumberConfirmed = user.PhoneNumberConfirmed,
                 };

@@ -13,7 +13,6 @@ using UseCases.Accounts.Authentication.Login.Password;
 using UseCases.Accounts.Authentication.LogOut;
 using UseCases.Accounts.Authentication.Register;
 using UseCases.Accounts.Authentication.Sessions;
-using UseCases.Accounts.Sessions.Get;
 using UseCases.Common.Extensions;
 
 namespace UseCases.Accounts.Authentication;

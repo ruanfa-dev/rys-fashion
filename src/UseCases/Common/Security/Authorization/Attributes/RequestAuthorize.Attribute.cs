@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-using System.Collections.Generic;
-
 using UseCases.Common.Security.Authorization.Claims;
 
 namespace UseCases.Common.Security.Authorization.Attributes;

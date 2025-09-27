@@ -1,4 +1,4 @@
-﻿namespace Core.Identity;
+﻿namespace Core.Identity.Permissions;
 
 /// <summary>
 /// Represents permission helpers and related types used across the identity system.

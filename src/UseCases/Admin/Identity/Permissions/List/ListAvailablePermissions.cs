@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Permissions.List;
+namespace UseCases.Admin.Identity.Permissions.List;
 
 public static partial class ListAvailablePermissions
 {

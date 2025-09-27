@@ -1,4 +1,4 @@
-﻿namespace UseCases.Accounts.Sessions.Get;
+﻿namespace UseCases.Accounts.Authentication.Sessions;
 public static partial class GetSession
 {
     public const string Name = nameof(GetSession);

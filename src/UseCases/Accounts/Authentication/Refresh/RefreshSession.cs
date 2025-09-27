@@ -1,4 +1,4 @@
-﻿namespace UseCases.Accounts.Authentication.Sessions.Refresh;
+﻿namespace UseCases.Accounts.Authentication.Refresh;
 public static partial class RefreshSession
 {
     public const string Name = nameof(RefreshSession);

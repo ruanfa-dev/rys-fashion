@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Roles;
 
 using ErrorOr;
 
@@ -11,9 +11,8 @@ using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Accounts.Common;
 using UseCases.Admin.Identity.Roles.Common;
-using UseCases.Admin.Roles.Common;
 
-namespace UseCases.Admin.Roles.Create;
+namespace UseCases.Admin.Identity.Roles.Create;
 
 public static partial class CreateRole
 {

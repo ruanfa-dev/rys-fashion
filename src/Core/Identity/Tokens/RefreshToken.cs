@@ -1,7 +1,9 @@
-﻿namespace Core.Identity;
-
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
+
+using Core.Identity.Users;
+
+namespace Core.Identity.Tokens;
 
 /// <summary>
 /// Represents a refresh token for a user.

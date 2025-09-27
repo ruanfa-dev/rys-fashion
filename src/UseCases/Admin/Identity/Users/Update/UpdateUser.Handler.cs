@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -11,15 +11,14 @@ using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Accounts.Common;
 using UseCases.Admin.Identity.Users.Common;
-using UseCases.Admin.Users.Common;
 using UseCases.Common.Persistence.Context;
 
-namespace UseCases.Admin.Users.Update;
+namespace UseCases.Admin.Identity.Users.Update;
 
 public static partial class UpdateUser
 {
     public sealed record Param : UserParam;
-    public sealed record Result : UserResult;
+    public sealed record Result : UserResult.ListItem;
 
     public sealed record Command(Guid Id, Param Param) : ICommand<Result>;
     public sealed class CommandValidator : AbstractValidator<Command>

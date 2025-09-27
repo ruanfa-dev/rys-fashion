@@ -1,6 +1,4 @@
-﻿using FluentValidation;
-
-namespace UseCases.Accounts.Phone.Confirm;
+﻿namespace UseCases.Accounts.Phone.Confirm;
 public static partial class ConfirmPhoneChange
 {
     public const string Name = nameof(ConfirmPhoneChange);

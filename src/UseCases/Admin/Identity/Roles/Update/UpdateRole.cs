@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Roles.Update;
+namespace UseCases.Admin.Identity.Roles.Update;
 
 public static partial class UpdateRole
 {

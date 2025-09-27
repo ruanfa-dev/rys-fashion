@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Users.Update;
+namespace UseCases.Admin.Identity.Users.Update;
 
 public static partial class UpdateUser
 {

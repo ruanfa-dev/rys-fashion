@@ -1,4 +1,4 @@
-﻿namespace UseCases.Admin.Users.Permissions.AssignBatch;
+﻿namespace UseCases.Admin.Identity.Users.Permissions.AssignBatch;
 
 public static partial class AssignBatchPermissionsToUser
 {

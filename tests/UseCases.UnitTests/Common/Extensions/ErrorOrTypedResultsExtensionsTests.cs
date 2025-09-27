@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
-using ErrorOr;
+﻿using ErrorOr;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+
 using Shouldly;
+
 using UseCases.Common.Extensions;
-using Xunit;
 
 namespace UseCases.UnitTests.Common.Extensions;
 

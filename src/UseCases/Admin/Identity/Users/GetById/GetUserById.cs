@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Users.GetById;
+namespace UseCases.Admin.Identity.Users.GetById;
 
 public static partial class GetUserById
 {

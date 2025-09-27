@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Users.Create;
+namespace UseCases.Admin.Identity.Users.Create;
 
 public static partial class CreateUser
 {

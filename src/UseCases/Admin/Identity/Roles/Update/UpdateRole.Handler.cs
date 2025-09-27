@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Roles;
 
 using ErrorOr;
 
@@ -10,9 +10,8 @@ using Microsoft.Extensions.Logging;
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Admin.Identity.Roles.Common;
-using UseCases.Admin.Roles.Common;
 
-namespace UseCases.Admin.Roles.Update;
+namespace UseCases.Admin.Identity.Roles.Update;
 
 public static partial class UpdateRole
 {
@@ -20,7 +19,7 @@ public static partial class UpdateRole
     public sealed record Command(Guid Id, Param Param) : ICommand<Result>;
 
     public sealed record Param : RoleParam;
-    public sealed record Result : RoleResult;
+    public sealed record Result : RoleResult.ListItem;
     public sealed class CommandValidator : AbstractValidator<Command>
     {
         public CommandValidator()
@@ -80,7 +79,7 @@ public static partial class UpdateRole
                     CreatedBy = role.CreatedBy,
                     UserCount = role.UserRoles?.Count ?? 0,
                     PermissionCount = role.RoleClaims?.Count ?? 0,
-                    
+
                 };
             }
             catch (Exception ex)

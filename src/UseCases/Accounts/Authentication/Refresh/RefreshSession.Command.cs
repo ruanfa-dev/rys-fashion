@@ -1,4 +1,5 @@
-﻿using Core.Identity;
+﻿using Core.Identity.Tokens;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -13,7 +14,7 @@ using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authentication.Tokens.Models;
 using UseCases.Common.Security.Authentication.Tokens.Services;
 
-namespace UseCases.Accounts.Authentication.Sessions.Refresh;
+namespace UseCases.Accounts.Authentication.Refresh;
 public static partial class RefreshSession
 {
     public sealed record Command(Param Param) : ICommand<AuthenticationResult>;

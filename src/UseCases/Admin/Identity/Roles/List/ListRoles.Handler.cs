@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Roles;
 
 using ErrorOr;
 
@@ -16,7 +16,7 @@ using UseCases.Admin.Identity.Roles.Common;
 using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authorization.Claims;
 
-namespace UseCases.Admin.Roles.List;
+namespace UseCases.Admin.Identity.Roles.List;
 
 public static partial class ListRoles
 {
@@ -25,7 +25,7 @@ public static partial class ListRoles
         public bool? IsSystemRole { get; init; }
         public bool? IsDefault { get; init; }
     }
-    public sealed record Result : RoleResult;
+    public sealed record Result : RoleResult.ListItem;
     public sealed record Query(Param Param) : IQuery<PagedList<Result>>;
 
     public sealed class Handler(

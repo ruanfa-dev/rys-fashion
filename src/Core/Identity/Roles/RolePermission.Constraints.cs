@@ -1,4 +1,4 @@
-namespace Core.Identity;
+namespace Core.Identity.Roles;
 
 /// <summary>
 /// Business constraints for role permission management operations

@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 
-using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -16,7 +17,7 @@ using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authentication.Contexts;
 using UseCases.Common.Security.Authorization.Claims;
 
-namespace UseCases.Admin.Roles.Permissions.AssignBatch;
+namespace UseCases.Admin.Identity.Roles.Permissions.AssignBatch;
 
 public static partial class AssignBatchPermissionsToRole
 {

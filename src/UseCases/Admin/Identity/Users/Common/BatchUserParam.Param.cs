@@ -1,9 +1,7 @@
 ﻿using Core.Identity;
+using Core.Identity.Users;
 
 using FluentValidation;
-
-using UseCases.Admin.Roles.Common;
-using UseCases.Common.Constants.Enums;
 
 namespace UseCases.Admin.Identity.Users.Common;
 /// <summary>

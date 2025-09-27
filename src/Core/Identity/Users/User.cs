@@ -1,10 +1,10 @@
-﻿using Core.Identity.Users;
+﻿using Core.Identity.Tokens;
 
 using Microsoft.AspNetCore.Identity;
 
 using SharedKernel.Domain.Attributes;
 
-namespace Core.Identity;
+namespace Core.Identity.Users;
 
 public partial class User : IdentityUser<Guid>, IAuditable
 {

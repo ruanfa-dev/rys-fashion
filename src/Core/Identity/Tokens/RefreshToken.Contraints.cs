@@ -1,4 +1,4 @@
-﻿namespace Core.Identity;
+﻿namespace Core.Identity.Tokens;
 public sealed partial class RefreshToken
 {
     public static class Constraints

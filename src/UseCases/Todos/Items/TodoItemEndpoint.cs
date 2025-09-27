@@ -4,10 +4,10 @@ using MediatR;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
+
 using UseCases.Common.Extensions;
 using UseCases.Common.Security.Authorization.Attributes;
 using UseCases.Common.Security.Authorization.Permissions;

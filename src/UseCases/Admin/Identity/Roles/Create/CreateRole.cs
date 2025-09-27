@@ -1,4 +1,4 @@
-namespace UseCases.Admin.Roles.Create;
+namespace UseCases.Admin.Identity.Roles.Create;
 
 public static partial class CreateRole
 {

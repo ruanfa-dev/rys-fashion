@@ -1,4 +1,5 @@
-using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -10,11 +11,10 @@ using Microsoft.Extensions.Logging;
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Admin.Identity.Roles.Common;
-using UseCases.Admin.Roles.Common;
 using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authentication.Contexts;
 
-namespace UseCases.Admin.Users.Roles.AssignBatch;
+namespace UseCases.Admin.Identity.Users.Roles.AssignBatch;
 
 public static partial class AssignBatchRolesToUser
 {
@@ -57,7 +57,7 @@ public static partial class AssignBatchRolesToUser
                 // Validate all roles exist upfront and get their names
                 var roleNames = new List<string>();
                 var nonExistentRoles = new List<Error>();
-                
+
                 foreach (var roleId in param.RoleIds)
                 {
                     var role = await roleManager.FindByIdAsync(roleId);

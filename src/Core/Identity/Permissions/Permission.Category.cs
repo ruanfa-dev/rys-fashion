@@ -1,4 +1,4 @@
-﻿namespace Core.Identity;
+﻿namespace Core.Identity.Permissions;
 
 public partial class Permission
 {

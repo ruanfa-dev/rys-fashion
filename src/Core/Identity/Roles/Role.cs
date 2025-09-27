@@ -1,10 +1,10 @@
-﻿using Core.Identity.Roles;
+﻿using Core.Identity.Users;
 
 using Microsoft.AspNetCore.Identity;
 
 using SharedKernel.Domain.Attributes;
 
-namespace Core.Identity;
+namespace Core.Identity.Roles;
 public partial class Role : IdentityRole<Guid>, IAuditable
 {
     #region Properties

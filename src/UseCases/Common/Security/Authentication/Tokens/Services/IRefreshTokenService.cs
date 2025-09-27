@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-using ErrorOr;
+﻿using ErrorOr;
 
 using UseCases.Common.Security.Authentication.Tokens.Models;
 

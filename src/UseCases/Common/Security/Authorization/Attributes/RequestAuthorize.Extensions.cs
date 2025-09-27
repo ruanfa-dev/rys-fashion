@@ -1,9 +1,9 @@
 ﻿using System.Collections.Concurrent;
 
 using Core.Identity;
+using Core.Identity.Permissions;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Authorization;
 
 namespace UseCases.Common.Security.Authorization.Attributes;
 

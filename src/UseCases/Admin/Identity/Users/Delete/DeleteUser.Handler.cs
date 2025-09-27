@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -10,11 +10,11 @@ using SharedKernel.Messaging.Abstracts;
 using UseCases.Admin.Identity.Users.Common;
 using UseCases.Common.Persistence.Context;
 
-namespace UseCases.Admin.Users.Delete;
+namespace UseCases.Admin.Identity.Users.Delete;
 
 public static partial class DeleteUser
 {
-    public sealed record Result : UserResult;
+    public sealed record Result : UserResult.ListItem;
     public sealed record Command(Guid Id) : ICommand<Result>;
     public sealed class Handler(
         UserManager<User> userManager,

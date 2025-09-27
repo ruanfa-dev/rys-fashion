@@ -1,4 +1,5 @@
 ﻿using Core.Identity;
+using Core.Identity.Permissions;
 
 namespace UseCases.Common.Security.Authorization.Permissions;
 
@@ -11,7 +12,8 @@ public static partial class Feature
             .. User.All,
             .. Role.All,
             .. AccessPermission.All,
-            .. AuditLog.All
+            .. AuditLog.All,
+            .. Property.All
         ];
     }
 }

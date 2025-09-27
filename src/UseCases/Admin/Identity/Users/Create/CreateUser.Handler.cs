@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -11,15 +11,14 @@ using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Accounts.Common;
 using UseCases.Admin.Identity.Users.Common;
-using UseCases.Admin.Users.Common;
 using UseCases.Common.Persistence.Context;
 
-namespace UseCases.Admin.Users.Create;
+namespace UseCases.Admin.Identity.Users.Create;
 
 public static partial class CreateUser
 {
     public sealed record Param : UserCreateParam;
-    public sealed record Result : UserResult;
+    public sealed record Result : UserResult.ListItem;
     public sealed record Command(Param Param) : ICommand<Result>;
 
     public sealed class Validator : AbstractValidator<Command>

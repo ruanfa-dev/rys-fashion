@@ -1,6 +1,6 @@
 ﻿using SharedKernel.Domain.Primitives;
 
-namespace Core.Identity;
+namespace Core.Identity.Permissions;
 
 /// <summary>
 /// Represents a permission identifier in the system using a three segment name:

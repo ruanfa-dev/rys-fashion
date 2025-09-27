@@ -1,4 +1,5 @@
-﻿using Core.Identity;
+﻿using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -14,7 +15,7 @@ using UseCases.Admin.Identity.Users.Common;
 using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authentication.Contexts;
 
-namespace UseCases.Admin.Roles.Users.AssignBatch;
+namespace UseCases.Admin.Identity.Roles.Users.AssignBatch;
 
 public static partial class AssignRoleToBatchUsers
 {

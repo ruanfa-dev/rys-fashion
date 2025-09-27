@@ -1,6 +1,6 @@
 using ErrorOr;
 
-namespace Core.Identity;
+namespace Core.Identity.Tokens;
 
 public sealed partial class Jwt
 {

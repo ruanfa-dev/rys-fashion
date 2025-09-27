@@ -3,7 +3,6 @@
 using Infrastructure.Security.Authentication.Options;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 

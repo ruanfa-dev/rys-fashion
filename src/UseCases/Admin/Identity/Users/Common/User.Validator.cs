@@ -1,10 +1,11 @@
 using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using FluentValidation;
 
-using UseCases.Admin.Permissions.Common;
-using UseCases.Admin.Roles.Common;
-using UseCases.Common.Security.Authorization.Permissions;
+using UseCases.Admin.Identity.Permissions.Common;
+using UseCases.Admin.Identity.Roles.Common;
 
 namespace UseCases.Admin.Identity.Users.Common;
 
@@ -92,7 +93,7 @@ public sealed class UserCreateParamValidator : AbstractValidator<UserCreateParam
 
         RuleFor(x => x.Roles)
             .ForEach(m => m.SetValidator(new RoleNameValidator()))
-            .When(x => x.Roles != null && x.Roles.Length > 0);
+            .When(x => x.Roles is { Length: > 0 });
     }
 }
 

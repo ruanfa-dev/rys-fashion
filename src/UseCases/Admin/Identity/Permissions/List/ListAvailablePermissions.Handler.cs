@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Permissions;
 
 using ErrorOr;
 
@@ -11,7 +11,7 @@ using SharedKernel.Models.Sort;
 using UseCases.Admin.Identity.Permissions.Common;
 using UseCases.Common.Persistence.Context;
 
-namespace UseCases.Admin.Permissions.List;
+namespace UseCases.Admin.Identity.Permissions.List;
 
 public static partial class ListAvailablePermissions
 {
