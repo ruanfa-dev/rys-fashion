@@ -1,6 +1,5 @@
 ﻿using Ardalis.GuardClauses;
 
-using Infrastructure.Persistence.Constants;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Interceptors;
 using Infrastructure.Persistence.Options;
@@ -8,7 +7,6 @@ using Infrastructure.Persistence.Seeders;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -2,7 +2,8 @@
 using System.Security.Claims;
 using System.Text;
 
-using Core.Identity;
+using Core.Identity.Tokens;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -34,7 +35,7 @@ public sealed class JwtTokenService : IJwtTokenService
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            RequireSignedTokens = true,               
+            RequireSignedTokens = true,
             ClockSkew = TimeSpan.FromMinutes(5), // Allow 5 minutes clock skew
             ValidIssuer = _jwtOptions.Issuer,
             ValidAudience = _jwtOptions.Audience,

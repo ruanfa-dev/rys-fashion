@@ -1,7 +1,9 @@
 using System.Reflection;
 
-using Core.Identity;
+using Core.Catalog.Properties;
+using Core.Identity.Permissions;
 using Core.Identity.Roles;
+using Core.Identity.Tokens;
 using Core.Identity.Users;
 using Core.Todos;
 
@@ -19,8 +21,8 @@ namespace Infrastructure.Persistence.Contexts;
 public sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<
-        User, Role, Guid, 
-        UserClaim, UserRole, IdentityUserLogin<Guid>, 
+        User, Role, Guid,
+        UserClaim, UserRole, IdentityUserLogin<Guid>,
         RoleClaim, IdentityUserToken<Guid>>(options),
       IApplicationDbContext
 {
@@ -37,4 +39,7 @@ public sealed class ApplicationDbContext(
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<TodoList> TodoLists { get; set; } = null!;
     public DbSet<TodoItem> TodoItems { get; set; } = null!;
+
+    // Catalog
+    public DbSet<Property> Properties { get; set; } = null!;
 }

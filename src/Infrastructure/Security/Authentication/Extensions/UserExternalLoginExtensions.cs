@@ -1,7 +1,7 @@
 using Core.Identity;
+using Core.Identity.Users;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Security.Authentication.Extensions;
 

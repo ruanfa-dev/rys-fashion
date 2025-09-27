@@ -4,6 +4,8 @@ using System.Text.Json;
 using AsyncKeyedLock;
 
 using Core.Identity;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using Infrastructure.Security.Authorization.Options;
 

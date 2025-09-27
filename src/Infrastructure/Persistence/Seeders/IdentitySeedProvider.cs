@@ -1,4 +1,7 @@
 ﻿using Core.Identity;
+using Core.Identity.Permissions;
+using Core.Identity.Roles;
+using Core.Identity.Users;
 
 using Infrastructure.Persistence.Contexts;
 

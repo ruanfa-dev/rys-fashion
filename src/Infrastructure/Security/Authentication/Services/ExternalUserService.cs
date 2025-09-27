@@ -1,4 +1,4 @@
-using Core.Identity;
+using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -13,25 +13,17 @@ namespace Infrastructure.Security.Authentication.Services;
 /// <summary>
 /// Service for managing external user authentication and integration with Identity EF Core
 /// </summary>
-public sealed class ExternalUserService : IExternalUserService
+public sealed class ExternalUserService(
+    UserManager<User> userManager,
+    ILogger<ExternalUserService> logger)
+    : IExternalUserService
 {
-    private readonly UserManager<User> _userManager;
-    private readonly ILogger<ExternalUserService> _logger;
-
     // Supported external providers for production e-commerce
     private static readonly HashSet<string> SupportedProviders = new(StringComparer.OrdinalIgnoreCase)
     {
         "google",
         "facebook"
     };
-
-    public ExternalUserService(
-        UserManager<User> userManager,
-        ILogger<ExternalUserService> logger)
-    {
-        _userManager = userManager;
-        _logger = logger;
-    }
 
     /// <summary>
     /// Finds or creates a user based on external authentication information
@@ -45,7 +37,7 @@ public sealed class ExternalUserService : IExternalUserService
         // Validate provider is supported
         if (!SupportedProviders.Contains(provider))
         {
-            _logger.LogWarning("Attempted to use unsupported provider: {Provider}", provider);
+            logger.LogWarning("Attempted to use unsupported provider: {Provider}", provider);
             return Error.Validation("Provider.NotSupported", $"Provider '{provider}' is not supported");
         }
 
@@ -55,7 +47,7 @@ public sealed class ExternalUserService : IExternalUserService
             var existingUser = await FindUserByExternalLoginAsync(provider, externalUserInfo.ProviderId, cancellationToken);
             if (existingUser != null)
             {
-                _logger.LogDebug("Found existing user {UserId} with external login {Provider}:{ProviderId}",
+                logger.LogDebug("Found existing user {UserId} with external login {Provider}:{ProviderId}",
                     existingUser.Id, provider, externalUserInfo.ProviderId);
 
                 await UpdateUserFromExternalInfoAsync(existingUser, externalUserInfo, cancellationToken);
@@ -70,7 +62,7 @@ public sealed class ExternalUserService : IExternalUserService
                 var userByEmail = await FindUserByEmailAsync(externalUserInfo.Email, cancellationToken);
                 if (userByEmail != null)
                 {
-                    _logger.LogDebug("Found existing user {UserId} by email, linking external login {Provider}:{ProviderId}",
+                    logger.LogDebug("Found existing user {UserId} by email, linking external login {Provider}:{ProviderId}",
                         userByEmail.Id, provider, externalUserInfo.ProviderId);
 
                     var linkResult = await LinkExternalLoginToUserAsync(userByEmail, provider, externalUserInfo, cancellationToken);
@@ -85,7 +77,7 @@ public sealed class ExternalUserService : IExternalUserService
             }
 
             // Step 3: Create new user with external login
-            _logger.LogDebug("Creating new user for external login {Provider}:{ProviderId}",
+            logger.LogDebug("Creating new user for external login {Provider}:{ProviderId}",
                 provider, externalUserInfo.ProviderId);
 
             var createResult = await CreateUserWithExternalLoginAsync(externalUserInfo, provider, cancellationToken);
@@ -98,7 +90,7 @@ public sealed class ExternalUserService : IExternalUserService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during external user management for {Provider}:{ProviderId}",
+            logger.LogError(ex, "Error during external user management for {Provider}:{ProviderId}",
                 provider, externalUserInfo.ProviderId);
             return Error.Failure("ExternalUser.ManagementError", "Failed to manage external user authentication");
         }
@@ -111,16 +103,16 @@ public sealed class ExternalUserService : IExternalUserService
     {
         try
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+            var user = await userManager.FindByIdAsync(userId.ToString());
             if (user == null)
                 return false;
 
-            var logins = await _userManager.GetLoginsAsync(user);
+            var logins = await userManager.GetLoginsAsync(user);
             return logins.Any(l => l.LoginProvider.Equals(provider, StringComparison.OrdinalIgnoreCase));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking external login for user {UserId} and provider {Provider}", userId, provider);
+            logger.LogError(ex, "Error checking external login for user {UserId} and provider {Provider}", userId, provider);
             return false;
         }
     }
@@ -132,15 +124,15 @@ public sealed class ExternalUserService : IExternalUserService
     {
         try
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+            var user = await userManager.FindByIdAsync(userId.ToString());
             if (user == null)
                 return new List<UserLoginInfo>();
 
-            return await _userManager.GetLoginsAsync(user);
+            return await userManager.GetLoginsAsync(user);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting external logins for user {UserId}", userId);
+            logger.LogError(ex, "Error getting external logins for user {UserId}", userId);
             return new List<UserLoginInfo>();
         }
     }
@@ -156,39 +148,39 @@ public sealed class ExternalUserService : IExternalUserService
     {
         try
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+            var user = await userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return Error.NotFound("User.NotFound", "User not found");
             }
 
             // Safety check: don't allow removal of last login method if user has no password
-            var hasPassword = await _userManager.HasPasswordAsync(user);
-            var logins = await _userManager.GetLoginsAsync(user);
+            var hasPassword = await userManager.HasPasswordAsync(user);
+            var logins = await userManager.GetLoginsAsync(user);
 
             if (!hasPassword && logins.Count <= 1)
             {
-                _logger.LogWarning("Attempted to remove last external login for user {UserId} without password", userId);
+                logger.LogWarning("Attempted to remove last external login for user {UserId} without password", userId);
                 return Error.Validation("ExternalLogin.CannotRemoveLast",
                     "Cannot remove the last external login. Set a password first or add another external login.");
             }
 
-            var result = await _userManager.RemoveLoginAsync(user, provider, providerKey);
+            var result = await userManager.RemoveLoginAsync(user, provider, providerKey);
             if (!result.Succeeded)
             {
-                _logger.LogError("Failed to remove external login for user {UserId}: {Errors}",
+                logger.LogError("Failed to remove external login for user {UserId}: {Errors}",
                     userId, string.Join(", ", result.Errors.Select(e => e.Description)));
                 return Error.Failure("ExternalLogin.RemovalFailed", "Failed to remove external login");
             }
 
-            _logger.LogInformation("Successfully removed external login {Provider}:{ProviderKey} for user {UserId}",
+            logger.LogInformation("Successfully removed external login {Provider}:{ProviderKey} for user {UserId}",
                 provider, providerKey, userId);
 
             return Result.Success;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing external login for user {UserId}", userId);
+            logger.LogError(ex, "Error removing external login for user {UserId}", userId);
             return Error.Failure("ExternalLogin.RemovalError", "Error occurred while removing external login");
         }
     }
@@ -202,11 +194,11 @@ public sealed class ExternalUserService : IExternalUserService
     {
         try
         {
-            return await _userManager.FindByLoginAsync(provider, providerKey);
+            return await userManager.FindByLoginAsync(provider, providerKey);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error finding user by external login {Provider}:{ProviderKey}", provider, providerKey);
+            logger.LogError(ex, "Error finding user by external login {Provider}:{ProviderKey}", provider, providerKey);
             return null;
         }
     }
@@ -215,11 +207,11 @@ public sealed class ExternalUserService : IExternalUserService
     {
         try
         {
-            return await _userManager.FindByEmailAsync(email);
+            return await userManager.FindByEmailAsync(email);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error finding user by email {Email}", email);
+            logger.LogError(ex, "Error finding user by email {Email}", email);
             return null;
         }
     }
@@ -235,15 +227,15 @@ public sealed class ExternalUserService : IExternalUserService
             providerKey: externalUserInfo.ProviderId,
             displayName: GetProviderDisplayName(provider));
 
-        var result = await _userManager.AddLoginAsync(user, externalLoginInfo);
+        var result = await userManager.AddLoginAsync(user, externalLoginInfo);
         if (!result.Succeeded)
         {
-            _logger.LogError("Failed to link external login to existing user {Email}: {Errors}",
+            logger.LogError("Failed to link external login to existing user {Email}: {Errors}",
                 user.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
             return Error.Failure("ExternalLogin.LinkFailed", "Failed to link external login to existing user");
         }
 
-        _logger.LogInformation("Successfully linked external login {Provider}:{ProviderId} to user {UserId}",
+        logger.LogInformation("Successfully linked external login {Provider}:{ProviderId} to user {UserId}",
             provider, externalUserInfo.ProviderId, user.Id);
 
         return Result.Success;
@@ -263,10 +255,10 @@ public sealed class ExternalUserService : IExternalUserService
             lastName: externalUserInfo.LastName);
 
         // Create the user
-        var createResult = await _userManager.CreateAsync(newUser);
+        var createResult = await userManager.CreateAsync(newUser);
         if (!createResult.Succeeded)
         {
-            _logger.LogError("Failed to create user from external token {Email}: {Errors}",
+            logger.LogError("Failed to create user from external token {Email}: {Errors}",
                 externalUserInfo.Email, string.Join(", ", createResult.Errors.Select(e => e.Description)));
             return Error.Failure("User.CreationFailed", "Failed to create user from external authentication");
         }
@@ -277,17 +269,17 @@ public sealed class ExternalUserService : IExternalUserService
             externalUserInfo.ProviderId,
             GetProviderDisplayName(provider));
 
-        var addLoginResult = await _userManager.AddLoginAsync(newUser, externalLoginInfo);
+        var addLoginResult = await userManager.AddLoginAsync(newUser, externalLoginInfo);
         if (!addLoginResult.Succeeded)
         {
             // Rollback: delete the created user if adding login fails
-            await _userManager.DeleteAsync(newUser);
-            _logger.LogError("Failed to add external login to new user {Email}: {Errors}",
+            await userManager.DeleteAsync(newUser);
+            logger.LogError("Failed to add external login to new user {Email}: {Errors}",
                 externalUserInfo.Email, string.Join(", ", addLoginResult.Errors.Select(e => e.Description)));
             return Error.Failure("ExternalLogin.AdditionFailed", "Failed to add external login to new user");
         }
 
-        _logger.LogInformation("Created new user {UserId} from external token via {Provider}",
+        logger.LogInformation("Created new user {UserId} from external token via {Provider}",
             newUser.Id, provider);
 
         return newUser;
@@ -325,15 +317,15 @@ public sealed class ExternalUserService : IExternalUserService
 
         if (updated)
         {
-            var updateResult = await _userManager.UpdateAsync(user);
+            var updateResult = await userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
-                _logger.LogWarning("Failed to update user {UserId} from external info: {Errors}",
+                logger.LogWarning("Failed to update user {UserId} from external info: {Errors}",
                     user.Id, string.Join(", ", updateResult.Errors.Select(e => e.Description)));
             }
             else
             {
-                _logger.LogDebug("Updated user {UserId} information from external provider", user.Id);
+                logger.LogDebug("Updated user {UserId} information from external provider", user.Id);
             }
         }
     }
@@ -352,7 +344,7 @@ public sealed class ExternalUserService : IExternalUserService
             ? externalUserInfo.FirstName.ToLowerInvariant()
             : "user";
 
-        return $"{baseName}_{externalUserInfo.ProviderId.Substring(0, Math.Min(8, externalUserInfo.ProviderId.Length))}";
+        return $"{baseName}_{externalUserInfo.ProviderId[..Math.Min(8, externalUserInfo.ProviderId.Length)]}";
     }
 
     private static string ExtractFirstNameFromEmail(string email)
