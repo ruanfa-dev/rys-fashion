@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Serilog;
 
+using SharedKernel.Extensions.Text;
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Admin.Catalogs.Properties.Commons;
@@ -40,7 +41,7 @@ public static partial class CreateProperty
                 var param = request.Param;
 
                 // Check: uniqueness of name
-                var name = param.Name.ComputeFilterParam();
+                var name = param.Name.Parameterize();
                 var exists = await context.Set<Property>()
                     .AnyAsync(p => p.Name == name, cancellationToken);
 
@@ -54,7 +55,9 @@ public static partial class CreateProperty
                     kind: param.Kind,
                     filterable: param.Filterable,
                     displayOn: param.DisplayOn,
-                    position: param.Position
+                    position: param.Position,
+                    publicMetadata: param.PublicMetadata,
+                    privateMetadata: param.PrivateMetadata
                 );
 
                 if (createResult.IsError)

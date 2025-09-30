@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Users;
+﻿using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -27,51 +26,41 @@ public static partial class UpdateProfile
         }
     }
 
-    public sealed class Handler : ICommandHandler<Command, Updated>
+    public sealed class Handler(
+        IUserContext userContext,
+        UserManager<User> userManager,
+        IUnitOfWork unitOfWork)
+        : ICommandHandler<Command, Updated>
     {
-        private readonly IUserContext _userContext;
-        private readonly UserManager<User> _userManager;
-        private readonly IUnitOfWork _unitOfWork;
-
-        public Handler(
-            IUserContext userContext,
-            UserManager<User> userManager,
-            IUnitOfWork unitOfWork)
-        {
-            _userContext = userContext;
-            _userManager = userManager;
-            _unitOfWork = unitOfWork;
-        }
-
         public async Task<ErrorOr<Updated>> Handle(Command command, CancellationToken cancellationToken)
         {
             try
             {
                 // Load: user context
-                var userId = _userContext.UserId;
-                var isAuthenticated = _userContext.IsAuthenticated;
+                var userId = userContext.UserId;
+                var isAuthenticated = userContext.IsAuthenticated;
 
                 // Check: user is authenticated
                 if (userId is null || !isAuthenticated)
                     return User.Errors.UserUnauthorized;
 
                 // Get: user
-                var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+                var user = await userManager.FindByIdAsync(userId.Value.ToString());
                 if (user is null)
                     return User.Errors.UserNotFound;
 
                 var param = command.Param;
 
                 // Begin: transaction
-                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+                await unitOfWork.BeginTransactionAsync(cancellationToken);
 
                 // Check: username uniqueness
                 if (!string.IsNullOrWhiteSpace(param.UserName) && param.UserName != user.UserName)
                 {
-                    var existingUser = await _userManager.FindByNameAsync(param.UserName);
+                    var existingUser = await userManager.FindByNameAsync(param.UserName);
                     if (existingUser is not null && existingUser.Id != user.Id)
                     {
-                        await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                        await unitOfWork.RollbackTransactionAsync(cancellationToken);
                         return User.Errors.UserNameAlreadyExists(param.UserName);
                     }
                 }
@@ -86,21 +75,21 @@ public static partial class UpdateProfile
                 if (!string.IsNullOrWhiteSpace(param.ProfileImagePath))
                     user.ProfileImagePath = param.ProfileImagePath;
 
-                var result = await _userManager.UpdateAsync(user);
+                var result = await userManager.UpdateAsync(user);
                 if (!result.Succeeded)
                 {
-                    await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                    await unitOfWork.RollbackTransactionAsync(cancellationToken);
                     return result.Errors.ToApplicationResult();
                 }
 
-                await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
-                await _unitOfWork.CommitTransactionAsync(cancellationToken);
+                await unitOfWork.Context.SaveChangesAsync(cancellationToken);
+                await unitOfWork.CommitTransactionAsync(cancellationToken);
 
                 return new Updated();
             }
             catch (Exception)
             {
-                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                await unitOfWork.RollbackTransactionAsync(cancellationToken);
                 return Error.Unexpected(
                     code: "UpdateProfile.Unexpected",
                     description: "An unexpected error occurred while updating the user profile."

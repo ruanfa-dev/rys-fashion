@@ -1,5 +1,4 @@
 ﻿using Core.Catalog.Properties;
-using Core.Identity;
 using Core.Identity.Permissions;
 using Core.Identity.Roles;
 using Core.Identity.Tokens;

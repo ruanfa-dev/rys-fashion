@@ -8,7 +8,7 @@ using SharedKernel.Messaging.Abstracts;
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Properties.Update;
-public partial class UpdateProperty
+public static partial class UpdateProperty
 {
     public class EventHandler : IDomainEventHandler<Property.Events.Updated>
     {

@@ -1,5 +1,5 @@
 ﻿namespace UseCases.Admin.Catalogs.Properties.Update;
-public partial class UpdateProperty
+public static partial class UpdateProperty
 {
     public const string Name = nameof(UpdateProperty);
     public const string Summary = "Update an existing property";

@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Users;
+﻿using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -23,35 +22,27 @@ public static partial class ChangePassword
             RuleFor(x => x.Param).SetValidator(new ParamValidator());
         }
     }
-    public sealed class Handler : ICommandHandler<Command, Updated>
+    public sealed class Handler(UserManager<User> userManager, IUserContext userContext)
+        : ICommandHandler<Command, Updated>
     {
-        private readonly UserManager<User> _userManager;
-        private readonly IUserContext _userContext;
-
-        public Handler(UserManager<User> userManager, IUserContext userContext)
-        {
-            _userManager = userManager;
-            _userContext = userContext;
-        }
-
         public async Task<ErrorOr<Updated>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = _userContext.UserId;
-            var isAuthenticated = _userContext.IsAuthenticated;
+            var userId = userContext.UserId;
+            var isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
             // Check: user exists
-            var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+            var user = await userManager.FindByIdAsync(userId.Value.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
             // Check: current password is correct
             var param = request.Param;
-            var result = await _userManager.ChangePasswordAsync(user, currentPassword: param.CurrentPassword, newPassword: param.NewPassword);
+            var result = await userManager.ChangePasswordAsync(user, currentPassword: param.CurrentPassword, newPassword: param.NewPassword);
             if (!result.Succeeded)
             {
                 return result.Errors.ToApplicationResult(fallbackCode: "");

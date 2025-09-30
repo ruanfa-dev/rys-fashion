@@ -38,7 +38,7 @@ public static class DependencyInjection
 
         // Add: Object-to-object mapping
         services.AddMappings();
-
+        
         Log.Information(LogTemplate.ComponentStarted, "Use Cases layer services registration");
         return services;
     }

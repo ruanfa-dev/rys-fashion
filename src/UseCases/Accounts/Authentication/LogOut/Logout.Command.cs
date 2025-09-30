@@ -18,7 +18,7 @@ public static partial class Logout
     public sealed class Handler(
         IRefreshTokenService refreshTokenService,
         IHttpContextAccessor accessor,
-        ILogger<Logout.Handler> logger) : ICommandHandler<Command, Deleted>
+        ILogger<Handler> logger) : ICommandHandler<Command, Deleted>
     {
         private readonly IRefreshTokenService _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
         private readonly IHttpContextAccessor _accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));

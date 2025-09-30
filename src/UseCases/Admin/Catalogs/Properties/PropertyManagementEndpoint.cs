@@ -24,6 +24,7 @@ using UseCases.Common.Security.Authorization.Attributes;
 using UseCases.Common.Security.Authorization.Permissions;
 
 namespace UseCases.Admin.Catalogs.Properties;
+
 public sealed class PropertyManagementEndpoint : ICarterModule
 {
     internal const string Route = "api/admin/properties";
@@ -52,7 +53,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             var apiResponse = result.ToApiResponseCreated("Property created successfully");
 
             // Add HATEOAS links for created property
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
@@ -69,7 +70,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .WithSummary(CreateProperty.Summary)
         .WithDescription(CreateProperty.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<CreateProperty.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<CreateProperty.Result>>()
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -128,7 +129,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .WithSummary(GetPropertyPagedList.Summary)
         .WithDescription(GetPropertyPagedList.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<List<GetPropertyPagedList.Result>>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<List<GetPropertyPagedList.Result>>>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
@@ -169,7 +170,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .WithSummary(GetPropertyOptionList.Summary)
         .WithDescription(GetPropertyOptionList.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<List<GetPropertyOptionList.Result>>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<List<GetPropertyOptionList.Result>>>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
@@ -204,7 +205,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .WithSummary(GetPropertyById.Summary)
         .WithDescription(GetPropertyById.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<GetPropertyById.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<GetPropertyById.Result>>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -239,7 +240,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .WithSummary(UpdateProperty.Summary)
         .WithDescription(UpdateProperty.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<UpdateProperty.Result>>(StatusCodes.Status200OK)
+        .Produces<ApiResponse<UpdateProperty.Result>>()
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -273,7 +274,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .WithSummary(DeleteProperty.Summary)
         .WithDescription(DeleteProperty.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse>(StatusCodes.Status200OK)
+        .Produces<ApiResponse>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)

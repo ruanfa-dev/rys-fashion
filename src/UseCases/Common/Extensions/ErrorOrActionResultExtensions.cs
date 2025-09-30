@@ -159,7 +159,7 @@ public static class ErrorOrActionResultExtensions
     /// </code>
     /// </example>
     public static IActionResult ToNoContentResult(this ErrorOr<Updated> result)
-        => result.Match<IActionResult>(
+        => result.Match(
             _ => new NoContentResult(),
             errors => errors.ToProblemDetailsActionResult());
 
@@ -180,7 +180,7 @@ public static class ErrorOrActionResultExtensions
     /// </code>
     /// </example>
     public static IActionResult ToNoContentResult(this ErrorOr<Deleted> result)
-        => result.Match<IActionResult>(
+        => result.Match(
             _ => new NoContentResult(),
             errors => errors.ToProblemDetailsActionResult());
 
@@ -415,15 +415,8 @@ public sealed class MvcControllerExampleService
 [Route("api/[controller]")]
 [Produces("application/json")]
 [ApiExplorerSettings(IgnoreApi = true)]
-internal sealed class CustomersController : ControllerBase
+internal sealed class CustomersController(MvcControllerExampleService customerService) : ControllerBase
 {
-    private readonly MvcControllerExampleService _customerService;
-
-    public CustomersController(MvcControllerExampleService customerService)
-    {
-        _customerService = customerService;
-    }
-
     /// <summary>
     /// Get customer by ID
     /// </summary>
@@ -438,7 +431,7 @@ internal sealed class CustomersController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Customer>> GetCustomer(int id)
     {
-        var result = await _customerService.GetCustomerByIdAsync(id);
+        var result = await customerService.GetCustomerByIdAsync(id);
         return result.ToActionResult();
     }
 
@@ -456,7 +449,7 @@ internal sealed class CustomersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<Customer>> CreateCustomer(CreateCustomerRequest request)
     {
-        var result = await _customerService.CreateCustomerAsync(request);
+        var result = await customerService.CreateCustomerAsync(request);
         return result.ToCreatedAtActionResult(nameof(GetCustomer), new { id = result.Value?.Id });
     }
 
@@ -475,7 +468,7 @@ internal sealed class CustomersController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerRequest request)
     {
-        var result = await _customerService.UpdateCustomerAsync(id, request);
+        var result = await customerService.UpdateCustomerAsync(id, request);
         return result.ToNoContentResult();
     }
 
@@ -491,7 +484,7 @@ internal sealed class CustomersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
-        var result = await _customerService.DeleteCustomerAsync(id);
+        var result = await customerService.DeleteCustomerAsync(id);
         return result.ToNoContentResult();
     }
 
@@ -508,7 +501,7 @@ internal sealed class CustomersController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<Customer>>> GetCustomers([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _customerService.GetCustomersPagedAsync(page, pageSize);
+        var result = await customerService.GetCustomersPagedAsync(page, pageSize);
         return result.ToActionResult();
     }
 
@@ -518,9 +511,9 @@ internal sealed class CustomersController : ControllerBase
     [HttpGet("{id:int}/alternative")]
     public async Task<IActionResult> GetCustomerAlternative(int id)
     {
-        var result = await _customerService.GetCustomerByIdAsync(id);
+        var result = await customerService.GetCustomerByIdAsync(id);
 
-        return result.Match<IActionResult>(
+        return result.Match(
             customer => Ok(customer),
             errors => errors.ToProblemDetailsActionResult()
         );
@@ -543,7 +536,7 @@ internal sealed class CustomersController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var result = await _customerService.CreateCustomerAsync(request);
+        var result = await customerService.CreateCustomerAsync(request);
         
         if (result.IsError)
             return result.Errors.ToProblemDetailsActionResult();

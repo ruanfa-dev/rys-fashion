@@ -18,7 +18,7 @@ using UseCases.Admin.Catalogs.Properties.Commons;
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Properties.Get.PagedList;
-public partial class GetPropertyPagedList
+public static partial class GetPropertyPagedList
 {
     public sealed record Param : QueryParams;
     public sealed record Result : PropertyResult.ListItem;

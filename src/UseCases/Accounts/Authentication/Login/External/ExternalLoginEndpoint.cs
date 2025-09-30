@@ -310,6 +310,6 @@ public sealed class ExternalLoginEndpoint : ICarterModule
     /// <returns>Array of supported provider names</returns>
     private static string[] GetSupportedProviders()
     {
-        return new[] { "google", "facebook" };
+        return ["google", "facebook"];
     }
 }

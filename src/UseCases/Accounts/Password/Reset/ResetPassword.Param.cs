@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Users;
+﻿using Core.Identity.Users;
 
 using FluentValidation;
 

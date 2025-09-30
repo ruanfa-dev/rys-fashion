@@ -1,7 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-using Core.Identity;
 using Core.Identity.Users;
 
 using ErrorOr;

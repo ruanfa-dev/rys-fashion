@@ -14,7 +14,7 @@ using UseCases.Admin.Catalogs.Properties.Commons;
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Properties.Get.Id;
-public partial class GetPropertyById
+public static partial class GetPropertyById
 {
     public record Result : PropertyResult.Details;
     public record Query(Guid Id) : IQuery<Result>;

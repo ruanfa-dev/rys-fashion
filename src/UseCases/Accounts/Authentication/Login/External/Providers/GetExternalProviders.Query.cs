@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Users;
+﻿using Core.Identity.Users;
 
 using ErrorOr;
 
@@ -148,8 +147,8 @@ public static partial class GetExternalProviders
         private static string[] GetProviderRequiredScopes(string providerName) =>
             providerName switch
             {
-                "google" => new[] { "openid", "email", "profile" },
-                "facebook" => new[] { "email", "public_profile" },
+                "google" => ["openid", "email", "profile"],
+                "facebook" => ["email", "public_profile"],
                 _ => Array.Empty<string>()
             };
 

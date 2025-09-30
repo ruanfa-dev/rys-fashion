@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Tokens;
+﻿using Core.Identity.Tokens;
 using Core.Identity.Users;
 
 namespace UseCases.Common.Security.Authentication.Tokens.Models;

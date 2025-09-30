@@ -1,7 +1,7 @@
 ﻿namespace UseCases.Admin.Catalogs.Properties.Commons;
 public class PropertyResult
 {
-    public record class ListItem : PropertyParam
+    public record ListItem : PropertyParam
     {
         // Identity
         public required Guid Id { get; set; }
@@ -15,13 +15,20 @@ public class PropertyResult
         public int PrototypeCount { get; set; } = 0;
     }
 
-    public record class Details : ListItem
+    public record Details : PropertyParam
     {
+        // Identity
+
+        public required Guid Id { get; set; }
+
+        // Audit
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
         public string? CreatedBy { get; set; }
         public string? UpdatedBy { get; set; }
     }
 
-    public record class ComboItem
+    public record ComboItem
     {
         public required Guid Id { get; set; }
         public required string Name { get; set; }

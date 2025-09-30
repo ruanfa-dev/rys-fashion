@@ -112,7 +112,7 @@ public static partial class GetOAuthConfig
                 ClientId = clientId,
                 AuthorizationUrl = "https://accounts.google.com/o/oauth2/v2/auth",
                 TokenUrl = "https://oauth2.googleapis.com/token",
-                Scopes = new[] { "openid", "email", "profile" },
+                Scopes = ["openid", "email", "profile"],
                 ResponseType = "code",
                 RequiresPKCE = true,
                 AdditionalParameters = new Dictionary<string, string>
@@ -149,7 +149,7 @@ public static partial class GetOAuthConfig
                 ClientId = appId,
                 AuthorizationUrl = "https://www.facebook.com/v18.0/dialog/oauth",
                 TokenUrl = "https://graph.facebook.com/v18.0/oauth/access_token",
-                Scopes = new[] { "email", "public_profile" },
+                Scopes = ["email", "public_profile"],
                 ResponseType = "code",
                 RequiresPKCE = false, // Facebook doesn't require PKCE but supports it
                 AdditionalParameters = new Dictionary<string, string>

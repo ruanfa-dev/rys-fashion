@@ -767,15 +767,8 @@ public sealed class ApiResponseWrappedExampleService
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-internal sealed class OrdersApiResponseController : ControllerBase
+internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleService orderService) : ControllerBase
 {
-    private readonly ApiResponseWrappedExampleService _orderService;
-
-    public OrdersApiResponseController(ApiResponseWrappedExampleService orderService)
-    {
-        _orderService = orderService;
-    }
-
     /// <summary>
     /// Get order by ID - Returns ApiResponse wrapper with preserved status codes.
     /// </summary>
@@ -786,7 +779,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> GetOrder(int id)
     {
-        var result = await _orderService.GetOrderByIdAsync(id);
+        var result = await orderService.GetOrderByIdAsync(id);
         var apiResponse = result.ToApiResponse("Order retrieved successfully");
 
         // Note: Always returns 200 OK, but the actual status is in apiResponse.Status
@@ -804,7 +797,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> CreateOrder(CreateOrderRequest request)
     {
-        var result = await _orderService.CreateOrderAsync(request);
+        var result = await orderService.CreateOrderAsync(request);
         var apiResponse = result.ToApiResponseCreated("Order created successfully");
 
         // Note: Returns 200 OK, but apiResponse.Status will be 201 on success
@@ -822,7 +815,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse>> UpdateOrderStatus(int id, [FromBody] string status)
     {
-        var result = await _orderService.UpdateOrderStatusAsync(id, status);
+        var result = await orderService.UpdateOrderStatusAsync(id, status);
         var apiResponse = result.ToApiResponseUpdated("Order status updated successfully");
 
         return Ok(apiResponse);
@@ -838,7 +831,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse>> CancelOrder(int id)
     {
-        var result = await _orderService.CancelOrderAsync(id);
+        var result = await orderService.CancelOrderAsync(id);
         var apiResponse = result.ToApiResponseDeleted("Order cancelled successfully");
 
         return Ok(apiResponse);
@@ -855,7 +848,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<List<Order>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<List<Order>>>> GetOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _orderService.GetOrdersPagedAsync(page, pageSize);
+        var result = await orderService.GetOrdersPagedAsync(page, pageSize);
         var apiResponse = result.ToApiResponsePaged("Orders retrieved successfully");
 
         return Ok(apiResponse);
@@ -871,7 +864,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> GetOrderWithLinks(int id)
     {
-        var result = await _orderService.GetOrderByIdAsync(id);
+        var result = await orderService.GetOrderByIdAsync(id);
         var links = new Dictionary<string, string>
         {
             ["self"] = $"/api/orders/{id}",
@@ -894,7 +887,7 @@ internal sealed class OrdersApiResponseController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> GetOrderWithMetadata(int id)
     {
-        var result = await _orderService.GetOrderByIdAsync(id);
+        var result = await orderService.GetOrderByIdAsync(id);
         var metadata = new Dictionary<string, object>
         {
             ["cached"] = true,
@@ -959,7 +952,7 @@ public static class ApiResponseMinimalApiExamples
         })
         .WithName("CancelOrderWrapped")
         .WithSummary("Cancel order with ApiResponse wrapper")
-        .Produces<ApiResponse>(StatusCodes.Status200OK);
+        .Produces<ApiResponse>();
 
         // GET /api/orders-wrapped - Returns paginated ApiResponse
         orders.MapGet("/", async (int page, int pageSize, ApiResponseWrappedExampleService orderService) =>

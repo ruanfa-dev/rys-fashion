@@ -1,5 +1,5 @@
 ﻿namespace UseCases.Admin.Catalogs.Properties.Delete;
-public partial class DeleteProperty
+public static partial class DeleteProperty
 {
     public const string Name = nameof(DeleteProperty);
     public const string Summary = "Delete a property";

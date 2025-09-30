@@ -1,5 +1,5 @@
 ﻿namespace UseCases.Admin.Catalogs.Properties.Get.OptionList;
-public partial class GetPropertyOptionList
+public static partial class GetPropertyOptionList
 {
     internal const string Name = "GetPropertyOptions";
     internal const string Summary = "Get options for a property";

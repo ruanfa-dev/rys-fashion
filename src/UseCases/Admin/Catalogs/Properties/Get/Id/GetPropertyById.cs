@@ -1,5 +1,5 @@
 ﻿namespace UseCases.Admin.Catalogs.Properties.Get.Id;
-public partial class GetPropertyById
+public static partial class GetPropertyById
 {
     public const string Name = "GetPropertyById";
     public const string Summary = "Get property by ID";

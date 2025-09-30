@@ -2,6 +2,8 @@
 
 using FluentValidation;
 
+using UseCases.Common.Validations.Attributes;
+
 namespace UseCases.Admin.Catalogs.Properties.Commons;
 
 public sealed class PropertyParamValidator : AbstractValidator<PropertyParam>
@@ -38,6 +40,8 @@ public sealed class PropertyParamValidator : AbstractValidator<PropertyParam>
             .InclusiveBetween(Property.Constraints.PositionMin, Property.Constraints.PositionMax)
             .WithErrorCode(Property.Errors.InvalidPosition.Code)
             .WithMessage(Property.Errors.InvalidPosition.Description);
+
+        Include(new MetadataSupportValidator());
 
     }
 }

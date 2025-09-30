@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Serilog;
 
+using SharedKernel.Extensions.Text;
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Admin.Catalogs.Properties.Commons;
@@ -18,7 +19,7 @@ using UseCases.Admin.Catalogs.Properties.Create;
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Properties.Update;
-public partial class UpdateProperty
+public static partial class UpdateProperty
 {
     public record Param : PropertyParam;
     public record Result : PropertyResult.ListItem;
@@ -51,7 +52,7 @@ public partial class UpdateProperty
                 var param = request.Param;
 
                 // Check: for name uniqueness
-                var name = param.Name.ComputeFilterParam();
+                var name = param.Name.Parameterize();
                 var nameExists = await dbContext.Set<Property>()
                     .AnyAsync(p => p.Id != request.Id && p.Name == name, cancellationToken);
                 if (nameExists)
@@ -64,7 +65,9 @@ public partial class UpdateProperty
                     kind: param.Kind,
                     filterable: param.Filterable,
                     displayOn: param.DisplayOn,
-                    position: param.Position
+                    position: param.Position,
+                    publicMetadata: param.PublicMetadata,
+                    privateMetadata: param.PrivateMetadata
                 );
                 if (updateResult.IsError)
                     return updateResult.Errors;

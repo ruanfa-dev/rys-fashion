@@ -1,7 +1,9 @@
 ﻿using Core.Catalog.Properties;
 
+using SharedKernel.Domain.Attributes.Metadata;
+
 namespace UseCases.Admin.Catalogs.Properties.Commons;
-public record PropertyParam
+public record PropertyParam : MetadataParam
 {
     public required string Name { get; set; }
     public required string Presentation { get; set; }
