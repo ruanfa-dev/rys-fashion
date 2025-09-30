@@ -1,34 +1,13 @@
-using SharedKernel.Extensions.Text;
 using SharedKernel.Domain.Attributes.TranslatableResource;
+using SharedKernel.Extensions.Text;
 
 namespace Core.Catalog.Taxonomies;
 
-public sealed class TaxonTranslation : ITranslation
+public sealed class TaxonTranslation : BaseTranslation
 {
     public Guid Id { get; set; }
 
     public Guid TaxonId { get; set; }
-
-    // Keep Locale for backward compatibility; map Culture to Locale for ITranslation
-    public string Locale { get; set; } = null!;
-
-    // ITranslation implementation
-    public string Culture
-    {
-        get => Locale;
-        set => Locale = value;
-    }
-
-    public bool IsDefault { get; set; }
-
-    /// <summary>
-    /// Generic fields dictionary used to store translated values for keys such as
-    /// "Name", "PrettyName", "Description", "Permalink". This replaces the previous
-    /// explicit properties to support the new ITranslation contract.
-    /// </summary>
-    public IDictionary<string, string?>? Fields { get; set; }
-
-    // Backing reference to parent taxon
     public Taxon? Taxon { get; set; }
 
     // Convenience accessors that read/write from Fields with sensible fallbacks
@@ -127,7 +106,7 @@ public sealed class TaxonTranslation : ITranslation
         if (string.IsNullOrWhiteSpace(Permalink))
         {
             string? source = string.IsNullOrWhiteSpace(Permalink) ? localizedName : Permalink?.Split('/').Last();
-            string slugPart = Slugifier.Parameterize(source ?? string.Empty);
+            string slugPart = (source ?? string.Empty).Parameterize();
             string? parentPermalink = null;
 
             if (taxon.Parent != null)
@@ -148,7 +127,7 @@ public sealed class TaxonTranslation : ITranslation
     string GenerateSlug()
     {
         if (Taxon == null)
-            return Slugifier.Parameterize(Permalink ?? Name ?? string.Empty);
+            return (Permalink ?? Name ?? string.Empty).Parameterize();
 
         if (Taxon.Parent != null)
         {
@@ -158,14 +137,14 @@ public sealed class TaxonTranslation : ITranslation
                 : Taxon.Parent.Permalink;
 
             string? source = string.IsNullOrWhiteSpace(Permalink) ? Name : Permalink?.Split('/').Last();
-            string slugPart = Slugifier.Parameterize(source ?? string.Empty);
+            string slugPart = (source ?? string.Empty).Parameterize();
             return string.Join('/', new[] { parentPermalink?.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
 
         if (string.IsNullOrWhiteSpace(Permalink))
-            return Slugifier.Parameterize(Name ?? string.Empty);
+            return (Name ?? string.Empty).Parameterize();
 
-        return Slugifier.Parameterize(Permalink ?? string.Empty);
+        return (Permalink ?? string.Empty).Parameterize();
     }
 
     string GeneratePrettyName()

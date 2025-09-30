@@ -24,3 +24,10 @@ public record TranslationParam : ITranslation
     public bool IsDefault { get; set; }
     public IDictionary<string, string?>? Fields { get; set; }
 }
+
+public abstract class BaseTranslation : ITranslation
+{
+    public string Culture { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
+    public IDictionary<string, string?>? Fields { get; set; }
+}

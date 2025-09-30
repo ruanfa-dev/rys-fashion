@@ -53,7 +53,7 @@ public static partial class CreateTaxon
                     .Include(tx => tx.Taxons)
                     .FirstOrDefaultAsync(tx => tx.Id == param.TaxonomyId, cancellationToken);
                 if (taxonomy == null)
-                    return Taxon.Errors.UnexpectedError("TaxonomyNotFound", new Exception($"Taxonomy {param.TaxonomyId} not found"));
+                    return Taxon.Errors.NotFound(param.TaxonomyId);
 
                 // Create taxon
                 ErrorOr<Taxon> createResult = Taxon.Create(

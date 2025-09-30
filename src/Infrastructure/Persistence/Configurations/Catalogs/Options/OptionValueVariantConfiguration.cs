@@ -11,10 +11,21 @@ public class OptionValueVariantConfiguration : IEntityTypeConfiguration<OptionVa
 {
     public void Configure(EntityTypeBuilder<OptionValueVariant> builder)
     {
-    builder.ToTable(Schema.VariantOptionValues);
+        // Table name
+        builder.ToTable(Schema.VariantOptionValues);
+
+        // Primary key
         builder.HasKey(ovv => ovv.Id);
 
-        builder.HasOne(ovv => ovv.OptionValue).WithMany(ov => ov.OptionValueVariants).HasForeignKey(ovv => ovv.OptionValueId).OnDelete(DeleteBehavior.Cascade);
-        builder.HasOne(ovv => ovv.Variant).WithMany(v => v.OptionValueVariants).HasForeignKey(ovv => ovv.VariantId).OnDelete(DeleteBehavior.Cascade);
+        // Properties
+        builder.Property(ovv => ovv.OptionValueId).IsRequired();
+        builder.HasOne(ovv => ovv.OptionValue)
+            .WithMany(ov => ov.OptionValueVariants)
+            .HasForeignKey(ovv => ovv.OptionValueId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(ovv => ovv.Variant)
+            .WithMany(v => v.OptionValueVariants)
+            .HasForeignKey(ovv => ovv.VariantId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
