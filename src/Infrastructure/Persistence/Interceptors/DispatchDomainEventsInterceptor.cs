@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using SharedKernel.Domain.Attributes;
+using SharedKernel.Messaging.Abstracts;
 
 namespace Infrastructure.Persistence.Interceptors;
 
@@ -26,7 +27,7 @@ internal class DispatchDomainEventsInterceptor(IMediator mediator) : SaveChanges
         if (context == null) return;
 
         // Get all entities with domain events
-        var entitiesWithDomainEvents = context.ChangeTracker
+        List<IHasDomainEvent> entitiesWithDomainEvents = context.ChangeTracker
             .Entries<IHasDomainEvent>()
             .Where(e => e.Entity.GetDomainEvents().Count != 0)
             .Select(e => e.Entity)
@@ -35,7 +36,7 @@ internal class DispatchDomainEventsInterceptor(IMediator mediator) : SaveChanges
         if (entitiesWithDomainEvents.Count == 0) return;
 
         // Get all domain events
-        var domainEvents = entitiesWithDomainEvents
+        List<IDomainEvent> domainEvents = entitiesWithDomainEvents
             .SelectMany(e => e.GetDomainEvents())
             .ToList();
 
@@ -43,7 +44,7 @@ internal class DispatchDomainEventsInterceptor(IMediator mediator) : SaveChanges
         entitiesWithDomainEvents.ForEach(e => e.ClearDomainEvents());
 
         // Dispatch each domain event asynchronously
-        foreach (var domainEvent in domainEvents)
+        foreach (IDomainEvent domainEvent in domainEvents)
         {
             await mediator.Publish(domainEvent, cancellationToken);
         }

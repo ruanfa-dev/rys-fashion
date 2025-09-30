@@ -32,13 +32,13 @@ public sealed class QueryFilterGroup
     public void Validate()
     {
         // Validate all filters in the group
-        foreach (var filter in Filters)
+        foreach (QueryFilterParameter filter in Filters)
         {
             filter.Validate();
         }
 
         // Validate all sub-groups recursively
-        foreach (var subGroup in SubGroups)
+        foreach (QueryFilterGroup subGroup in SubGroups)
         {
             subGroup.Validate();
         }
@@ -65,9 +65,9 @@ public sealed class QueryFilterGroup
     /// <returns>A flattened list of all filters.</returns>
     public List<QueryFilterParameter> GetAllFilters()
     {
-        var allFilters = new List<QueryFilterParameter>(Filters);
+        List<QueryFilterParameter> allFilters = new List<QueryFilterParameter>(Filters);
 
-        foreach (var subGroup in SubGroups)
+        foreach (QueryFilterGroup subGroup in SubGroups)
         {
             allFilters.AddRange(subGroup.GetAllFilters());
         }

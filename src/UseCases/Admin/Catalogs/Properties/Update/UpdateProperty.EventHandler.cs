@@ -24,10 +24,10 @@ public static partial class UpdateProperty
         public async Task Handle(Property.Events.FilterableChanged domainEvent, CancellationToken cancellationToken)
         {
             // Trigger: filterable in product properties update
-            var dbContext = unitOfWork.Context;
+            IApplicationDbContext dbContext = unitOfWork.Context;
 
             // Load: property with its product properties
-            var property = dbContext.Set<Property>()
+            Property? property = dbContext.Set<Property>()
                 .Where(p => p.Id == domainEvent.PropertyId)
                 .Include(p => p.ProductProperties)
                 .FirstOrDefault();
@@ -35,7 +35,7 @@ public static partial class UpdateProperty
             // Update: ensure filter params in product properties if now filterable
             if (property != null)
             {
-                var productProperties = property.EnsureProductPropertiesHaveFilterParams();
+                List<ProductProperty>? productProperties = property.EnsureProductPropertiesHaveFilterParams();
                 if (productProperties?.Count > 0)
                 {
                     dbContext.Set<ProductProperty>().UpdateRange(productProperties);

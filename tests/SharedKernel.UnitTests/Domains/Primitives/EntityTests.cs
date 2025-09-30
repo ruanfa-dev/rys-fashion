@@ -60,7 +60,7 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Constructor_Default_CreatesEntityWithDefaultId()
     {
         // Act
-        var entity = new TestEntity();
+        TestEntity entity = new TestEntity();
 
         // Assert
         entity.Id.ShouldBe(0);
@@ -75,7 +75,7 @@ public sealed class EntityTests(ITestOutputHelper output)
         const int expectedId = 123;
 
         // Act
-        var entity = new TestEntity(expectedId);
+        TestEntity entity = new TestEntity(expectedId);
 
         // Assert
         entity.Id.ShouldBe(expectedId);
@@ -87,7 +87,7 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Constructor_GuidEntity_AutoGeneratesGuid()
     {
         // Act
-        var entity = new TestGuidEntity();
+        TestGuidEntity entity = new TestGuidEntity();
 
         // Assert
         entity.Id.ShouldNotBe(Guid.Empty);
@@ -99,10 +99,10 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Constructor_GuidEntityWithId_UsesProvidedId()
     {
         // Arrange
-        var expectedId = Guid.NewGuid();
+        Guid expectedId = Guid.NewGuid();
 
         // Act
-        var entity = new TestGuidEntity(expectedId);
+        TestGuidEntity entity = new TestGuidEntity(expectedId);
 
         // Assert
         entity.Id.ShouldBe(expectedId);
@@ -121,10 +121,10 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void IsTransient_WithIntId_ReturnsExpectedResult(int id, bool expectedIsTransient)
     {
         // Arrange
-        var entity = new TestEntity(id);
+        TestEntity entity = new TestEntity(id);
 
         // Act
-        var isTransient = entity.IsTransient();
+        bool isTransient = entity.IsTransient();
 
         // Assert
         isTransient.ShouldBe(expectedIsTransient);
@@ -135,10 +135,10 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void IsTransient_WithEmptyGuid_ReturnsTrue()
     {
         // Arrange
-        var entity = new TestGuidEntity(Guid.Empty);
+        TestGuidEntity entity = new TestGuidEntity(Guid.Empty);
 
         // Act
-        var isTransient = entity.IsTransient();
+        bool isTransient = entity.IsTransient();
 
         // Assert
         isTransient.ShouldBeTrue();
@@ -148,10 +148,10 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void IsTransient_WithValidGuid_ReturnsFalse()
     {
         // Arrange
-        var entity = new TestGuidEntity(Guid.NewGuid());
+        TestGuidEntity entity = new TestGuidEntity(Guid.NewGuid());
 
         // Act
-        var isTransient = entity.IsTransient();
+        bool isTransient = entity.IsTransient();
 
         // Assert
         isTransient.ShouldBeFalse();
@@ -165,14 +165,14 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void AddDomainEvent_SingleEvent_AddsEventSuccessfully()
     {
         // Arrange
-        var entity = new TestEntity(1);
-        var domainEvent = new TestDomainEvent();
+        TestEntity entity = new TestEntity(1);
+        TestDomainEvent domainEvent = new TestDomainEvent();
 
         // Act
         entity.AddDomainEvent(domainEvent);
 
         // Assert
-        var events = entity.GetDomainEvents();
+        IReadOnlyCollection<IDomainEvent> events = entity.GetDomainEvents();
         events.Count.ShouldBe(1);
         events.ShouldContain(domainEvent);
     }
@@ -181,10 +181,10 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void AddDomainEvent_MultipleEvents_AddsAllEventsInOrder()
     {
         // Arrange
-        var entity = new TestEntity(1);
-        var event1 = new TestDomainEvent();
-        var event2 = new AnotherTestDomainEvent();
-        var event3 = new TestDomainEvent();
+        TestEntity entity = new TestEntity(1);
+        TestDomainEvent event1 = new TestDomainEvent();
+        AnotherTestDomainEvent event2 = new AnotherTestDomainEvent();
+        TestDomainEvent event3 = new TestDomainEvent();
 
         // Act
         entity.AddDomainEvent(event1);
@@ -192,7 +192,7 @@ public sealed class EntityTests(ITestOutputHelper output)
         entity.AddDomainEvent(event3);
 
         // Assert
-        var events = entity.GetDomainEvents();
+        IReadOnlyCollection<IDomainEvent> events = entity.GetDomainEvents();
         events.Count.ShouldBe(3);
         events.ElementAt(0).ShouldBe(event1);
         events.ElementAt(1).ShouldBe(event2);
@@ -203,9 +203,9 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void RemoveDomainEvent_ExistingEvent_RemovesEventSuccessfully()
     {
         // Arrange
-        var entity = new TestEntity(1);
-        var event1 = new TestDomainEvent();
-        var event2 = new AnotherTestDomainEvent();
+        TestEntity entity = new TestEntity(1);
+        TestDomainEvent event1 = new TestDomainEvent();
+        AnotherTestDomainEvent event2 = new AnotherTestDomainEvent();
         entity.AddDomainEvent(event1);
         entity.AddDomainEvent(event2);
 
@@ -213,7 +213,7 @@ public sealed class EntityTests(ITestOutputHelper output)
         entity.RemoveDomainEvent(event1);
 
         // Assert
-        var events = entity.GetDomainEvents();
+        IReadOnlyCollection<IDomainEvent> events = entity.GetDomainEvents();
         events.Count.ShouldBe(1);
         events.ShouldNotContain(event1);
         events.ShouldContain(event2);
@@ -223,16 +223,16 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void RemoveDomainEvent_NonExistingEvent_DoesNothing()
     {
         // Arrange
-        var entity = new TestEntity(1);
-        var existingEvent = new TestDomainEvent();
-        var nonExistingEvent = new AnotherTestDomainEvent();
+        TestEntity entity = new TestEntity(1);
+        TestDomainEvent existingEvent = new TestDomainEvent();
+        AnotherTestDomainEvent nonExistingEvent = new AnotherTestDomainEvent();
         entity.AddDomainEvent(existingEvent);
 
         // Act
         entity.RemoveDomainEvent(nonExistingEvent);
 
         // Assert
-        var events = entity.GetDomainEvents();
+        IReadOnlyCollection<IDomainEvent> events = entity.GetDomainEvents();
         events.Count.ShouldBe(1);
         events.ShouldContain(existingEvent);
     }
@@ -241,7 +241,7 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void ClearDomainEvents_WithMultipleEvents_RemovesAllEvents()
     {
         // Arrange
-        var entity = new TestEntity(1);
+        TestEntity entity = new TestEntity(1);
         entity.AddDomainEvent(new TestDomainEvent());
         entity.AddDomainEvent(new AnotherTestDomainEvent());
         entity.AddDomainEvent(new TestDomainEvent());
@@ -257,12 +257,12 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void GetDomainEvents_ReturnsReadOnlyCollection()
     {
         // Arrange
-        var entity = new TestEntity(1);
-        var domainEvent = new TestDomainEvent();
+        TestEntity entity = new TestEntity(1);
+        TestDomainEvent domainEvent = new TestDomainEvent();
         entity.AddDomainEvent(domainEvent);
 
         // Act
-        var events = entity.GetDomainEvents();
+        IReadOnlyCollection<IDomainEvent> events = entity.GetDomainEvents();
 
         // Assert
         events.ShouldBeOfType<System.Collections.ObjectModel.ReadOnlyCollection<IDomainEvent>>();
@@ -278,8 +278,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_SameReference_ReturnsTrue()
     {
         // Arrange
-        var entity = new TestEntity(1, "Test");
-        var sameEntity = entity; // Same reference
+        TestEntity entity = new TestEntity(1, "Test");
+        TestEntity sameEntity = entity; // Same reference
 
         // Act & Assert
         entity.Equals(sameEntity).ShouldBeTrue();
@@ -291,8 +291,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_SameIdSameType_ReturnsTrue()
     {
         // Arrange
-        var entity1 = new TestEntity(1, "Test1");
-        var entity2 = new TestEntity(1, "Test2");
+        TestEntity entity1 = new TestEntity(1, "Test1");
+        TestEntity entity2 = new TestEntity(1, "Test2");
 
         // Act & Assert
         entity1.Equals(entity2).ShouldBeTrue();
@@ -305,8 +305,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_DifferentId_ReturnsFalse()
     {
         // Arrange
-        var entity1 = new TestEntity(1, "Test");
-        var entity2 = new TestEntity(2, "Test");
+        TestEntity entity1 = new TestEntity(1, "Test");
+        TestEntity entity2 = new TestEntity(2, "Test");
 
         // Act & Assert
         entity1.Equals(entity2).ShouldBeFalse();
@@ -318,8 +318,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_DifferentType_ReturnsFalse()
     {
         // Arrange
-        var intEntity = new TestEntity(1);
-        var guidEntity = new TestGuidEntity();
+        TestEntity intEntity = new TestEntity(1);
+        TestGuidEntity guidEntity = new TestGuidEntity();
 
         // Act & Assert
         intEntity.Equals(guidEntity).ShouldBeFalse();
@@ -329,7 +329,7 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_WithNull_ReturnsFalse()
     {
         // Arrange
-        var entity = new TestEntity(1);
+        TestEntity? entity = new TestEntity(1);
 
         // Act & Assert
         entity.Equals(null).ShouldBeFalse();
@@ -343,8 +343,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_BothTransient_ReturnsFalse()
     {
         // Arrange
-        var entity1 = new TestEntity(); // ID = 0 (transient)
-        var entity2 = new TestEntity(); // ID = 0 (transient)
+        TestEntity entity1 = new TestEntity(); // ID = 0 (transient)
+        TestEntity entity2 = new TestEntity(); // ID = 0 (transient)
 
         // Act & Assert
         entity1.Equals(entity2).ShouldBeFalse();
@@ -355,8 +355,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Equals_OneTransient_ReturnsFalse()
     {
         // Arrange
-        var transientEntity = new TestEntity(); // ID = 0 (transient)
-        var persistedEntity = new TestEntity(0); // ID = 0 but explicitly set
+        TestEntity transientEntity = new TestEntity(); // ID = 0 (transient)
+        TestEntity persistedEntity = new TestEntity(0); // ID = 0 but explicitly set
 
         // Act & Assert
         transientEntity.Equals(persistedEntity).ShouldBeFalse();
@@ -371,12 +371,12 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void GetHashCode_TransientEntity_UsesReferenceHashCode()
     {
         // Arrange
-        var entity1 = new TestEntity();
-        var entity2 = new TestEntity();
+        TestEntity entity1 = new TestEntity();
+        TestEntity entity2 = new TestEntity();
 
         // Act
-        var hash1 = entity1.GetHashCode();
-        var hash2 = entity2.GetHashCode();
+        int hash1 = entity1.GetHashCode();
+        int hash2 = entity2.GetHashCode();
 
         // Assert
         hash1.ShouldNotBe(hash2);
@@ -387,12 +387,12 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void GetHashCode_SameId_ReturnsSameHashCode()
     {
         // Arrange
-        var entity1 = new TestEntity(42);
-        var entity2 = new TestEntity(42);
+        TestEntity entity1 = new TestEntity(42);
+        TestEntity entity2 = new TestEntity(42);
 
         // Act
-        var hash1 = entity1.GetHashCode();
-        var hash2 = entity2.GetHashCode();
+        int hash1 = entity1.GetHashCode();
+        int hash2 = entity2.GetHashCode();
 
         // Assert
         hash1.ShouldBe(hash2);
@@ -403,12 +403,12 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void GetHashCode_DifferentId_ReturnsDifferentHashCode()
     {
         // Arrange
-        var entity1 = new TestEntity(1);
-        var entity2 = new TestEntity(2);
+        TestEntity entity1 = new TestEntity(1);
+        TestEntity entity2 = new TestEntity(2);
 
         // Act
-        var hash1 = entity1.GetHashCode();
-        var hash2 = entity2.GetHashCode();
+        int hash1 = entity1.GetHashCode();
+        int hash2 = entity2.GetHashCode();
 
         // Assert
         hash1.ShouldNotBe(hash2);
@@ -418,12 +418,12 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void GetHashCode_ConsistentAcrossMultipleCalls()
     {
         // Arrange
-        var entity = new TestEntity(123);
+        TestEntity entity = new TestEntity(123);
 
         // Act
-        var hash1 = entity.GetHashCode();
-        var hash2 = entity.GetHashCode();
-        var hash3 = entity.GetHashCode();
+        int hash1 = entity.GetHashCode();
+        int hash2 = entity.GetHashCode();
+        int hash3 = entity.GetHashCode();
 
         // Assert
         hash1.ShouldBe(hash2);
@@ -438,9 +438,9 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Entity_CompleteWorkflow_BehavesCorrectly()
     {
         // Arrange
-        var entity = new TestEntity(1, "Initial");
-        var event1 = new TestDomainEvent();
-        var event2 = new AnotherTestDomainEvent();
+        TestEntity entity = new TestEntity(1, "Initial");
+        TestDomainEvent event1 = new TestDomainEvent();
+        AnotherTestDomainEvent event2 = new AnotherTestDomainEvent();
 
         // Act & Assert - Initial state
         entity.IsTransient().ShouldBeFalse();
@@ -453,7 +453,7 @@ public sealed class EntityTests(ITestOutputHelper output)
 
         // Act & Assert - Modify and verify equality still works
         entity.Name = "Modified";
-        var sameEntity = new TestEntity(1, "Different Name");
+        TestEntity sameEntity = new TestEntity(1, "Different Name");
         entity.Equals(sameEntity).ShouldBeTrue();
 
         // Act & Assert - Clear events
@@ -472,8 +472,8 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void Entity_WithVariousIds_MaintainsConsistency(int id)
     {
         // Arrange & Act
-        var entity1 = new TestEntity(id);
-        var entity2 = new TestEntity(id);
+        TestEntity entity1 = new TestEntity(id);
+        TestEntity entity2 = new TestEntity(id);
 
         // Assert
         entity1.Equals(entity2).ShouldBe(!entity1.IsTransient());
@@ -489,12 +489,12 @@ public sealed class EntityTests(ITestOutputHelper output)
     public void GuidEntity_AutoGeneratedIds_AreUnique()
     {
         // Arrange & Act
-        var entities = Enumerable.Range(0, 100)
+        TestGuidEntity[] entities = Enumerable.Range(0, 100)
             .Select(_ => new TestGuidEntity())
             .ToArray();
 
         // Assert
-        var uniqueIds = entities.Select(e => e.Id).Distinct().ToArray();
+        Guid[] uniqueIds = entities.Select(e => e.Id).Distinct().ToArray();
         uniqueIds.Length.ShouldBe(entities.Length);
         _output.WriteLine($"Generated {entities.Length} unique GUIDs");
     }

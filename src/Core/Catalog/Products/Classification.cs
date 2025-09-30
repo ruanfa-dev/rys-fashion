@@ -26,7 +26,7 @@ public sealed class Classification : AuditableEntity
         if (productId == Guid.Empty) return Errors.ProductRequired;
         if (taxonId == Guid.Empty) return Errors.TaxonRequired;
 
-        var c = new Classification
+        Classification c = new Classification
         {
             ProductId = productId,
             TaxonId = taxonId,

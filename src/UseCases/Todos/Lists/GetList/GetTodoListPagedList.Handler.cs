@@ -29,8 +29,8 @@ public static partial class GetTodoListPagedList
     {
         public async Task<ErrorOr<PagedList<Result>>> Handle(Query query, CancellationToken cancellationToken)
         {
-            var param = query.Param;
-            var paginatedList = await context.TodoLists
+            Param param = query.Param;
+            PagedList<Result> paginatedList = await context.TodoLists
               .AsQueryable()
               .AsNoTracking()
               .ApplyFilters(param.Filter)

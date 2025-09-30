@@ -148,8 +148,8 @@ public static class DependencyInjection
     {
         options.CustomizeProblemDetails = context =>
         {
-            var traceId = context.HttpContext.TraceIdentifier;
-            var userAgent = context.HttpContext.Request.Headers.UserAgent.ToString();
+            string traceId = context.HttpContext.TraceIdentifier;
+            string userAgent = context.HttpContext.Request.Headers.UserAgent.ToString();
 
             context.ProblemDetails.Extensions["trace_id"] = traceId;
             context.ProblemDetails.Extensions["user_agent"] = userAgent;

@@ -1,4 +1,6 @@
-﻿using ErrorOr;
+﻿using Core.Identity.Users;
+
+using ErrorOr;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -6,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Common.Security.Authentication.Contexts;
+using UseCases.Common.Security.Authentication.Tokens.Models;
 using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace UseCases.Accounts.Authentication.LogOut;
@@ -26,21 +29,21 @@ public static partial class Logout
 
         public async Task<ErrorOr<Deleted>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var httpContext = _accessor.HttpContext;
-            var ipAddress = httpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            HttpContext? httpContext = _accessor.HttpContext;
+            string ipAddress = httpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
             try
             {
-                var refreshToken = request.Param.RefreshToken;
+                string? refreshToken = request.Param.RefreshToken;
 
                 if (string.IsNullOrWhiteSpace(refreshToken))
                 {
                     // No refresh token was provided in the request body.
                     // If the user is authenticated via an access token, log them out.
-                    var principalUserId = httpContext?.User.GetUserId();
+                    Guid? principalUserId = httpContext?.User.GetUserId();
                     if (principalUserId.HasValue)
                     {
-                        var revokeAllResult = await _refreshTokenService.RevokeAllUserTokensAsync(
+                        ErrorOr<int> revokeAllResult = await _refreshTokenService.RevokeAllUserTokensAsync(
                             userId: principalUserId.Value, ipAddress, reason: "User logout", null, cancellationToken);
 
                         if (revokeAllResult.IsError)
@@ -62,7 +65,7 @@ public static partial class Logout
                 }
 
                 // A refresh token was supplied in the request body; revoke only that token.
-                var revokeResult = await _refreshTokenService.RevokeTokenAsync(
+                ErrorOr<Success> revokeResult = await _refreshTokenService.RevokeTokenAsync(
                     refreshToken,
                     ipAddress,
                     "User logout",
@@ -78,11 +81,11 @@ public static partial class Logout
                 _logger.LogInformation("Refresh token revoked from IP {IpAddress}", ipAddress);
 
                 // Try to log user id for auditing if token validation is available.
-                var validation = await _refreshTokenService
+                ErrorOr<RefreshTokenValidationResult> validation = await _refreshTokenService
                         .ValidateRefreshTokenAsync(refreshToken, cancellationToken);
                 if (!validation.IsError && validation.Value.RefreshToken is not null)
                 {
-                    var user = validation.Value.RefreshToken.User;
+                    User? user = validation.Value.RefreshToken.User;
                     if (user is not null)
                     {
                         _logger.LogInformation("User {UserId} logged out from IP {IpAddress}", user.Id, ipAddress);

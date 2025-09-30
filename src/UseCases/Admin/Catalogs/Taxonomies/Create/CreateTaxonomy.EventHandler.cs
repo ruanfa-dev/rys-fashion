@@ -1,5 +1,7 @@
 using Core.Catalog.Taxonomies;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +23,7 @@ public static partial class CreateTaxonomy
             logger.LogInformation("Domain Event: {DomainEvent} for Taxonomy {TaxonomyId}", notification.GetType().Name, notification.TaxonomyId);
 
             // Load taxonomy with taxons
-            var taxonomy = await context.Set<Taxonomy>()
+            Taxonomy? taxonomy = await context.Set<Taxonomy>()
                 .Include(t => t.Taxons)
                 .FirstOrDefaultAsync(t => t.Id == notification.TaxonomyId, cancellationToken);
 
@@ -32,7 +34,7 @@ public static partial class CreateTaxonomy
             }
 
             // Ensure root exists
-            var rootResult = taxonomy.EnsureRoot();
+            ErrorOr<Taxon> rootResult = taxonomy.EnsureRoot();
             if (rootResult.IsError)
             {
                 logger.LogError("Failed to ensure root taxon for taxonomy {TaxonomyId}: {Errors}", notification.TaxonomyId, string.Join(';', rootResult.Errors.Select(e => e.Code)));
@@ -40,8 +42,8 @@ public static partial class CreateTaxonomy
             }
 
             // Persist root if it was created
-            var root = rootResult.Value;
-            var exists = await context.Set<Taxon>().AnyAsync(t => t.Id == root.Id, cancellationToken);
+            Taxon root = rootResult.Value;
+            bool exists = await context.Set<Taxon>().AnyAsync(t => t.Id == root.Id, cancellationToken);
             if (!exists)
             {
                 await context.Set<Taxon>().AddAsync(root, cancellationToken);

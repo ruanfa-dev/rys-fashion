@@ -21,7 +21,7 @@ public static class SearchParamsExtensions
             return query;
 
         // Create options from SearchParams
-        var options = new SearchOptions
+        SearchOptions options = new SearchOptions
         {
             StartsWith = searchParams.StartsWith,
             ExactMatch = searchParams.ExactMatch,
@@ -183,7 +183,7 @@ public static class SearchParamsExtensions
 
         return PropertyMappingCache.GetOrAdd(cacheKey, _ =>
         {
-            var mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, PropertyInfo> mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
             PropertyInfo[] properties = typeof(T).GetProperties()
                 .Where(p => p.PropertyType == typeof(string) && p.CanRead)
                 .ToArray();
@@ -224,7 +224,7 @@ public static class SearchParamsExtensions
         // Try with normalized field name (remove underscores, hyphens, make lowercase)
         string normalizedFieldName = fieldName.Replace("_", "").Replace("-", "").ToLower();
 
-        foreach (var kvp in propertyMapping)
+        foreach (KeyValuePair<string, PropertyInfo> kvp in propertyMapping)
         {
             string normalizedMappingKey = kvp.Key.Replace("_", "").Replace("-", "").ToLower();
             if (normalizedMappingKey == normalizedFieldName)
@@ -244,7 +244,7 @@ public static class SearchParamsExtensions
         if (string.IsNullOrEmpty(input))
             return input;
 
-        var result = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         result.Append(char.ToLower(input[0]));
 
         for (int i = 1; i < input.Length; i++)
@@ -272,7 +272,7 @@ public static class SearchParamsExtensions
         if (string.IsNullOrEmpty(input))
             return input;
 
-        var result = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         result.Append(char.ToLower(input[0]));
 
         for (int i = 1; i < input.Length; i++)

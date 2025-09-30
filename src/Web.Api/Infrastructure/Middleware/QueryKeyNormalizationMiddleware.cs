@@ -130,7 +130,7 @@ public sealed class QueryKeyNormalizationMiddleware
     /// </remarks>
     public async Task InvokeAsync(HttpContext context)
     {
-        var originalQuery = context.Request.Query;
+        IQueryCollection originalQuery = context.Request.Query;
 
         // Fast path: no query parameters
         if (originalQuery.Count == 0)
@@ -147,7 +147,7 @@ public sealed class QueryKeyNormalizationMiddleware
         }
 
         // Build normalized query collection
-        var normalizedDict = BuildNormalizedQuery(originalQuery);
+        Dictionary<string, StringValues> normalizedDict = BuildNormalizedQuery(originalQuery);
 
         // Only replace if we actually added normalized keys
         if (normalizedDict.Count > originalQuery.Count)
@@ -172,9 +172,9 @@ public sealed class QueryKeyNormalizationMiddleware
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool RequiresNormalization(IQueryCollection query)
     {
-        foreach (var key in query.Keys)
+        foreach (string key in query.Keys)
         {
-            var keySpan = key.AsSpan();
+            ReadOnlySpan<char> keySpan = key.AsSpan();
 
             // Check for underscores first (cheap IndexOf operation)
             if (keySpan.IndexOf('_') >= 0)
@@ -183,7 +183,7 @@ public sealed class QueryKeyNormalizationMiddleware
             // Check for uppercase letters (requires character iteration)
             for (int i = 0; i < keySpan.Length; i++)
             {
-                var ch = keySpan[i];
+                char ch = keySpan[i];
                 if (ch is >= 'A' and <= 'Z')
                     return true;
             }
@@ -200,18 +200,18 @@ public sealed class QueryKeyNormalizationMiddleware
     private static Dictionary<string, StringValues> BuildNormalizedQuery(IQueryCollection originalQuery)
     {
         // Pre-size to avoid resizing; use OrdinalIgnoreCase for model binder compatibility
-        var dict = new Dictionary<string, StringValues>(
+        Dictionary<string, StringValues> dict = new Dictionary<string, StringValues>(
             originalQuery.Count * 2,
             StringComparer.OrdinalIgnoreCase);
 
         // Add all original parameters first
-        foreach (var kvp in originalQuery)
+        foreach (KeyValuePair<string, StringValues> kvp in originalQuery)
         {
             dict[kvp.Key] = kvp.Value;
         }
 
         // Add normalized variants
-        foreach (var kvp in originalQuery)
+        foreach (KeyValuePair<string, StringValues> kvp in originalQuery)
         {
             ProcessKeyForNormalization(kvp.Key, kvp.Value, dict);
         }
@@ -228,12 +228,12 @@ public sealed class QueryKeyNormalizationMiddleware
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ProcessKeyForNormalization(string key, StringValues value, Dictionary<string, StringValues> targetDict)
     {
-        var keySpan = key.AsSpan();
+        ReadOnlySpan<char> keySpan = key.AsSpan();
 
         if (keySpan.IndexOf('_') >= 0)
         {
             // snake_case → camelCase
-            var camelCaseKey = GetCamelCase(key);
+            string camelCaseKey = GetCamelCase(key);
             targetDict.TryAdd(camelCaseKey, value);
         }
         else
@@ -241,7 +241,7 @@ public sealed class QueryKeyNormalizationMiddleware
             // Only convert to snake_case if uppercase letters are present
             if (HasUppercaseLetters(keySpan))
             {
-                var snakeCaseKey = GetSnakeCase(key);
+                string snakeCaseKey = GetSnakeCase(key);
                 targetDict.TryAdd(snakeCaseKey, value);
             }
         }
@@ -257,7 +257,7 @@ public sealed class QueryKeyNormalizationMiddleware
     {
         for (int i = 0; i < span.Length; i++)
         {
-            var ch = span[i];
+            char ch = span[i];
             if (ch is >= 'A' and <= 'Z')
                 return true;
         }
@@ -283,12 +283,12 @@ public sealed class QueryKeyNormalizationMiddleware
     private static string GetCamelCase(string snakeCase)
     {
         // Try fast lock-free read from snapshot
-        var snapshot = _camelCaseSnapshot;
-        if (snapshot?.TryGetValue(snakeCase, out var cachedValue) == true)
+        IReadOnlyDictionary<string, string>? snapshot = _camelCaseSnapshot;
+        if (snapshot?.TryGetValue(snakeCase, out string? cachedValue) == true)
             return cachedValue;
 
         // Cache miss: compute and store in concurrent dictionary
-        var computedValue = _camelCaseCache.GetOrAdd(snakeCase, static key => ComputeCamelCase(key));
+        string computedValue = _camelCaseCache.GetOrAdd(snakeCase, static key => ComputeCamelCase(key));
 
         // Periodically rebuild snapshot to maintain fast reads
         if (Interlocked.Increment(ref _camelEntriesSinceSnapshot) >= SnapshotRebuildThreshold)
@@ -309,12 +309,12 @@ public sealed class QueryKeyNormalizationMiddleware
     private static string GetSnakeCase(string camelCase)
     {
         // Try fast lock-free read from snapshot
-        var snapshot = _snakeCaseSnapshot;
-        if (snapshot?.TryGetValue(camelCase, out var cachedValue) == true)
+        IReadOnlyDictionary<string, string>? snapshot = _snakeCaseSnapshot;
+        if (snapshot?.TryGetValue(camelCase, out string? cachedValue) == true)
             return cachedValue;
 
         // Cache miss: compute and store in concurrent dictionary
-        var computedValue = _snakeCaseCache.GetOrAdd(camelCase, static key => ComputeSnakeCase(key));
+        string computedValue = _snakeCaseCache.GetOrAdd(camelCase, static key => ComputeSnakeCase(key));
 
         // Periodically rebuild snapshot to maintain fast reads
         if (Interlocked.Increment(ref _snakeEntriesSinceSnapshot) >= SnapshotRebuildThreshold)
@@ -337,8 +337,8 @@ public sealed class QueryKeyNormalizationMiddleware
     /// </remarks>
     private static IReadOnlyDictionary<string, string> CreateReadOptimizedSnapshot(ConcurrentDictionary<string, string> source)
     {
-        var snapshot = new Dictionary<string, string>(source.Count, StringComparer.Ordinal);
-        foreach (var kvp in source)
+        Dictionary<string, string> snapshot = new Dictionary<string, string>(source.Count, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> kvp in source)
         {
             snapshot[kvp.Key] = kvp.Value;
         }
@@ -372,8 +372,8 @@ public sealed class QueryKeyNormalizationMiddleware
         if (string.IsNullOrEmpty(snakeCase))
             return snakeCase;
 
-        var inputSpan = snakeCase.AsSpan();
-        var inputLength = inputSpan.Length;
+        ReadOnlySpan<char> inputSpan = snakeCase.AsSpan();
+        int inputLength = inputSpan.Length;
 
         // Fast path: no underscores found
         if (inputSpan.IndexOf('_') == -1)
@@ -396,10 +396,10 @@ public sealed class QueryKeyNormalizationMiddleware
     private static string ComputeCamelCaseWithStackAlloc(ReadOnlySpan<char> input)
     {
         Span<char> buffer = stackalloc char[StackAllocThreshold];
-        var writeIndex = 0;
-        var shouldCapitalizeNext = false;
+        int writeIndex = 0;
+        bool shouldCapitalizeNext = false;
 
-        foreach (var ch in input)
+        foreach (char ch in input)
         {
             if (ch == '_')
             {
@@ -431,14 +431,14 @@ public sealed class QueryKeyNormalizationMiddleware
     /// </summary>
     private static string ComputeCamelCaseWithArrayPool(ReadOnlySpan<char> input, int inputLength)
     {
-        var rentedBuffer = ArrayPool<char>.Shared.Rent(inputLength);
+        char[] rentedBuffer = ArrayPool<char>.Shared.Rent(inputLength);
         try
         {
-            var buffer = rentedBuffer.AsSpan(0, inputLength);
-            var writeIndex = 0;
-            var shouldCapitalizeNext = false;
+            Span<char> buffer = rentedBuffer.AsSpan(0, inputLength);
+            int writeIndex = 0;
+            bool shouldCapitalizeNext = false;
 
-            foreach (var ch in input)
+            foreach (char ch in input)
             {
                 if (ch == '_')
                 {
@@ -490,18 +490,18 @@ public sealed class QueryKeyNormalizationMiddleware
         if (string.IsNullOrEmpty(camelCase))
             return camelCase;
 
-        var inputSpan = camelCase.AsSpan();
-        var inputLength = inputSpan.Length;
+        ReadOnlySpan<char> inputSpan = camelCase.AsSpan();
+        int inputLength = inputSpan.Length;
 
         // Pre-scan for uppercase letters
-        var uppercaseCount = CountUppercaseLetters(inputSpan);
+        int uppercaseCount = CountUppercaseLetters(inputSpan);
 
         // Fast path: no uppercase letters
         if (uppercaseCount == 0)
             return camelCase;
 
         // Estimate output length: original + underscores for each uppercase
-        var estimatedOutputLength = inputLength + uppercaseCount;
+        int estimatedOutputLength = inputLength + uppercaseCount;
 
         // Choose allocation strategy
         if (estimatedOutputLength <= StackAllocThreshold)
@@ -520,8 +520,8 @@ public sealed class QueryKeyNormalizationMiddleware
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int CountUppercaseLetters(ReadOnlySpan<char> span)
     {
-        var count = 0;
-        foreach (var ch in span)
+        int count = 0;
+        foreach (char ch in span)
         {
             if (ch is >= 'A' and <= 'Z')
                 count++;
@@ -535,11 +535,11 @@ public sealed class QueryKeyNormalizationMiddleware
     private static string ComputeSnakeCaseWithStackAlloc(ReadOnlySpan<char> input)
     {
         Span<char> buffer = stackalloc char[StackAllocThreshold];
-        var writeIndex = 0;
+        int writeIndex = 0;
 
         for (int i = 0; i < input.Length; i++)
         {
-            var ch = input[i];
+            char ch = input[i];
             if (ch is >= 'A' and <= 'Z')
             {
                 // Add underscore before uppercase letters (except at start)
@@ -563,15 +563,15 @@ public sealed class QueryKeyNormalizationMiddleware
     /// </summary>
     private static string ComputeSnakeCaseWithArrayPool(ReadOnlySpan<char> input, int estimatedLength)
     {
-        var rentedBuffer = ArrayPool<char>.Shared.Rent(estimatedLength);
+        char[] rentedBuffer = ArrayPool<char>.Shared.Rent(estimatedLength);
         try
         {
-            var buffer = rentedBuffer.AsSpan();
-            var writeIndex = 0;
+            Span<char> buffer = rentedBuffer.AsSpan();
+            int writeIndex = 0;
 
             for (int i = 0; i < input.Length; i++)
             {
-                var ch = input[i];
+                char ch = input[i];
                 if (ch is >= 'A' and <= 'Z')
                 {
                     if (i > 0)

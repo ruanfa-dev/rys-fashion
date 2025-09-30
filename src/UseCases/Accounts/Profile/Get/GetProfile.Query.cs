@@ -19,14 +19,14 @@ public static partial class GetProfile
         public async Task<ErrorOr<AccountProfileResult>> Handle(Query request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
-            var user = await dbContext.Users
+            AccountProfileResult? user = await dbContext.Users
                 .Where(u => u.Id == userId)
                 .Select(u => new AccountProfileResult
                 {

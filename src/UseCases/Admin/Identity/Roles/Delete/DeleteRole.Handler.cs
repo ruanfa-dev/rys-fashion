@@ -26,7 +26,7 @@ public static partial class DeleteRole
         {
             try
             {
-                var role = await roleManager.FindByIdAsync(request.Id.ToString());
+                Role? role = await roleManager.FindByIdAsync(request.Id.ToString());
                 if (role == null)
                     return Role.Errors.RoleNotFound(Name);
 
@@ -35,19 +35,19 @@ public static partial class DeleteRole
                     return Role.Errors.CannotDeleteDefaultRole(role.Name!);
 
                 // Check: if role is in use
-                var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
+                IList<User> usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
                 if (usersInRole.Count > 0)
                     return Role.Errors.RoleInUse(role.Name!);
 
                 // Store role info for response before deletion
-                var roleName = role.Name!;
-                var roleId = role.Id;
+                string roleName = role.Name!;
+                Guid roleId = role.Id;
 
                 // Delete the role
-                var result = await roleManager.DeleteAsync(role);
+                IdentityResult result = await roleManager.DeleteAsync(role);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to delete role {RoleId}: {Errors}", request.Id, errors);
                     return result.Errors.ToApplicationResult(prefix: "Role", fallbackCode: "DeletionFailed");
                 }

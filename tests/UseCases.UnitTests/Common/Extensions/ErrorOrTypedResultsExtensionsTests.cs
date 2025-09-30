@@ -24,14 +24,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithSuccessValue_ReturnsOkResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<TestModel>>();
-        var okResult = (Ok<TestModel>)result;
+        Ok<TestModel> okResult = (Ok<TestModel>)result;
         okResult.Value.ShouldBe(_testModel);
     }
 
@@ -40,14 +40,14 @@ public class ErrorOrTypedResultsExtensionsTests
     {
         // Arrange
         TestModel? nullModel = null;
-        var successResult = ErrorOrFactory.From(nullModel);
+        ErrorOr<TestModel?> successResult = ErrorOrFactory.From(nullModel);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<TestModel?>>();
-        var okResult = (Ok<TestModel?>)result;
+        Ok<TestModel?> okResult = (Ok<TestModel?>)result;
         okResult.Value.ShouldBeNull();
     }
 
@@ -55,15 +55,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithValidationError_ReturnsValidationProblem()
     {
         // Arrange
-        var validationError = Error.Validation("TestField", "Validation failed");
-        var errorResult = ErrorOrFactory.From<TestModel>(validationError);
+        Error validationError = Error.Validation("TestField", "Validation failed");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(validationError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
         problemResult.ProblemDetails.Title.ShouldBe("Validation Failed");
     }
@@ -72,15 +72,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithNotFoundError_ReturnsNotFoundProblem()
     {
         // Arrange
-        var notFoundError = Error.NotFound("Resource.NotFound", "Resource was not found");
-        var errorResult = ErrorOrFactory.From<TestModel>(notFoundError);
+        Error notFoundError = Error.NotFound("Resource.NotFound", "Resource was not found");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(notFoundError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status404NotFound);
         problemResult.ProblemDetails.Title.ShouldBe("Resource.NotFound");
         problemResult.ProblemDetails.Detail.ShouldBe("Resource was not found");
@@ -90,15 +90,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithUnauthorizedError_ReturnsUnauthorizedProblem()
     {
         // Arrange
-        var unauthorizedError = Error.Unauthorized("Auth.Unauthorized", "Access denied");
-        var errorResult = ErrorOrFactory.From<TestModel>(unauthorizedError);
+        Error unauthorizedError = Error.Unauthorized("Auth.Unauthorized", "Access denied");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(unauthorizedError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status401Unauthorized);
         problemResult.ProblemDetails.Title.ShouldBe("Auth.Unauthorized");
     }
@@ -107,15 +107,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithForbiddenError_ReturnsForbiddenProblem()
     {
         // Arrange
-        var forbiddenError = Error.Forbidden("Auth.Forbidden", "Insufficient permissions");
-        var errorResult = ErrorOrFactory.From<TestModel>(forbiddenError);
+        Error forbiddenError = Error.Forbidden("Auth.Forbidden", "Insufficient permissions");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(forbiddenError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status403Forbidden);
         problemResult.ProblemDetails.Title.ShouldBe("Auth.Forbidden");
     }
@@ -124,15 +124,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithConflictError_ReturnsConflictProblem()
     {
         // Arrange
-        var conflictError = Error.Conflict("Resource.Conflict", "Resource already exists");
-        var errorResult = ErrorOrFactory.From<TestModel>(conflictError);
+        Error conflictError = Error.Conflict("Resource.Conflict", "Resource already exists");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(conflictError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status409Conflict);
         problemResult.ProblemDetails.Title.ShouldBe("Resource.Conflict");
     }
@@ -141,15 +141,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithFailureError_ReturnsInternalServerErrorProblem()
     {
         // Arrange
-        var failureError = Error.Failure("System.Failure", "Internal system error");
-        var errorResult = ErrorOrFactory.From<TestModel>(failureError);
+        Error failureError = Error.Failure("System.Failure", "Internal system error");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(failureError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status500InternalServerError);
         problemResult.ProblemDetails.Title.ShouldBe("System.Failure");
     }
@@ -158,15 +158,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithUnexpectedError_ReturnsUnprocessableEntityProblem()
     {
         // Arrange
-        var unexpectedError = Error.Unexpected("System.Unexpected", "Unexpected error occurred");
-        var errorResult = ErrorOrFactory.From<TestModel>(unexpectedError);
+        Error unexpectedError = Error.Unexpected("System.Unexpected", "Unexpected error occurred");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(unexpectedError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status422UnprocessableEntity);
         problemResult.ProblemDetails.Title.ShouldBe("System.Unexpected");
     }
@@ -175,25 +175,25 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithMultipleValidationErrors_ReturnsValidationProblemWithAllErrors()
     {
         // Arrange
-        var errors = new List<Error>
+        List<Error> errors = new List<Error>
         {
             Error.Validation("Field1", "Field1 is required"),
             Error.Validation("Field2", "Field2 is invalid"),
             Error.Validation("Field1", "Field1 must be unique") // Same field, multiple errors
         };
-        var errorResult = ErrorOrFactory.From<TestModel>(errors);
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(errors);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
         problemResult.ProblemDetails.Title.ShouldBe("Validation Failed");
         
         // Check that validation errors are properly grouped
-        var validationProblemDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        HttpValidationProblemDetails? validationProblemDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationProblemDetails.ShouldNotBeNull();
         validationProblemDetails.Errors.ShouldContainKey("Field1");
         validationProblemDetails.Errors.ShouldContainKey("Field2");
@@ -209,14 +209,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultCreated_WithSuccessValue_ReturnsCreatedResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResultCreated(TestLocationUrl);
+        IResult result = successResult.ToTypedResultCreated(TestLocationUrl);
 
         // Assert
         result.ShouldBeOfType<Created<TestModel>>();
-        var createdResult = (Created<TestModel>)result;
+        Created<TestModel> createdResult = (Created<TestModel>)result;
         createdResult.Value.ShouldBe(_testModel);
         createdResult.Location.ShouldBe(TestLocationUrl);
     }
@@ -225,14 +225,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultCreated_WithEmptyLocationUrl_ReturnsCreatedResultWithEmptyLocation()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResultCreated(string.Empty);
+        IResult result = successResult.ToTypedResultCreated(string.Empty);
 
         // Assert
         result.ShouldBeOfType<Created<TestModel>>();
-        var createdResult = (Created<TestModel>)result;
+        Created<TestModel> createdResult = (Created<TestModel>)result;
         createdResult.Location.ShouldBe(string.Empty);
     }
 
@@ -240,15 +240,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultCreated_WithError_ReturnsProblemDetails()
     {
         // Arrange
-        var error = Error.Validation("Field", "Invalid field");
-        var errorResult = ErrorOrFactory.From<TestModel>(error);
+        Error error = Error.Validation("Field", "Invalid field");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResultCreated(TestLocationUrl);
+        IResult result = errorResult.ToTypedResultCreated(TestLocationUrl);
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
     }
 
@@ -260,14 +260,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultCreated_WithVariousLocationUrls_HandlesCorrectly(string? locationUrl)
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResultCreated(locationUrl!);
+        IResult result = successResult.ToTypedResultCreated(locationUrl!);
 
         // Assert
         result.ShouldBeOfType<Created<TestModel>>();
-        var createdResult = (Created<TestModel>)result;
+        Created<TestModel> createdResult = (Created<TestModel>)result;
         createdResult.Location.ShouldBe(locationUrl);
     }
 
@@ -279,10 +279,10 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultNoContent_WithSuccessUpdatedResult_ReturnsNoContentResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(Result.Updated);
+        ErrorOr<Updated> successResult = ErrorOrFactory.From(Result.Updated);
 
         // Act
-        var result = successResult.ToTypedResultNoContent();
+        IResult result = successResult.ToTypedResultNoContent();
 
         // Assert
         result.ShouldBeOfType<NoContent>();
@@ -292,15 +292,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultNoContent_WithError_ReturnsProblemDetails()
     {
         // Arrange
-        var error = Error.NotFound("Resource.NotFound", "Resource not found");
-        var errorResult = ErrorOrFactory.From<Updated>(error);
+        Error error = Error.NotFound("Resource.NotFound", "Resource not found");
+        ErrorOr<Updated> errorResult = ErrorOrFactory.From<Updated>(error);
 
         // Act
-        var result = errorResult.ToTypedResultNoContent();
+        IResult result = errorResult.ToTypedResultNoContent();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status404NotFound);
     }
 
@@ -312,10 +312,10 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultDeleted_WithSuccessDeletedResult_ReturnsNoContentResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(Result.Deleted);
+        ErrorOr<Deleted> successResult = ErrorOrFactory.From(Result.Deleted);
 
         // Act
-        var result = successResult.ToTypedResultDeleted();
+        IResult result = successResult.ToTypedResultDeleted();
 
         // Assert
         result.ShouldBeOfType<NoContent>();
@@ -325,15 +325,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultDeleted_WithError_ReturnsProblemDetails()
     {
         // Arrange
-        var error = Error.NotFound("Resource.NotFound", "Resource not found for deletion");
-        var errorResult = ErrorOrFactory.From<Deleted>(error);
+        Error error = Error.NotFound("Resource.NotFound", "Resource not found for deletion");
+        ErrorOr<Deleted> errorResult = ErrorOrFactory.From<Deleted>(error);
 
         // Act
-        var result = errorResult.ToTypedResultDeleted();
+        IResult result = errorResult.ToTypedResultDeleted();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status404NotFound);
         problemResult.ProblemDetails.Detail.ShouldBe("Resource not found for deletion");
     }
@@ -346,14 +346,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultAccepted_WithSuccessValueAndLocation_ReturnsAcceptedResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResultAccepted(TestLocationUrl);
+        IResult result = successResult.ToTypedResultAccepted(TestLocationUrl);
 
         // Assert
         result.ShouldBeOfType<Accepted<TestModel>>();
-        var acceptedResult = (Accepted<TestModel>)result;
+        Accepted<TestModel> acceptedResult = (Accepted<TestModel>)result;
         acceptedResult.Value.ShouldBe(_testModel);
         acceptedResult.Location.ShouldBe(TestLocationUrl);
     }
@@ -362,14 +362,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultAccepted_WithSuccessValueAndNullLocation_ReturnsAcceptedResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResultAccepted(null);
+        IResult result = successResult.ToTypedResultAccepted(null);
 
         // Assert
         result.ShouldBeOfType<Accepted<TestModel>>();
-        var acceptedResult = (Accepted<TestModel>)result;
+        Accepted<TestModel> acceptedResult = (Accepted<TestModel>)result;
         acceptedResult.Value.ShouldBe(_testModel);
         acceptedResult.Location.ShouldBeNull();
     }
@@ -378,14 +378,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultAccepted_WithSuccessValueAndNoLocation_ReturnsAcceptedResult()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
 
         // Act
-        var result = successResult.ToTypedResultAccepted();
+        IResult result = successResult.ToTypedResultAccepted();
 
         // Assert
         result.ShouldBeOfType<Accepted<TestModel>>();
-        var acceptedResult = (Accepted<TestModel>)result;
+        Accepted<TestModel> acceptedResult = (Accepted<TestModel>)result;
         acceptedResult.Value.ShouldBe(_testModel);
     }
 
@@ -393,15 +393,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultAccepted_WithError_ReturnsProblemDetails()
     {
         // Arrange
-        var error = Error.Failure("Processing.Failed", "Failed to process request");
-        var errorResult = ErrorOrFactory.From<TestModel>(error);
+        Error error = Error.Failure("Processing.Failed", "Failed to process request");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResultAccepted(TestLocationUrl);
+        IResult result = errorResult.ToTypedResultAccepted(TestLocationUrl);
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status500InternalServerError);
     }
 
@@ -413,14 +413,14 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithEmptyErrorList_ReturnsGenericProblem()
     {
         // Arrange
-        var emptyErrors = new List<Error>();
+        List<Error> emptyErrors = new List<Error>();
 
         // Act
-        var result = ErrorOrTypedResultsExtensions.ToProblemDetails(emptyErrors);
+        IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(emptyErrors);
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status500InternalServerError);
         problemResult.ProblemDetails.Detail.ShouldBe("An unknown error occurred.");
     }
@@ -429,17 +429,17 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithSingleNonValidationError_ReturnsProblemDetails()
     {
         // Arrange
-        var errors = new List<Error>
+        List<Error> errors = new List<Error>
         {
             Error.NotFound("User.NotFound", "User with specified ID was not found")
         };
 
         // Act
-        var result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
+        IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status404NotFound);
         problemResult.ProblemDetails.Title.ShouldBe("User.NotFound");
         problemResult.ProblemDetails.Detail.ShouldBe("User with specified ID was not found");
@@ -450,21 +450,21 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithSingleValidationError_ReturnsValidationProblem()
     {
         // Arrange
-        var errors = new List<Error>
+        List<Error> errors = new List<Error>
         {
             Error.Validation("Email", "Email is required")
         };
 
         // Act
-        var result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
+        IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
         problemResult.ProblemDetails.Title.ShouldBe("Validation Failed");
 
-        var validationProblemDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        HttpValidationProblemDetails? validationProblemDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationProblemDetails.ShouldNotBeNull();
         validationProblemDetails.Errors.ShouldContainKey("Email");
         validationProblemDetails.Errors["Email"].ShouldContain("Email is required");
@@ -474,7 +474,7 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithMultipleValidationErrors_GroupsByPropertyName()
     {
         // Arrange
-        var errors = new List<Error>
+        List<Error> errors = new List<Error>
         {
             Error.Validation("Email", "Email is required"),
             Error.Validation("Email", "Email format is invalid"),
@@ -483,14 +483,14 @@ public class ErrorOrTypedResultsExtensionsTests
         };
 
         // Act
-        var result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
+        IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
 
-        var validationProblemDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        HttpValidationProblemDetails? validationProblemDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationProblemDetails.ShouldNotBeNull();
 
         // Verify Email has 2 errors
@@ -516,15 +516,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithCustomErrorType_ReturnsInternalServerError()
     {
         // Arrange - Create a custom error that doesn't map to any specific status code
-        var customError = Error.Custom(999, "Custom.Error", "Custom error message");
-        var errorResult = ErrorOrFactory.From<TestModel>(customError);
+        Error customError = Error.Custom(999, "Custom.Error", "Custom error message");
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(customError);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.StatusCode.ShouldBe(StatusCodes.Status500InternalServerError);
         problemResult.ProblemDetails.Title.ShouldBe("Custom.Error");
     }
@@ -533,16 +533,16 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithVeryLongErrorMessage_HandlesCorrectly()
     {
         // Arrange
-        var longMessage = new string('A', 5000); // Very long error message
-        var error = Error.Failure("Long.Error", longMessage);
-        var errorResult = ErrorOrFactory.From<TestModel>(error);
+        string longMessage = new string('A', 5000); // Very long error message
+        Error error = Error.Failure("Long.Error", longMessage);
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.ProblemDetails.Detail.ShouldBe(longMessage);
         problemResult.ProblemDetails.Detail!.Length.ShouldBe(5000);
     }
@@ -551,16 +551,16 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithSpecialCharactersInErrorMessage_HandlesCorrectly()
     {
         // Arrange
-        var specialMessage = "Error with special chars: <>&\"'åäö中文🚀";
-        var error = Error.NotFound("Special.Error", specialMessage);
-        var errorResult = ErrorOrFactory.From<TestModel>(error);
+        string specialMessage = "Error with special chars: <>&\"'åäö中文🚀";
+        Error error = Error.NotFound("Special.Error", specialMessage);
+        ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.ProblemDetails.Detail.ShouldBe(specialMessage);
     }
 
@@ -568,15 +568,15 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResultCreated_WithVeryLongLocationUrl_HandlesCorrectly()
     {
         // Arrange
-        var successResult = ErrorOrFactory.From(_testModel);
-        var longUrl = "https://example.com/" + new string('a', 2000);
+        ErrorOr<TestModel> successResult = ErrorOrFactory.From(_testModel);
+        string longUrl = "https://example.com/" + new string('a', 2000);
 
         // Act
-        var result = successResult.ToTypedResultCreated(longUrl);
+        IResult result = successResult.ToTypedResultCreated(longUrl);
 
         // Assert
         result.ShouldBeOfType<Created<TestModel>>();
-        var createdResult = (Created<TestModel>)result;
+        Created<TestModel> createdResult = (Created<TestModel>)result;
         createdResult.Location.ShouldBe(longUrl);
     }
 
@@ -584,19 +584,19 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithComplexGenericType_HandlesCorrectly()
     {
         // Arrange
-        var complexModel = new Dictionary<string, List<TestModel>>
+        Dictionary<string, List<TestModel>> complexModel = new Dictionary<string, List<TestModel>>
         {
             ["category1"] = new List<TestModel> { _testModel },
             ["category2"] = new List<TestModel> { new(2, "Test2", 200.0m) }
         };
-        var successResult = ErrorOrFactory.From(complexModel);
+        ErrorOr<Dictionary<string, List<TestModel>>> successResult = ErrorOrFactory.From(complexModel);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<Dictionary<string, List<TestModel>>>>();
-        var okResult = (Ok<Dictionary<string, List<TestModel>>>)result;
+        Ok<Dictionary<string, List<TestModel>>> okResult = (Ok<Dictionary<string, List<TestModel>>>)result;
         okResult.ShouldNotBeNull();
         okResult.Value.ShouldNotBeNull();
         okResult.Value.ShouldBe(complexModel);
@@ -608,14 +608,14 @@ public class ErrorOrTypedResultsExtensionsTests
     {
         // Arrange
         int? nullableInt = null;
-        var successResult = ErrorOrFactory.From(nullableInt);
+        ErrorOr<int?> successResult = ErrorOrFactory.From(nullableInt);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<int?>>();
-        var okResult = (Ok<int?>)result;
+        Ok<int?> okResult = (Ok<int?>)result;
         okResult.Value.ShouldBeNull();
     }
 
@@ -624,14 +624,14 @@ public class ErrorOrTypedResultsExtensionsTests
     {
         // Arrange
         int? nullableInt = 42;
-        var successResult = ErrorOrFactory.From(nullableInt);
+        ErrorOr<int?> successResult = ErrorOrFactory.From(nullableInt);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<int?>>();
-        var okResult = (Ok<int?>)result;
+        Ok<int?> okResult = (Ok<int?>)result;
         okResult.Value.ShouldBe(42);
     }
 

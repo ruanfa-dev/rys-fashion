@@ -17,7 +17,7 @@ public sealed class SmtpOptions : IValidateOptions<SmtpOptions>
 
     public ValidateOptionsResult Validate(string? name, SmtpOptions options)
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         // Validate that EnableEmailNotifications is true if FromEmail and FromName are set
         if (options.EnableEmailNotifications)

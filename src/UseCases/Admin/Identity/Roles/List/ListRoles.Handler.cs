@@ -37,8 +37,8 @@ public static partial class ListRoles
         {
             try
             {
-                var param = request.Param;
-                var paginatedList = await context.Set<Role>()
+                Param param = request.Param;
+                PagedList<Result> paginatedList = await context.Set<Role>()
                     .AsQueryable()
                     .AsNoTracking()
                     .Where(r => !param.IsSystemRole.HasValue

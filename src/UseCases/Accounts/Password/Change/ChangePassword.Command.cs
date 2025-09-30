@@ -28,21 +28,21 @@ public static partial class ChangePassword
         public async Task<ErrorOr<Updated>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
             // Check: user exists
-            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            User? user = await userManager.FindByIdAsync(userId.Value.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
             // Check: current password is correct
-            var param = request.Param;
-            var result = await userManager.ChangePasswordAsync(user, currentPassword: param.CurrentPassword, newPassword: param.NewPassword);
+            Param param = request.Param;
+            IdentityResult result = await userManager.ChangePasswordAsync(user, currentPassword: param.CurrentPassword, newPassword: param.NewPassword);
             if (!result.Succeeded)
             {
                 return result.Errors.ToApplicationResult(fallbackCode: "");

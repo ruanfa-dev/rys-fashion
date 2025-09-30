@@ -27,7 +27,7 @@ public static partial class DeleteUser
             try
             {
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
-                var user = await userManager.FindByIdAsync(request.Id.ToString());
+                User? user = await userManager.FindByIdAsync(request.Id.ToString());
                 if (user == null)
                 {
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);
@@ -35,14 +35,14 @@ public static partial class DeleteUser
                 }
 
                 // Store user info for response before deletion
-                var userEmail = user.Email!;
-                var userId = user.Id;
+                string userEmail = user.Email!;
+                Guid userId = user.Id;
 
                 // Delete: the user
-                var result = await userManager.DeleteAsync(user);
+                IdentityResult result = await userManager.DeleteAsync(user);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to delete user {UserId}: {Errors}", request.Id, errors);
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);
                     return Error.Failure("User.DeletionFailed", $"Failed to delete user: {errors}");

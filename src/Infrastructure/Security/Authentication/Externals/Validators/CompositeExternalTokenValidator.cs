@@ -26,9 +26,9 @@ public sealed class CompositeExternalTokenValidator(
             return Error.Validation("Provider.Required", "Provider is required");
         }
 
-        var normalizedProvider = provider.ToLowerInvariant();
+        string normalizedProvider = provider.ToLowerInvariant();
         
-        var validator = normalizedProvider switch
+        IExternalTokenValidator? validator = normalizedProvider switch
         {
             "google" => serviceProvider.GetService<GoogleTokenValidator>() as IExternalTokenValidator,
             "facebook" => serviceProvider.GetService<FacebookTokenValidator>() as IExternalTokenValidator,
@@ -44,7 +44,7 @@ public sealed class CompositeExternalTokenValidator(
         try
         {
             logger.LogDebug("Validating token for provider: {Provider}", provider);
-            var result = await validator.ValidateTokenAsync(provider, accessToken, idToken, authorizationCode, redirectUri, cancellationToken);
+            ErrorOr<ExternalUserInfo> result = await validator.ValidateTokenAsync(provider, accessToken, idToken, authorizationCode, redirectUri, cancellationToken);
             
             if (result.IsError)
             {

@@ -174,7 +174,7 @@ public sealed class Property :
         IDictionary<string, string?>? publicMetadata = null,
         IDictionary<string, string?>? privateMetadata = null)
     {
-        var property = new Property
+        Property property = new Property
         {
             Name = name.Trim(),
             Presentation = presentation.Trim(),
@@ -212,7 +212,7 @@ public sealed class Property :
 
         if (!string.IsNullOrWhiteSpace(name) && name != Name)
         {
-            var result = SetName(name);
+            ErrorOr<Success> result = SetName(name);
             if (result.IsError) return result.Errors;
             changed = true;
             nameChanged = true;
@@ -220,7 +220,7 @@ public sealed class Property :
 
         if (!string.IsNullOrWhiteSpace(presentation) && presentation != Presentation)
         {
-            var result = SetPresentation(presentation);
+            ErrorOr<Success> result = SetPresentation(presentation);
             if (result.IsError) return result.Errors;
             changed = true;
             presentationChanged = true;
@@ -298,14 +298,14 @@ public sealed class Property :
     /// </summary>
     public List<(string? FilterParam, string Value)> UniqValues(IEnumerable<Guid>? productPropertiesScope = null)
     {
-        var props = ProductProperties.AsEnumerable();
+        IEnumerable<ProductProperty> props = ProductProperties.AsEnumerable();
         if (productPropertiesScope != null)
         {
-            var ids = productPropertiesScope.ToHashSet();
+            HashSet<Guid> ids = productPropertiesScope.ToHashSet();
             props = props.Where(pp => ids.Contains(pp.Id));
         }
 
-        var pairs = props
+        List<(string? FilterParam, string Value)> pairs = props
             .Where(pp => !string.IsNullOrWhiteSpace(pp.Value))
             .Select(pp => (pp.FilterParam, pp.Value))
             .Distinct()
@@ -352,7 +352,7 @@ public sealed class Property :
     {
         if (filterable != Filterable)
         {
-            var old = Filterable;
+            bool old = Filterable;
             Filterable = filterable;
             MarkAsUpdated();
             AddDomainEvent(new Events.FilterableChanged(Id, old, filterable));
@@ -384,7 +384,7 @@ public sealed class Property :
 
         if (ProductProperties.Count == 0) return null;
 
-        var missingProducts = ProductProperties
+        List<ProductProperty> missingProducts = ProductProperties
             .Where(pp => string.IsNullOrWhiteSpace(pp.FilterParam) && !string.IsNullOrWhiteSpace(pp.Value))
             .Distinct()
             .ToList();
@@ -392,7 +392,7 @@ public sealed class Property :
         if (!missingProducts.Any()) return null;
 
         // Generate: missing filter params for existing product properties
-        foreach (var pp in ProductProperties.Where(pp =>
+        foreach (ProductProperty pp in ProductProperties.Where(pp =>
                      string.IsNullOrWhiteSpace(pp.FilterParam) &&
                      !string.IsNullOrWhiteSpace(pp.Value)))
         {

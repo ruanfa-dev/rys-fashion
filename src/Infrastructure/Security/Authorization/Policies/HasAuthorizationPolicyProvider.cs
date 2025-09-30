@@ -26,23 +26,23 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
         if (string.IsNullOrWhiteSpace(policyName))
             throw new ArgumentException("Policy name cannot be null or empty.", nameof(policyName));
 
-        var existingPolicy = _options.GetPolicy(policyName);
+        AuthorizationPolicy? existingPolicy = _options.GetPolicy(policyName);
         if (existingPolicy != null)
         {
             return Task.FromResult<AuthorizationPolicy?>(existingPolicy);
         }
 
-        var (permissions, policies, roles) = ParsePolicyName(policyName);
+        (List<string> permissions, List<string> policies, List<string> roles) = ParsePolicyName(policyName);
 
         if (permissions.Count == 0 && policies.Count == 0 && roles.Count == 0)
             return Task.FromResult<AuthorizationPolicy?>(null);
 
-        var requirement = new HasAuthorizationRequirement(
+        HasAuthorizationRequirement requirement = new HasAuthorizationRequirement(
             [.. permissions],
             [.. policies],
             [.. roles]);
 
-        var policy = new AuthorizationPolicyBuilder()
+        AuthorizationPolicy policy = new AuthorizationPolicyBuilder()
             .AddRequirements(requirement)
             .Build();
 
@@ -57,19 +57,19 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
     /// <returns>Tuple containing lists of permissions, policies, and roles</returns>
     private static (List<string> permissions, List<string> policies, List<string> roles) ParsePolicyName(string policyName)
     {
-        var permissions = new List<string>();
-        var policies = new List<string>();
-        var roles = new List<string>();
+        List<string> permissions = new List<string>();
+        List<string> policies = new List<string>();
+        List<string> roles = new List<string>();
 
         try
         {
-            var policyParts = policyName.AsSpan();
+            ReadOnlySpan<char> policyParts = policyName.AsSpan();
             const char partSeparator = ';';
 
             while (!policyParts.IsEmpty)
             {
-                var nextSeparator = policyParts.IndexOf(partSeparator);
-                var part = nextSeparator >= 0 ? policyParts[..nextSeparator] : policyParts;
+                int nextSeparator = policyParts.IndexOf(partSeparator);
+                ReadOnlySpan<char> part = nextSeparator >= 0 ? policyParts[..nextSeparator] : policyParts;
 
                 if (!part.IsEmpty)
                 {
@@ -96,14 +96,14 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
     /// <param name="roles">Collection to add roles to</param>
     private static void ProcessPolicyPart(string part, List<string> permissions, List<string> policies, List<string> roles)
     {
-        var colonIndex = part.IndexOf(':');
+        int colonIndex = part.IndexOf(':');
         if (colonIndex <= 0 || colonIndex >= part.Length - 1)
         {
             return; // Invalid format, skip this part
         }
 
-        var claimType = part[..colonIndex];
-        var valuesSpan = part.AsSpan(colonIndex + 1);
+        string claimType = part[..colonIndex];
+        ReadOnlySpan<char> valuesSpan = part.AsSpan(colonIndex + 1);
 
         if (string.Equals(claimType, CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
         {
@@ -132,12 +132,12 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
         
         while (!values.IsEmpty)
         {
-            var nextSeparator = values.IndexOf(valueSeparator);
-            var value = nextSeparator >= 0 ? values[..nextSeparator] : values;
+            int nextSeparator = values.IndexOf(valueSeparator);
+            ReadOnlySpan<char> value = nextSeparator >= 0 ? values[..nextSeparator] : values;
 
             if (!value.IsEmpty)
             {
-                var trimmedValue = value.ToString().Trim();
+                string trimmedValue = value.ToString().Trim();
                 if (!string.IsNullOrEmpty(trimmedValue))
                 {
                     targetList.Add(trimmedValue);

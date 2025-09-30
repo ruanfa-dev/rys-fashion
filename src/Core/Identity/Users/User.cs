@@ -66,7 +66,7 @@ public partial class User : IdentityUser<Guid>, IAuditable
             userName = email;
         }
 
-        var user = new User
+        User user = new User
         {
             Id = Guid.NewGuid(),
             Email = email,

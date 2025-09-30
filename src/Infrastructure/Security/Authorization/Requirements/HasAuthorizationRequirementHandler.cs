@@ -22,7 +22,7 @@ internal class HasAuthorizationRequirementHandler(
     {
         try
         {
-            var userContext = serviceProvider.GetRequiredService<IUserContext>();
+            IUserContext userContext = serviceProvider.GetRequiredService<IUserContext>();
             
             // Check if user is authenticated
             if (!userContext.IsAuthenticated || userContext.UserId is null)
@@ -32,11 +32,11 @@ internal class HasAuthorizationRequirementHandler(
                 return;
             }
 
-            var userId = userContext.UserId.Value;
+            Guid userId = userContext.UserId.Value;
             logger.LogDebug("Evaluating authorization for user {UserId}", userId);
 
-            var authorizationProvider = serviceProvider.GetRequiredService<IUserAuthorizationProvider>();
-            var userAuthorization = await authorizationProvider.GetUserAuthorizationAsync(userId);
+            IUserAuthorizationProvider authorizationProvider = serviceProvider.GetRequiredService<IUserAuthorizationProvider>();
+            UserAuthorizationData? userAuthorization = await authorizationProvider.GetUserAuthorizationAsync(userId);
             
             if (userAuthorization is null)
             {
@@ -94,7 +94,7 @@ internal class HasAuthorizationRequirementHandler(
         logger.LogDebug("Checking permissions {RequiredPermissions} for user {UserId}", 
             requirement.Permissions, userId);
 
-        foreach (var requiredPermission in requirement.Permissions)
+        foreach (string requiredPermission in requirement.Permissions)
         {
             if (!userAuthorization.Permissions.Contains(requiredPermission))
             {
@@ -126,7 +126,7 @@ internal class HasAuthorizationRequirementHandler(
         logger.LogDebug("Checking policies {RequiredPolicies} for user {UserId}", 
             requirement.Policies, userId);
 
-        foreach (var requiredPolicy in requirement.Policies)
+        foreach (string requiredPolicy in requirement.Policies)
         {
             if (!userAuthorization.Policies.Contains(requiredPolicy))
             {
@@ -158,7 +158,7 @@ internal class HasAuthorizationRequirementHandler(
         logger.LogDebug("Checking roles {RequiredRoles} for user {UserId}", 
             requirement.Roles, userId);
 
-        foreach (var requiredRole in requirement.Roles)
+        foreach (string requiredRole in requirement.Roles)
         {
             if (!userAuthorization.Roles.Contains(requiredRole))
             {

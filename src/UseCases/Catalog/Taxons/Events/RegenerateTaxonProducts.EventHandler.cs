@@ -15,7 +15,7 @@ internal sealed class RegenerateTaxonProductsEventHandler(IApplicationDbContext 
         Log.Information("Domain Event: {DomainEvent} for Taxon {TaxonId} (onlyOnce={OnlyOnce})", notification.GetType().Name, notification.TaxonId, notification.OnlyOnce);
 
         // Load taxon with rules and current classifications
-        var taxon = await context.Set<Taxon>()
+        Taxon? taxon = await context.Set<Taxon>()
             .Include(t => t.TaxonRules)
             .Include(t => t.Classifications)
                 .ThenInclude(c => c.Product)
@@ -35,15 +35,15 @@ internal sealed class RegenerateTaxonProductsEventHandler(IApplicationDbContext 
         }
 
         // Get all products (use Set<T>() so we don't rely on a dedicated DbSet property)
-        var allProductsQuery = context.Set<Product>().AsQueryable();
+        IQueryable<Product> allProductsQuery = context.Set<Product>().AsQueryable();
 
         // Apply each rule and merge results according to rules match policy
-        var anyPolicy = taxon.RulesMatchPolicy == "any";
+        bool anyPolicy = taxon.RulesMatchPolicy == "any";
         IEnumerable<Product> resultProducts = anyPolicy ? Enumerable.Empty<Product>() : allProductsQuery;
 
-        foreach (var rule in taxon.TaxonRules)
+        foreach (TaxonRule rule in taxon.TaxonRules)
         {
-            var matched = rule.Apply(allProductsQuery);
+            IQueryable<Product> matched = rule.Apply(allProductsQuery);
             if (anyPolicy)
             {
                 resultProducts = resultProducts.Concat(matched).Distinct();
@@ -54,28 +54,28 @@ internal sealed class RegenerateTaxonProductsEventHandler(IApplicationDbContext 
             }
         }
 
-        var matchedList = resultProducts.ToList();
+        List<Product> matchedList = resultProducts.ToList();
 
         // Update classifications: remove ones not present, add missing ones
-        var currentClassifications = taxon.Classifications.ToList();
+        List<Classification> currentClassifications = taxon.Classifications.ToList();
 
         // Remove classifications for products no longer matched
-        var toRemove = currentClassifications.Where(c => c.Product == null || !matchedList.Any(p => p.Id == c.Product.Id)).ToList();
+        List<Classification> toRemove = currentClassifications.Where(c => c.Product == null || !matchedList.Any(p => p.Id == c.Product.Id)).ToList();
         if (toRemove.Any())
         {
-            foreach (var rem in toRemove)
+            foreach (Classification rem in toRemove)
             {
                 context.Set<Classification>().Remove(rem);
             }
         }
 
         // Add classifications for products that are matched but not currently classified
-        var existingProductIds = currentClassifications.Where(c => c.Product != null).Select(c => c.Product!.Id).ToHashSet();
-        var toAdd = matchedList.Where(p => !existingProductIds.Contains(p.Id)).ToList();
+        HashSet<Guid> existingProductIds = currentClassifications.Where(c => c.Product != null).Select(c => c.Product!.Id).ToHashSet();
+        List<Product> toAdd = matchedList.Where(p => !existingProductIds.Contains(p.Id)).ToList();
 
-        foreach (var prod in toAdd)
+        foreach (Product prod in toAdd)
         {
-            var classification = new Classification
+            Classification classification = new Classification
             {
                 Id = Guid.NewGuid(),
                 TaxonId = taxon.Id,

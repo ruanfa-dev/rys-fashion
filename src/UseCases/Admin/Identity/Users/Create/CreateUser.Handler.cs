@@ -38,13 +38,13 @@ public static partial class CreateUser
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
 
             try
             {
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
                 // Check: if user already exists
-                var existingUser = await userManager.FindByEmailAsync(param.Email);
+                User? existingUser = await userManager.FindByEmailAsync(param.Email);
                 if (existingUser != null)
                 {
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);
@@ -52,7 +52,7 @@ public static partial class CreateUser
                 }
 
                 // Create: new user
-                var user = User.Create(
+                User user = User.Create(
                     email: param.Email,
                     emailConfirmed: param.EmailConfirmed,
                     userName: param.Email,
@@ -63,10 +63,10 @@ public static partial class CreateUser
                     phoneNumberConfirmed: param.PhoneNumberConfirmed);
 
                 // Create: new users
-                var result = await userManager.CreateAsync(user, param.Password);
+                IdentityResult result = await userManager.CreateAsync(user, param.Password);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to create user {Email}: {Errors}", param.Email, errors);
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);
                     return result.Errors.ToApplicationResult("User", "CreationFailed");

@@ -30,14 +30,14 @@ public static partial class CreateTodoList
     {
         public async Task<ErrorOr<TodoListResult>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            TodoListParam param = request.Param;
             // Validate: colour is supported
-            var colourOrError = Colour.Create(param.Colour);
+            ErrorOr<Colour> colourOrError = Colour.Create(param.Colour);
             if (colourOrError.IsError)
                 return colourOrError.Errors;
 
             // Check: todo title duplicate
-            var existing = await unitOfWork.Context.TodoLists
+            bool existing = await unitOfWork.Context.TodoLists
                 .AsNoTracking()
                 .AnyAsync(t => t.Title == request.Param.Title, cancellationToken);
 

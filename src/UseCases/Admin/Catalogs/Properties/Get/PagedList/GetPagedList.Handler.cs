@@ -33,8 +33,8 @@ public static partial class GetPropertyPagedList
         {
             try
             {
-                var param = request.Param;
-                var paginatedList = await context.Set<Property>()
+                Param param = request.Param;
+                PagedList<Result> paginatedList = await context.Set<Property>()
                     .AsQueryable()
                     .AsNoTracking()
                     .ApplySearch(param.Search)

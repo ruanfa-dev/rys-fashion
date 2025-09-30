@@ -30,7 +30,7 @@ public static partial class UpdateTodoItem
         public async Task<ErrorOr<Updated>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Check: if the TodoItem exists
-            var todoItem = await unitOfWork.Context.TodoItems
+            TodoItem? todoItem = await unitOfWork.Context.TodoItems
                 .Include(m => m.List)
                 .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
 

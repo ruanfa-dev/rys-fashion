@@ -1,6 +1,9 @@
+using System.Net.Mail;
+
 using ErrorOr;
 
 using FluentEmail.Core;
+using FluentEmail.Core.Models;
 
 using Infrastructure.Notification.Options;
 
@@ -26,11 +29,11 @@ public sealed class EmailSenderService(
     {
         try
         {
-            var validationResult = notificationData.Validate();
+            ErrorOr<EmailNotificationData> validationResult = notificationData.Validate();
             if (validationResult.IsError)
                 return validationResult.Errors;
 
-            foreach (var recipient in notificationData.Receivers)
+            foreach (string recipient in notificationData.Receivers)
             {
                 if (!IsValidEmail(recipient))
                     return Errors.InvalidEmail(recipient);
@@ -38,20 +41,20 @@ public sealed class EmailSenderService(
 
             if (notificationData.Attachments.Count != 0)
             {
-                var maxSizeInBytes = _emailOption.MaxAttachmentSize ?? 25 * 1024 * 1024; // Default to 25MB
-                var missingAttachments = notificationData.Attachments.Where(a => !File.Exists(a)).ToList();
+                int maxSizeInBytes = _emailOption.MaxAttachmentSize ?? 25 * 1024 * 1024; // Default to 25MB
+                List<string> missingAttachments = notificationData.Attachments.Where(a => !File.Exists(a)).ToList();
                 if (missingAttachments.Any())
                     return Errors.InvalidAttachments(missingAttachments);
 
-                foreach (var attachment in notificationData.Attachments)
+                foreach (string attachment in notificationData.Attachments)
                 {
-                    var fileInfo = new FileInfo(attachment);
+                    FileInfo fileInfo = new FileInfo(attachment);
                     if (fileInfo.Length > maxSizeInBytes)
                         return Errors.AttachmentSize(attachment, maxSizeInBytes);
                 }
             }
 
-            var email = fluentEmail
+            IFluentEmail? email = fluentEmail
                 .SetFrom(_emailOption.FromEmail, _emailOption.FromName)
                 .To(notificationData.Receivers.Select(m => new FluentEmail.Core.Models.Address(m)))
                 .Subject(notificationData.Title)
@@ -60,15 +63,15 @@ public sealed class EmailSenderService(
 
             if (notificationData.Attachments.Count != 0)
             {
-                var contentTypeProvider = new FileExtensionContentTypeProvider();
-                foreach (var attachmentPath in notificationData.Attachments)
+                FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
+                foreach (string attachmentPath in notificationData.Attachments)
                 {
-                    var attachmentBytes = await File.ReadAllBytesAsync(attachmentPath, cancellationToken);
+                    byte[] attachmentBytes = await File.ReadAllBytesAsync(attachmentPath, cancellationToken);
                     email.Attach(new FluentEmail.Core.Models.Attachment
                     {
                         Filename = Path.GetFileName(attachmentPath),
                         Data = new MemoryStream(attachmentBytes),
-                        ContentType = contentTypeProvider.TryGetContentType(attachmentPath, out var contentType)
+                        ContentType = contentTypeProvider.TryGetContentType(attachmentPath, out string? contentType)
                             ? contentType
                             : "application/octet-stream"
                     });
@@ -78,7 +81,7 @@ public sealed class EmailSenderService(
             Log.Information("Sending email notification with UseCase: {UseCase}, Priority: {Priority}, Language: {Language} to {Receivers}",
                 notificationData.UseCase, notificationData.Priority, notificationData.Language, notificationData.Receivers);
 
-            var sendResult = await email.SendAsync(cancellationToken);
+            SendResponse? sendResult = await email.SendAsync(cancellationToken);
             if (!sendResult.Successful)
             {
                 Log.Error("Failed to send email notification. Errors: {Errors}", sendResult.ErrorMessages);
@@ -99,7 +102,7 @@ public sealed class EmailSenderService(
     {
         try
         {
-            var addr = new System.Net.Mail.MailAddress(email);
+            MailAddress addr = new System.Net.Mail.MailAddress(email);
             return addr.Address == email;
         }
         catch

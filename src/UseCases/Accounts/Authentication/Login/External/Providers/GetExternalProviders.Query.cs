@@ -2,6 +2,7 @@
 
 using ErrorOr;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -45,15 +46,15 @@ public static partial class GetExternalProviders
         {
             try
             {
-                var schemes = await signInManager.GetExternalAuthenticationSchemesAsync();
-                var baseUrl = GetBaseUrl();
+                IEnumerable<AuthenticationScheme> schemes = await signInManager.GetExternalAuthenticationSchemesAsync();
+                string baseUrl = GetBaseUrl();
                 const string externalRoute = ExternalLoginEndpoint.Route;
 
-                var providers = new List<Result>();
+                List<Result> providers = new List<Result>();
 
-                foreach (var scheme in schemes)
+                foreach (AuthenticationScheme scheme in schemes)
                 {
-                    var providerName = scheme.Name.ToLowerInvariant();
+                    string providerName = scheme.Name.ToLowerInvariant();
                     
                     // Security: Only include supported providers
                     if (!SupportedProviders.Contains(providerName))
@@ -68,7 +69,7 @@ public static partial class GetExternalProviders
                         continue;
                     }
 
-                    var provider = new Result
+                    Result provider = new Result
                     {
                         Name = providerName,
                         DisplayName = GetProviderDisplayName(providerName),
@@ -99,18 +100,18 @@ public static partial class GetExternalProviders
 
         private string GetBaseUrl()
         {
-            var configuredBaseUrl = configuration["App:BaseUrl"];
+            string? configuredBaseUrl = configuration["App:BaseUrl"];
             if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
             {
                 return configuredBaseUrl.TrimEnd('/');
             }
 
-            var context = httpContextAccessor.HttpContext;
+            HttpContext? context = httpContextAccessor.HttpContext;
             if (context != null)
             {
-                var request = context.Request;
-                var scheme = request.Scheme;
-                var host = request.Host.Value;
+                HttpRequest request = context.Request;
+                string scheme = request.Scheme;
+                string? host = request.Host.Value;
                 return $"{scheme}://{host}";
             }
 
@@ -156,7 +157,7 @@ public static partial class GetExternalProviders
         {
             try
             {
-                var normalizedName = providerName.ToLowerInvariant();
+                string normalizedName = providerName.ToLowerInvariant();
                 
                 // Only check configuration for supported providers
                 if (!SupportedProviders.Contains(normalizedName))
@@ -164,14 +165,14 @@ public static partial class GetExternalProviders
                     return false;
                 }
 
-                var section = configuration.GetSection($"Authentication:{providerName}");
+                IConfigurationSection section = configuration.GetSection($"Authentication:{providerName}");
                 if (!section.Exists())
                 {
                     logger.LogDebug("Configuration section not found for provider: {Provider}", providerName);
                     return false;
                 }
 
-                var isConfigured = normalizedName switch
+                bool isConfigured = normalizedName switch
                 {
                     "google" => HasRequiredGoogleConfig(section),
                     "facebook" => HasRequiredFacebookConfig(section),
@@ -194,15 +195,15 @@ public static partial class GetExternalProviders
 
         private static bool HasRequiredGoogleConfig(IConfigurationSection section)
         {
-            var clientId = section["ClientId"];
-            var clientSecret = section["ClientSecret"];
+            string? clientId = section["ClientId"];
+            string? clientSecret = section["ClientSecret"];
             return !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret);
         }
 
         private static bool HasRequiredFacebookConfig(IConfigurationSection section)
         {
-            var appId = section["AppId"];
-            var appSecret = section["AppSecret"];
+            string? appId = section["AppId"];
+            string? appSecret = section["AppSecret"];
             return !string.IsNullOrWhiteSpace(appId) && !string.IsNullOrWhiteSpace(appSecret);
         }
     }

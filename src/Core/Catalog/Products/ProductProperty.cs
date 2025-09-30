@@ -83,7 +83,7 @@ public sealed class ProductProperty : AuditableEntity
             return Errors.ValueTooLong;
         if (!System.Text.RegularExpressions.Regex.IsMatch(value, Constraints.ValueAllowedPattern))
             return Errors.InvalidValue;
-        var filterParamCandidate = value.Parameterize();
+        string filterParamCandidate = value.Parameterize();
 
         // Validate: FilterParam (max length, allowed characters)
         if (filterParamCandidate.Length > Constraints.MaxFilterParamLength)
@@ -91,7 +91,7 @@ public sealed class ProductProperty : AuditableEntity
         if (!System.Text.RegularExpressions.Regex.IsMatch(filterParamCandidate, Constraints.FilterParamAllowedPattern))
             return Errors.InvalidFilterParam;
 
-        var productProperty = new ProductProperty(
+        ProductProperty productProperty = new ProductProperty(
             productId: productId,
             propertyId: propertyId,
             value: value,
@@ -109,7 +109,7 @@ public sealed class ProductProperty : AuditableEntity
 
     public ErrorOr<Success> Update(string? value = null, int? position = null)
     {
-        var changed = false;
+        bool changed = false;
 
         if (value != null && value.Trim() != Value)
         {
@@ -148,7 +148,7 @@ public sealed class ProductProperty : AuditableEntity
         if (!string.IsNullOrWhiteSpace(FilterParam))
             return;
 
-        var candidate = Value;
+        string candidate = Value;
         if (string.IsNullOrWhiteSpace(candidate))
             return;
 

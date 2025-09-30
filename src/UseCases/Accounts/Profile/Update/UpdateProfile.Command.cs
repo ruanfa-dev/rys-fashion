@@ -37,19 +37,19 @@ public static partial class UpdateProfile
             try
             {
                 // Load: user context
-                var userId = userContext.UserId;
-                var isAuthenticated = userContext.IsAuthenticated;
+                Guid? userId = userContext.UserId;
+                bool isAuthenticated = userContext.IsAuthenticated;
 
                 // Check: user is authenticated
                 if (userId is null || !isAuthenticated)
                     return User.Errors.UserUnauthorized;
 
                 // Get: user
-                var user = await userManager.FindByIdAsync(userId.Value.ToString());
+                User? user = await userManager.FindByIdAsync(userId.Value.ToString());
                 if (user is null)
                     return User.Errors.UserNotFound;
 
-                var param = command.Param;
+                AccountProfileParam param = command.Param;
 
                 // Begin: transaction
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -57,7 +57,7 @@ public static partial class UpdateProfile
                 // Check: username uniqueness
                 if (!string.IsNullOrWhiteSpace(param.UserName) && param.UserName != user.UserName)
                 {
-                    var existingUser = await userManager.FindByNameAsync(param.UserName);
+                    User? existingUser = await userManager.FindByNameAsync(param.UserName);
                     if (existingUser is not null && existingUser.Id != user.Id)
                     {
                         await unitOfWork.RollbackTransactionAsync(cancellationToken);
@@ -75,7 +75,7 @@ public static partial class UpdateProfile
                 if (!string.IsNullOrWhiteSpace(param.ProfileImagePath))
                     user.ProfileImagePath = param.ProfileImagePath;
 
-                var result = await userManager.UpdateAsync(user);
+                IdentityResult result = await userManager.UpdateAsync(user);
                 if (!result.Succeeded)
                 {
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);

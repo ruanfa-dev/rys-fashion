@@ -35,7 +35,7 @@ public partial class Role : IdentityRole<Guid>, IAuditable
         bool isSystemRole = false,
         bool isDefault = false)
     {
-        var role = new Role
+        Role role = new Role
         {
             Name = name,
             NormalizedName = name.ToUpperInvariant(),

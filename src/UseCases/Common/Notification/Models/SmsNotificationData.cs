@@ -29,7 +29,7 @@ public partial class SmsNotificationData
     /// </summary>
     public ErrorOr<SmsNotificationData> Validate()
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         if (UseCase == NotificationUseCase.None)
             errors.Add(Errors.MissingUseCase);

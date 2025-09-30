@@ -1,4 +1,8 @@
-﻿using Core.Catalog.Taxonomies;
+﻿using System.Reflection;
+
+using Core.Catalog.Taxonomies;
+
+using ErrorOr;
 
 using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging;
@@ -16,7 +20,7 @@ public class TaxonTests
     public void Create_WithValidParameters_ShouldReturnSuccess()
     {
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: _validName,
             taxonomyId: _validTaxonomyId
         );
@@ -37,13 +41,13 @@ public class TaxonTests
     public void Create_WithAllParameters_ShouldSetPropertiesCorrectly()
     {
         // Arrange
-        var parentId = Guid.NewGuid();
-        var description = "Electronic devices and gadgets";
-        var metaTitle = "Electronics SEO Title";
-        var publicMetadata = new Dictionary<string, string?> { ["key1"] = "value1" };
+        Guid parentId = Guid.NewGuid();
+        string description = "Electronic devices and gadgets";
+        string metaTitle = "Electronics SEO Title";
+        Dictionary<string, string?> publicMetadata = new Dictionary<string, string?> { ["key1"] = "value1" };
 
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: _validName,
             taxonomyId: _validTaxonomyId,
             parentId: parentId,
@@ -58,7 +62,7 @@ public class TaxonTests
 
         // Assert
         result.IsError.ShouldBeFalse();
-        var taxon = result.Value;
+        Taxon taxon = result.Value;
 
         taxon.Name.ShouldBe(_validName);
         taxon.TaxonomyId.ShouldBe(_validTaxonomyId);
@@ -79,7 +83,7 @@ public class TaxonTests
     public void Create_WithInvalidName_ShouldReturnError(string? invalidName)
     {
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: invalidName?? string.Empty,
             taxonomyId: _validTaxonomyId
         );
@@ -93,7 +97,7 @@ public class TaxonTests
     public void Create_WithEmptyTaxonomyId_ShouldReturnError()
     {
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: _validName,
             taxonomyId: Guid.Empty
         );
@@ -107,10 +111,10 @@ public class TaxonTests
     public void Create_WithTooLongName_ShouldReturnError()
     {
         // Arrange
-        var tooLongName = new string('A', Taxon.Constraints.NameMaxLength + 1);
+        string tooLongName = new string('A', Taxon.Constraints.NameMaxLength + 1);
 
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: tooLongName,
             taxonomyId: _validTaxonomyId
         );
@@ -126,7 +130,7 @@ public class TaxonTests
     public void Create_WithInvalidRulesMatchPolicy_ShouldReturnError(string invalidPolicy)
     {
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: _validName,
             taxonomyId: _validTaxonomyId,
             rulesMatchPolicy: invalidPolicy
@@ -143,7 +147,7 @@ public class TaxonTests
     public void Create_WithInvalidSortOrder_ShouldReturnError(string invalidSort)
     {
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: _validName,
             taxonomyId: _validTaxonomyId,
             sortOrder: invalidSort
@@ -158,10 +162,10 @@ public class TaxonTests
     public void Create_WithTooLongDescription_ShouldReturnError()
     {
         // Arrange
-        var tooLongDescription = new string('A', Taxon.Constraints.DescriptionMaxLength + 1);
+        string tooLongDescription = new string('A', Taxon.Constraints.DescriptionMaxLength + 1);
 
         // Act
-        var result = Taxon.Create(
+        ErrorOr<Taxon> result = Taxon.Create(
             name: _validName,
             taxonomyId: _validTaxonomyId,
             description: tooLongDescription
@@ -176,14 +180,14 @@ public class TaxonTests
     public void Create_ShouldGenerateDomainEvent()
     {
         // Act
-        var result = Taxon.Create(_validName, _validTaxonomyId);
+        ErrorOr<Taxon> result = Taxon.Create(_validName, _validTaxonomyId);
 
         // Assert
         result.IsError.ShouldBeFalse();
         result.Value.GetDomainEvents().ShouldHaveSingleItem();
         result.Value.GetDomainEvents().First().ShouldBeOfType<Taxon.Events.Created>();
 
-        var createdEvent = (Taxon.Events.Created)result.Value.GetDomainEvents().First();
+        Taxon.Events.Created createdEvent = (Taxon.Events.Created)result.Value.GetDomainEvents().First();
         createdEvent.TaxonId.ShouldBe(result.Value.Id);
     }
 }
@@ -194,7 +198,7 @@ public class TaxonUpdateTests
 
     public TaxonUpdateTests()
     {
-        var result = Taxon.Create("Electronics", Guid.NewGuid());
+        ErrorOr<Taxon> result = Taxon.Create("Electronics", Guid.NewGuid());
         _taxon = result.Value;
         _taxon.ClearDomainEvents(); // Clear creation event for cleaner tests
     }
@@ -206,7 +210,7 @@ public class TaxonUpdateTests
         const string newName = "Updated Electronics";
 
         // Act
-        var result = _taxon.Update(name: newName);
+        ErrorOr<Taxon> result = _taxon.Update(name: newName);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -219,7 +223,7 @@ public class TaxonUpdateTests
     public void Update_WithSameName_ShouldNotTriggerUpdate()
     {
         // Act
-        var result = _taxon.Update(name: _taxon.Name);
+        ErrorOr<Taxon> result = _taxon.Update(name: _taxon.Name);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -233,7 +237,7 @@ public class TaxonUpdateTests
     public void Update_WithInvalidName_ShouldReturnError(string? invalidName)
     {
         // Act
-        var result = _taxon.Update(name: invalidName);
+        ErrorOr<Taxon> result = _taxon.Update(name: invalidName);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -244,7 +248,7 @@ public class TaxonUpdateTests
     public void Update_WithSelfAsParent_ShouldReturnError()
     {
         // Act
-        var result = _taxon.Update(parentId: _taxon.Id);
+        ErrorOr<Taxon> result = _taxon.Update(parentId: _taxon.Id);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -255,11 +259,11 @@ public class TaxonUpdateTests
     public void Update_RulesPolicyChangeOnAutomaticTaxon_ShouldTriggerRegeneration()
     {
         // Arrange
-        var automaticTaxon = Taxon.Create("Auto", Guid.NewGuid(), automatic: true).Value;
+        Taxon automaticTaxon = Taxon.Create("Auto", Guid.NewGuid(), automatic: true).Value;
         automaticTaxon.ClearDomainEvents();
 
         // Act
-        var result = automaticTaxon.Update(rulesMatchPolicy: "any");
+        ErrorOr<Taxon> result = automaticTaxon.Update(rulesMatchPolicy: "any");
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -275,7 +279,7 @@ public class TaxonUpdateTests
         const bool newAutomatic = true;
 
         // Act
-        var result = _taxon.Update(
+        ErrorOr<Taxon> result = _taxon.Update(
             name: newName,
             description: newDescription,
             automatic: newAutomatic
@@ -283,7 +287,7 @@ public class TaxonUpdateTests
 
         // Assert
         result.IsError.ShouldBeFalse();
-        var updated = result.Value;
+        Taxon updated = result.Value;
         updated.Name.ShouldBe(newName);
         updated.Description.ShouldBe(newDescription);
         updated.Automatic.ShouldBe(newAutomatic);
@@ -307,11 +311,11 @@ public class TaxonHierarchyTests
     public void SetParent_WithValidParent_ShouldSucceed()
     {
         // Arrange
-        var newParent = Taxon.Create("NewParent", _taxonomyId).Value;
-        var child = Taxon.Create("TestChild", _taxonomyId).Value;
+        Taxon newParent = Taxon.Create("NewParent", _taxonomyId).Value;
+        Taxon child = Taxon.Create("TestChild", _taxonomyId).Value;
 
         // Act
-        var result = child.SetParent(newParent);
+        ErrorOr<Taxon> result = child.SetParent(newParent);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -324,7 +328,7 @@ public class TaxonHierarchyTests
     public void SetParent_WithSelfAsParent_ShouldReturnError()
     {
         // Act
-        var result = _parentTaxon.SetParent(_parentTaxon);
+        ErrorOr<Taxon> result = _parentTaxon.SetParent(_parentTaxon);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -335,10 +339,10 @@ public class TaxonHierarchyTests
     public void SetParent_WithDifferentTaxonomy_ShouldReturnError()
     {
         // Arrange
-        var differentTaxonomyParent = Taxon.Create("DifferentParent", Guid.NewGuid()).Value;
+        Taxon differentTaxonomyParent = Taxon.Create("DifferentParent", Guid.NewGuid()).Value;
 
         // Act
-        var result = _childTaxon.SetParent(differentTaxonomyParent);
+        ErrorOr<Taxon> result = _childTaxon.SetParent(differentTaxonomyParent);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -349,7 +353,7 @@ public class TaxonHierarchyTests
     public void SetParent_WithCircularReference_ShouldReturnError()
     {
         // Arrange - Create a grandchild
-        var grandChild = Taxon.Create("GrandChild", _taxonomyId, _childTaxon.Id).Value;
+        Taxon grandChild = Taxon.Create("GrandChild", _taxonomyId, _childTaxon.Id).Value;
 
         // Simulate hierarchy by setting up the ancestor relationship
         // In a real scenario, this would be handled by the infrastructure
@@ -357,7 +361,7 @@ public class TaxonHierarchyTests
         _childTaxon.SetParent(_parentTaxon);
 
         // Act - Try to make parent a child of grandchild (circular reference)
-        var result = _parentTaxon.SetParent(grandChild);
+        ErrorOr<Taxon> result = _parentTaxon.SetParent(grandChild);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -403,10 +407,10 @@ public class TaxonBusinessRulesTests
     public void AddRule_ToAutomaticTaxon_ShouldSucceed()
     {
         // Arrange
-        var rule = TaxonRule.Create(_taxon.Id, "product_name", "laptop").Value;
+        TaxonRule rule = TaxonRule.Create(_taxon.Id, "product_name", "laptop").Value;
 
         // Act
-        var result = _taxon.AddRule(rule);
+        ErrorOr<Taxon> result = _taxon.AddRule(rule);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -418,11 +422,11 @@ public class TaxonBusinessRulesTests
     public void AddRule_ToManualTaxon_ShouldReturnError()
     {
         // Arrange
-        var manualTaxon = Taxon.Create("Manual", Guid.NewGuid(), automatic: false).Value;
-        var rule = TaxonRule.Create(manualTaxon.Id, "product_name", "laptop").Value;
+        Taxon manualTaxon = Taxon.Create("Manual", Guid.NewGuid(), automatic: false).Value;
+        TaxonRule rule = TaxonRule.Create(manualTaxon.Id, "product_name", "laptop").Value;
 
         // Act
-        var result = manualTaxon.AddRule(rule);
+        ErrorOr<Taxon> result = manualTaxon.AddRule(rule);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -433,7 +437,7 @@ public class TaxonBusinessRulesTests
     public void AddRule_WithNullRule_ShouldReturnError()
     {
         // Act
-        var result = _taxon.AddRule(null!);
+        ErrorOr<Taxon> result = _taxon.AddRule(null!);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -444,12 +448,12 @@ public class TaxonBusinessRulesTests
     public void RemoveRule_WithExistingRule_ShouldSucceed()
     {
         // Arrange
-        var rule = TaxonRule.Create(_taxon.Id, "product_name", "laptop").Value;
+        TaxonRule rule = TaxonRule.Create(_taxon.Id, "product_name", "laptop").Value;
         _taxon.AddRule(rule);
         _taxon.ClearDomainEvents();
 
         // Act
-        var result = _taxon.RemoveRule(rule.Id);
+        ErrorOr<Taxon> result = _taxon.RemoveRule(rule.Id);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -461,7 +465,7 @@ public class TaxonBusinessRulesTests
     public void RemoveRule_WithNonExistingRule_ShouldReturnError()
     {
         // Act
-        var result = _taxon.RemoveRule(Guid.NewGuid());
+        ErrorOr<Taxon> result = _taxon.RemoveRule(Guid.NewGuid());
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -472,10 +476,10 @@ public class TaxonBusinessRulesTests
     public void ClassifyProduct_WithValidProduct_ShouldSucceed()
     {
         // Arrange
-        var productId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
 
         // Act
-        var result = _taxon.ClassifyProduct(productId, position: 1);
+        ErrorOr<Taxon> result = _taxon.ClassifyProduct(productId, position: 1);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -487,7 +491,7 @@ public class TaxonBusinessRulesTests
     public void ClassifyProduct_WithEmptyProductId_ShouldReturnError()
     {
         // Act
-        var result = _taxon.ClassifyProduct(Guid.Empty);
+        ErrorOr<Taxon> result = _taxon.ClassifyProduct(Guid.Empty);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -498,11 +502,11 @@ public class TaxonBusinessRulesTests
     public void ClassifyProduct_WithAlreadyClassifiedProduct_ShouldReturnError()
     {
         // Arrange
-        var productId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
         _taxon.ClassifyProduct(productId);
 
         // Act
-        var result = _taxon.ClassifyProduct(productId);
+        ErrorOr<Taxon> result = _taxon.ClassifyProduct(productId);
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -513,12 +517,12 @@ public class TaxonBusinessRulesTests
     public void UnclassifyProduct_WithClassifiedProduct_ShouldSucceed()
     {
         // Arrange
-        var productId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
         _taxon.ClassifyProduct(productId);
         _taxon.ClearDomainEvents();
 
         // Act
-        var result = _taxon.UnclassifyProduct(productId);
+        ErrorOr<Taxon> result = _taxon.UnclassifyProduct(productId);
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -530,7 +534,7 @@ public class TaxonBusinessRulesTests
     public void UnclassifyProduct_WithNonClassifiedProduct_ShouldReturnError()
     {
         // Act
-        var result = _taxon.UnclassifyProduct(Guid.NewGuid());
+        ErrorOr<Taxon> result = _taxon.UnclassifyProduct(Guid.NewGuid());
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -544,10 +548,10 @@ public class TaxonDeleteTests
     public void Delete_WithNoChildrenOrClassifications_ShouldSucceed()
     {
         // Arrange
-        var taxon = Taxon.Create("ToDelete", Guid.NewGuid()).Value;
+        Taxon taxon = Taxon.Create("ToDelete", Guid.NewGuid()).Value;
 
         // Act
-        var result = taxon.Delete();
+        ErrorOr<Deleted> result = taxon.Delete();
 
         // Assert
         result.IsError.ShouldBeFalse();
@@ -558,12 +562,12 @@ public class TaxonDeleteTests
     public void Delete_WithChildren_ShouldReturnError()
     {
         // Arrange
-        var parent = Taxon.Create("Parent", Guid.NewGuid()).Value;
-        var child = Taxon.Create("Child", parent.TaxonomyId, parent.Id).Value;
+        Taxon parent = Taxon.Create("Parent", Guid.NewGuid()).Value;
+        Taxon child = Taxon.Create("Child", parent.TaxonomyId, parent.Id).Value;
         parent.AddChild(child);
 
         // Act
-        var result = parent.Delete();
+        ErrorOr<Deleted> result = parent.Delete();
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -574,11 +578,11 @@ public class TaxonDeleteTests
     public void Delete_WithClassifications_ShouldReturnError()
     {
         // Arrange
-        var taxon = Taxon.Create("WithProducts", Guid.NewGuid()).Value;
+        Taxon taxon = Taxon.Create("WithProducts", Guid.NewGuid()).Value;
         taxon.ClassifyProduct(Guid.NewGuid());
 
         // Act
-        var result = taxon.Delete();
+        ErrorOr<Deleted> result = taxon.Delete();
 
         // Assert
         result.IsError.ShouldBeTrue();
@@ -592,10 +596,10 @@ public class TaxonSlugGenerationTests
     public void GenerateSlug_WithNoParent_ShouldReturnNameAsSlug()
     {
         // Arrange
-        var taxon = Taxon.Create("Test Category", Guid.NewGuid()).Value;
+        Taxon taxon = Taxon.Create("Test Category", Guid.NewGuid()).Value;
 
         // Act
-        var slug = taxon.GenerateSlug();
+        string slug = taxon.GenerateSlug();
 
         // Assert
         slug.ShouldBe("test-category"); // Assumes ToUrl() converts to kebab-case
@@ -605,10 +609,10 @@ public class TaxonSlugGenerationTests
     public void GeneratePrettyName_WithNoParent_ShouldReturnName()
     {
         // Arrange
-        var taxon = Taxon.Create("Electronics", Guid.NewGuid()).Value;
+        Taxon taxon = Taxon.Create("Electronics", Guid.NewGuid()).Value;
 
         // Act
-        var prettyName = taxon.GeneratePrettyName();
+        string prettyName = taxon.GeneratePrettyName();
 
         // Assert
         prettyName.ShouldBe("Electronics");
@@ -618,13 +622,13 @@ public class TaxonSlugGenerationTests
     public void GeneratePrettyName_WithParent_ShouldIncludeParentPath()
     {
         // Arrange
-        var parent = Taxon.Create("Electronics", Guid.NewGuid()).Value;
+        Taxon parent = Taxon.Create("Electronics", Guid.NewGuid()).Value;
         parent.SetPrettyName();
-        var child = Taxon.Create("Laptops", parent.TaxonomyId, parent.Id).Value;
+        Taxon child = Taxon.Create("Laptops", parent.TaxonomyId, parent.Id).Value;
         child.SetParent(parent);
 
         // Act
-        var prettyName = child.GeneratePrettyName();
+        string prettyName = child.GeneratePrettyName();
 
         // Assert
         prettyName.ShouldBe("Electronics -> Laptops");
@@ -637,8 +641,8 @@ public class TaxonComputedPropertiesTests
     public void IsManual_WhenNotAutomatic_ShouldReturnTrue()
     {
         // Arrange
-        var manualTaxon = Taxon.Create("Manual", Guid.NewGuid(), automatic: false).Value;
-        var automaticTaxon = Taxon.Create("Automatic", Guid.NewGuid(), automatic: true).Value;
+        Taxon manualTaxon = Taxon.Create("Manual", Guid.NewGuid(), automatic: false).Value;
+        Taxon automaticTaxon = Taxon.Create("Automatic", Guid.NewGuid(), automatic: true).Value;
 
         // Assert
         manualTaxon.IsManual.ShouldBeTrue();
@@ -649,8 +653,8 @@ public class TaxonComputedPropertiesTests
     public void IsManualSortOrder_WhenSortOrderIsManual_ShouldReturnTrue()
     {
         // Arrange
-        var manualSort = Taxon.Create("Manual", Guid.NewGuid(), sortOrder: "manual").Value;
-        var nameSort = Taxon.Create("NameSort", Guid.NewGuid(), sortOrder: "name-a-z").Value;
+        Taxon manualSort = Taxon.Create("Manual", Guid.NewGuid(), sortOrder: "manual").Value;
+        Taxon nameSort = Taxon.Create("NameSort", Guid.NewGuid(), sortOrder: "name-a-z").Value;
 
         // Assert
         manualSort.IsManualSortOrder.ShouldBeTrue();
@@ -661,7 +665,7 @@ public class TaxonComputedPropertiesTests
     public void SeoTitle_WhenMetaTitleIsEmpty_ShouldReturnName()
     {
         // Arrange
-        var taxon = Taxon.Create("Electronics", Guid.NewGuid()).Value;
+        Taxon taxon = Taxon.Create("Electronics", Guid.NewGuid()).Value;
 
         // Assert
         taxon.SeoTitle.ShouldBe("Electronics");
@@ -671,7 +675,7 @@ public class TaxonComputedPropertiesTests
     public void SeoTitle_WhenMetaTitleIsSet_ShouldReturnMetaTitle()
     {
         // Arrange
-        var taxon = Taxon.Create("Electronics", Guid.NewGuid(), metaTitle: "Buy Electronics Online").Value;
+        Taxon taxon = Taxon.Create("Electronics", Guid.NewGuid(), metaTitle: "Buy Electronics Online").Value;
 
         // Assert
         taxon.SeoTitle.ShouldBe("Buy Electronics Online");
@@ -681,7 +685,7 @@ public class TaxonComputedPropertiesTests
     public void PageBuilderImageUrl_ShouldPrioritizeSquareImage()
     {
         // Arrange
-        var taxon = Taxon.Create("Electronics", Guid.NewGuid(),
+        Taxon taxon = Taxon.Create("Electronics", Guid.NewGuid(),
             imageUrl: "image.jpg",
             squareImageUrl: "square.jpg").Value;
 
@@ -693,7 +697,7 @@ public class TaxonComputedPropertiesTests
     public void PageBuilderImageUrl_WhenNoSquareImage_ShouldReturnImageUrl()
     {
         // Arrange
-        var taxon = Taxon.Create("Electronics", Guid.NewGuid(), imageUrl: "image.jpg").Value;
+        Taxon taxon = Taxon.Create("Electronics", Guid.NewGuid(), imageUrl: "image.jpg").Value;
 
         // Assert
         taxon.PageBuilderImageUrl.ShouldBe("image.jpg");
@@ -707,11 +711,11 @@ public static class TaxonTestExtensions
     {
         // Access the protected ClearDomainEvents method through reflection if needed
         // Or implement a test-specific method in the domain model
-        var field = typeof(AuditableEntity).GetField("_domainEvents",
+        FieldInfo? field = typeof(AuditableEntity).GetField("_domainEvents",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (field != null)
         {
-            var events = field.GetValue(taxon) as List<DomainEvent>;
+            List<DomainEvent>? events = field.GetValue(taxon) as List<DomainEvent>;
             events?.Clear();
         }
     }

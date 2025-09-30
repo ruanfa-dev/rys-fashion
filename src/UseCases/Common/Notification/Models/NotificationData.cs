@@ -34,7 +34,7 @@ public partial class NotificationData
     /// </summary>
     public ErrorOr<NotificationData> Validate()
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         if (UseCase == NotificationUseCase.None)
             errors.Add(Errors.MissingUseCase);

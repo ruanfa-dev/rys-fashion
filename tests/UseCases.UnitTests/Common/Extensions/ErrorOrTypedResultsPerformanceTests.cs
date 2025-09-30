@@ -23,12 +23,12 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Performance_SingleSuccessResult_IsEfficient()
     {
         // Arrange
-        var product = new TestProductModel(1, "Test Product", 99.99m);
-        var successResult = ErrorOrFactory.From(product);
-        var stopwatch = Stopwatch.StartNew();
+        TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
+        ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
         stopwatch.Stop();
 
         // Assert
@@ -41,12 +41,12 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Performance_SingleErrorResult_IsEfficient()
     {
         // Arrange
-        var error = Error.NotFound("Product.NotFound", "Product was not found");
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
-        var stopwatch = Stopwatch.StartNew();
+        Error error = Error.NotFound("Product.NotFound", "Product was not found");
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
         stopwatch.Stop();
 
         // Assert
@@ -62,22 +62,22 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Performance_MultipleValidationErrors_ScalesLinearly(int errorCount)
     {
         // Arrange
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
         for (int i = 0; i < errorCount; i++)
         {
             errors.Add(Error.Validation($"Field{i}", $"Error message {i}"));
         }
-        var errorResult = ErrorOrFactory.From<TestProductModel>(errors);
-        var stopwatch = Stopwatch.StartNew();
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(errors);
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
         stopwatch.Stop();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
-        var validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
+        HttpValidationProblemDetails? validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationDetails.ShouldNotBeNull();
         validationDetails.Errors.Count.ShouldBe(errorCount);
 
@@ -91,15 +91,15 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Performance_RepeatedConversions_AreConsistent()
     {
         // Arrange
-        var product = new TestProductModel(1, "Test Product", 99.99m);
-        var successResult = ErrorOrFactory.From(product);
-        var times = new List<long>();
+        TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
+        ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
+        List<long> times = new List<long>();
 
         // Act - Perform multiple conversions
         for (int i = 0; i < 1000; i++)
         {
-            var stopwatch = Stopwatch.StartNew();
-            var result = successResult.ToTypedResult();
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            IResult result = successResult.ToTypedResult();
             stopwatch.Stop();
             times.Add(stopwatch.ElapsedTicks);
             
@@ -107,9 +107,9 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
         }
 
         // Assert
-        var averageTime = times.Sum() / times.Count;
-        var maxTime = times.Max();
-        var minTime = times.Min();
+        long averageTime = times.Sum() / times.Count;
+        long maxTime = times.Max();
+        long minTime = times.Min();
         
         output.WriteLine($"Average: {averageTime} ticks, Min: {minTime} ticks, Max: {maxTime} ticks");
         
@@ -126,16 +126,16 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Memory_LargeErrorMessages_HandledCorrectly()
     {
         // Arrange - Create error with very large message
-        var largeMessage = new string('A', 100_000); // 100KB message
-        var error = Error.Failure("Large.Error", largeMessage);
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        string largeMessage = new string('A', 100_000); // 100KB message
+        Error error = Error.Failure("Large.Error", largeMessage);
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.ProblemDetails.Detail.ShouldBe(largeMessage);
         problemResult.ProblemDetails.Detail!.Length.ShouldBe(100_000);
     }
@@ -144,26 +144,26 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Memory_ManyErrorsWithLargeMessages_HandledGracefully()
     {
         // Arrange
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
         for (int i = 0; i < 100; i++)
         {
-            var largeMessage = new string('X', 10_000); // 10KB each
+            string largeMessage = new string('X', 10_000); // 10KB each
             errors.Add(Error.Validation($"Field{i}", largeMessage));
         }
-        var errorResult = ErrorOrFactory.From<TestProductModel>(errors);
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(errors);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
-        var validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
+        HttpValidationProblemDetails? validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationDetails.ShouldNotBeNull();
         validationDetails.Errors.Count.ShouldBe(100);
 
         // Each error message should be preserved
-        foreach (var kvp in validationDetails.Errors)
+        foreach (KeyValuePair<string, string[]> kvp in validationDetails.Errors)
         {
             kvp.Value[0].Length.ShouldBe(10_000);
         }
@@ -177,9 +177,9 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public async Task Concurrency_ParallelConversions_AreThreadSafe()
     {
         // Arrange
-        var product = new TestProductModel(1, "Test Product", 99.99m);
-        var successResult = ErrorOrFactory.From(product);
-        var tasks = new List<Task<IResult>>();
+        TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
+        ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
+        List<Task<IResult>> tasks = new List<Task<IResult>>();
 
         // Act - Run conversions in parallel
         for (int i = 0; i < 1000; i++)
@@ -187,13 +187,13 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
             tasks.Add(Task.Run(() => successResult.ToTypedResult()));
         }
 
-        var results = await Task.WhenAll(tasks);
+        IResult[] results = await Task.WhenAll(tasks);
 
         // Assert
-        foreach (var result in results)
+        foreach (IResult result in results)
         {
             result.ShouldBeOfType<Ok<TestProductModel>>();
-            var okResult = (Ok<TestProductModel>)result;
+            Ok<TestProductModel> okResult = (Ok<TestProductModel>)result;
             okResult.Value.ShouldBe(product);
         }
     }
@@ -202,9 +202,9 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public async Task Concurrency_ParallelErrorConversions_AreThreadSafe()
     {
         // Arrange
-        var error = Error.NotFound("Product.NotFound", "Product was not found");
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
-        var tasks = new List<Task<IResult>>();
+        Error error = Error.NotFound("Product.NotFound", "Product was not found");
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        List<Task<IResult>> tasks = new List<Task<IResult>>();
 
         // Act
         for (int i = 0; i < 1000; i++)
@@ -212,13 +212,13 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
             tasks.Add(Task.Run(() => errorResult.ToTypedResult()));
         }
 
-        var results = await Task.WhenAll(tasks);
+        IResult[] results = await Task.WhenAll(tasks);
 
         // Assert
-        foreach (var result in results)
+        foreach (IResult result in results)
         {
             result.ShouldBeOfType<ProblemHttpResult>();
-            var problemResult = (ProblemHttpResult)result;
+            ProblemHttpResult problemResult = (ProblemHttpResult)result;
             problemResult.ProblemDetails.Title.ShouldBe("Product.NotFound");
         }
     }
@@ -231,15 +231,15 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_MaxIntId_HandlesCorrectly()
     {
         // Arrange
-        var product = new TestProductModel(int.MaxValue, "Max ID Product", 999999999.99m);
-        var successResult = ErrorOrFactory.From(product);
+        TestProductModel product = new TestProductModel(int.MaxValue, "Max ID Product", 999999999.99m);
+        ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<TestProductModel>>();
-        var okResult = (Ok<TestProductModel>)result;
+        Ok<TestProductModel> okResult = (Ok<TestProductModel>)result;
         okResult.Value!.Id.ShouldBe(int.MaxValue);
         okResult.Value.Price.ShouldBe(999999999.99m);
     }
@@ -248,15 +248,15 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_MinIntId_HandlesCorrectly()
     {
         // Arrange
-        var product = new TestProductModel(int.MinValue, "Min ID Product", -999999999.99m);
-        var successResult = ErrorOrFactory.From(product);
+        TestProductModel product = new TestProductModel(int.MinValue, "Min ID Product", -999999999.99m);
+        ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
 
         // Act
-        var result = successResult.ToTypedResult();
+        IResult result = successResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<Ok<TestProductModel>>();
-        var okResult = (Ok<TestProductModel>)result;
+        Ok<TestProductModel> okResult = (Ok<TestProductModel>)result;
         okResult.Value!.Id.ShouldBe(int.MinValue);
         okResult.Value.Price.ShouldBe(-999999999.99m);
     }
@@ -265,17 +265,17 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_UnicodeErrorMessages_HandlesCorrectly()
     {
         // Arrange
-        var unicodeMessage = "测试错误消息 🚀 العربية русский ñäöü €₹¥£";
-        var error = Error.Validation("UnicodeField", unicodeMessage);
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        string unicodeMessage = "测试错误消息 🚀 العربية русский ñäöü €₹¥£";
+        Error error = Error.Validation("UnicodeField", unicodeMessage);
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
-        var validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
+        HttpValidationProblemDetails? validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationDetails.ShouldNotBeNull();
         validationDetails.Errors["UnicodeField"][0].ShouldBe(unicodeMessage);
     }
@@ -284,17 +284,17 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_ErrorCodeWithSpecialCharacters_HandlesCorrectly()
     {
         // Arrange
-        var specialCode = "Error.With-Special_Characters.123!@#";
-        var error = Error.Validation(specialCode, "Error with special code");
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        string specialCode = "Error.With-Special_Characters.123!@#";
+        Error error = Error.Validation(specialCode, "Error with special code");
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
-        var validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
+        HttpValidationProblemDetails? validationDetails = problemResult.ProblemDetails as HttpValidationProblemDetails;
         validationDetails.ShouldNotBeNull();
         validationDetails.Errors.ShouldContainKey(specialCode);
     }
@@ -303,16 +303,16 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_VeryLongLocationUrl_HandlesCorrectly()
     {
         // Arrange
-        var product = new TestProductModel(1, "Test", 99.99m);
-        var successResult = ErrorOrFactory.From(product);
-        var veryLongUrl = "https://example.com/" + new string('a', 10_000) + "/product/1";
+        TestProductModel product = new TestProductModel(1, "Test", 99.99m);
+        ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
+        string veryLongUrl = "https://example.com/" + new string('a', 10_000) + "/product/1";
 
         // Act
-        var result = successResult.ToTypedResultCreated(veryLongUrl);
+        IResult result = successResult.ToTypedResultCreated(veryLongUrl);
 
         // Assert
         result.ShouldBeOfType<Created<TestProductModel>>();
-        var createdResult = (Created<TestProductModel>)result;
+        Created<TestProductModel> createdResult = (Created<TestProductModel>)result;
         createdResult.Location.ShouldBe(veryLongUrl);
         createdResult.Location!.Length.ShouldBe(veryLongUrl.Length);
     }
@@ -321,15 +321,15 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_ErrorWithNullDescription_HandlesCorrectly()
     {
         // Arrange
-        var error = Error.Custom(999, "Null.Description", null!);
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        Error error = Error.Custom(999, "Null.Description", null!);
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.ProblemDetails.Detail.ShouldBeNull();
     }
 
@@ -337,15 +337,15 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void ExtremeCases_ErrorWithEmptyCode_HandlesCorrectly()
     {
         // Arrange
-        var error = Error.Custom(999, "", "Error with empty code");
-        var errorResult = ErrorOrFactory.From<TestProductModel>(error);
+        Error error = Error.Custom(999, "", "Error with empty code");
+        ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
 
         // Act
-        var result = errorResult.ToTypedResult();
+        IResult result = errorResult.ToTypedResult();
 
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
-        var problemResult = (ProblemHttpResult)result;
+        ProblemHttpResult problemResult = (ProblemHttpResult)result;
         problemResult.ProblemDetails.Title.ShouldBe("");
     }
 

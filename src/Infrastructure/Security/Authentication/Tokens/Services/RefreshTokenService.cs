@@ -9,6 +9,7 @@ using Infrastructure.Security.Authentication.Options;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -32,7 +33,7 @@ public sealed class RefreshTokenService(
     public async Task<ErrorOr<RefreshTokenResult>> GenerateRefreshTokenAsync(
         Guid userId, string ipAddress, bool rememberMe = false, CancellationToken cancellationToken = default)
     {
-        var user = await userManager.FindByIdAsync(userId.ToString());
+        User? user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
             return User.Errors.UserNotFound;
 
@@ -41,12 +42,12 @@ public sealed class RefreshTokenService(
 
         try
         {
-            var rawToken = GenerateSecureToken();
-            var lifetimeDays = rememberMe
+            string rawToken = GenerateSecureToken();
+            int lifetimeDays = rememberMe
                 ? _options.RefreshTokenRememberMeLifetimeDays
                 : _options.RefreshTokenLifetimeDays;
 
-            var token = RefreshToken.Create(
+            RefreshToken token = RefreshToken.Create(
                 userId,
                 rawToken,
                 DateTimeOffset.UtcNow.AddDays(lifetimeDays),
@@ -79,8 +80,8 @@ public sealed class RefreshTokenService(
         if (string.IsNullOrWhiteSpace(rawCurrentToken))
             return RefreshToken.Errors.RefreshTokenRequired;
 
-        var hash = RefreshToken.Hash(rawCurrentToken);
-        var oldToken = await unitOfWork.Context.RefreshTokens
+        string hash = RefreshToken.Hash(rawCurrentToken);
+        RefreshToken? oldToken = await unitOfWork.Context.RefreshTokens
             .Include(t => t.User)
             .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
@@ -96,7 +97,7 @@ public sealed class RefreshTokenService(
         if (oldToken.IsExpired) return RefreshToken.Errors.Expired;
 
         // Start transaction for atomic operation
-        await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
+        await using IDbContextTransaction transaction = await unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
@@ -105,7 +106,7 @@ public sealed class RefreshTokenService(
             unitOfWork.Context.RefreshTokens.Update(oldToken);
 
             // 2. Generate and save the new token
-            var newRefreshTokenResult = await GenerateRefreshTokenAsync(oldToken.UserId, ipAddress, rememberMe, cancellationToken);
+            ErrorOr<RefreshTokenResult> newRefreshTokenResult = await GenerateRefreshTokenAsync(oldToken.UserId, ipAddress, rememberMe, cancellationToken);
             if (newRefreshTokenResult.IsError)
             {
                 await transaction.RollbackAsync(cancellationToken);
@@ -135,8 +136,8 @@ public sealed class RefreshTokenService(
         if (string.IsNullOrWhiteSpace(rawToken))
             return RefreshToken.Errors.RefreshTokenRequired;
 
-        var hash = RefreshToken.Hash(rawToken);
-        var token = await unitOfWork.Context.RefreshTokens
+        string hash = RefreshToken.Hash(rawToken);
+        RefreshToken? token = await unitOfWork.Context.RefreshTokens
             .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
         if (token is null || token.IsRevoked)
@@ -162,9 +163,9 @@ public sealed class RefreshTokenService(
     {
         try
         {
-            var now = DateTimeOffset.UtcNow;
-            var retentionCutoff = now.AddDays(-_options.RevokedTokenRetentionDays);
-            var deletedCount = await unitOfWork.Context.RefreshTokens
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset retentionCutoff = now.AddDays(-_options.RevokedTokenRetentionDays);
+            int deletedCount = await unitOfWork.Context.RefreshTokens
                 .Where(t => t.ExpiresAt < now || (t.IsRevoked && t.RevokedAt < retentionCutoff))
                 .ExecuteDeleteAsync(cancellationToken);
 
@@ -189,8 +190,8 @@ public sealed class RefreshTokenService(
 
         try
         {
-            var hash = RefreshToken.Hash(token);
-            var stored = await unitOfWork.Context.RefreshTokens
+            string hash = RefreshToken.Hash(token);
+            RefreshToken? stored = await unitOfWork.Context.RefreshTokens
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
@@ -242,14 +243,14 @@ public sealed class RefreshTokenService(
                 }
             }
 
-            var tokens = await unitOfWork.Context.RefreshTokens
+            List<RefreshToken> tokens = await unitOfWork.Context.RefreshTokens
                 .Where(t => t.UserId == userId && !t.IsRevoked && (exceptHash == null || t.TokenHash != exceptHash))
                 .ToListAsync(cancellationToken);
 
             if (tokens.Count == 0)
                 return 0;
 
-            foreach (var t in tokens)
+            foreach (RefreshToken t in tokens)
             {
                 t.Revoke(ipAddress, reason ?? "Revoke all user tokens");
                 unitOfWork.Context.RefreshTokens.Update(t);
@@ -269,7 +270,7 @@ public sealed class RefreshTokenService(
 
     private static string GenerateSecureToken()
     {
-        var bytes = RandomNumberGenerator.GetBytes(SecureTokenBytes);
+        byte[] bytes = RandomNumberGenerator.GetBytes(SecureTokenBytes);
         // Use Base64Url encoding for URL safety
         return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }

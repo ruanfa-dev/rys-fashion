@@ -36,16 +36,16 @@ public static class ImageMethods
 
         // normalize size (remove whitespace) and validate
         size = Regex.Replace(size, @"\s+", "");
-        var m = Regex.Match(size, @"^(\d+)x(\d+)$", RegexOptions.IgnoreCase);
+        Match m = Regex.Match(size, @"^(\d+)x(\d+)$", RegexOptions.IgnoreCase);
         if (!m.Success) return string.Empty;
 
-        var width = m.Groups[1].Value;
-        var height = m.Groups[2].Value;
+        string width = m.Groups[1].Value;
+        string height = m.Groups[2].Value;
 
-        var translatedGravity = TranslateGravityForMiniMagick(gravity, processor);
+        string translatedGravity = TranslateGravityForMiniMagick(gravity, processor);
 
         // Build query string (simple approach). Replace with signed URL / CDN params in infra.
-        var qs = $"mode=resize_and_pad&width={Uri.EscapeDataString(width)}&height={Uri.EscapeDataString(height)}&gravity={Uri.EscapeDataString(translatedGravity)}&quality={quality}";
+        string qs = $"mode=resize_and_pad&width={Uri.EscapeDataString(width)}&height={Uri.EscapeDataString(height)}&gravity={Uri.EscapeDataString(translatedGravity)}&quality={quality}";
 
         // background not implemented in this helper (kept for API parity)
         if (!string.IsNullOrWhiteSpace(background))
@@ -54,7 +54,7 @@ public static class ImageMethods
             qs += $"&background={Uri.EscapeDataString(background)}";
         }
 
-        var sep = originalUrl.Contains('?') ? '&' : '?';
+        char sep = originalUrl.Contains('?') ? '&' : '?';
         return $"{originalUrl}{sep}{qs}";
     }
 

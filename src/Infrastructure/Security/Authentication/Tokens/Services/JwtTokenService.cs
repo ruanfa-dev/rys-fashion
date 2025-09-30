@@ -52,11 +52,11 @@ public sealed class JwtTokenService : IJwtTokenService
             if (user is null || user.Id == Guid.Empty)
                 return Task.FromResult<ErrorOr<AccessTokenResult>>(Jwt.Errors.InvalidUser);
 
-            var now = DateTimeOffset.UtcNow;
-            var expires = now.AddMinutes(_jwtOptions.AccessTokenLifetimeMinutes);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset expires = now.AddMinutes(_jwtOptions.AccessTokenLifetimeMinutes);
 
             // Essential claims only - avoid PII in JWT
-            var claims = new List<Claim>
+            List<Claim> claims = new List<Claim>
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -75,10 +75,10 @@ public sealed class JwtTokenService : IJwtTokenService
                 claims.Add(new Claim("email_verified", "true"));
             }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Secret));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Secret));
+            SigningCredentials credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(
+            JwtSecurityToken token = new JwtSecurityToken(
                 issuer: _jwtOptions.Issuer,
                 audience: _jwtOptions.Audience,
                 claims: claims,
@@ -87,7 +87,7 @@ public sealed class JwtTokenService : IJwtTokenService
                 signingCredentials: credentials
             );
 
-            var tokenString = _tokenHandler.WriteToken(token);
+            string? tokenString = _tokenHandler.WriteToken(token);
 
             return Task.FromResult<ErrorOr<AccessTokenResult>>(new AccessTokenResult
             {
@@ -115,9 +115,9 @@ public sealed class JwtTokenService : IJwtTokenService
         try
         {
             // Read token without validation for expired tokens
-            var jwtToken = _tokenHandler.ReadJwtToken(token);
-            var claims = jwtToken.Claims;
-            var identity = new ClaimsIdentity(claims, "JWT", JwtRegisteredClaimNames.UniqueName, ClaimTypes.Role);
+            JwtSecurityToken? jwtToken = _tokenHandler.ReadJwtToken(token);
+            IEnumerable<Claim>? claims = jwtToken.Claims;
+            ClaimsIdentity identity = new ClaimsIdentity(claims, "JWT", JwtRegisteredClaimNames.UniqueName, ClaimTypes.Role);
             return new ClaimsPrincipal(identity);
         }
         catch (ArgumentException ex)
@@ -139,16 +139,16 @@ public sealed class JwtTokenService : IJwtTokenService
 
         try
         {
-            var jwtToken = _tokenHandler.ReadJwtToken(token);
-            var exp = jwtToken.Payload.Expiration;
+            JwtSecurityToken? jwtToken = _tokenHandler.ReadJwtToken(token);
+            long? exp = jwtToken.Payload.Expiration;
 
             if (!exp.HasValue)
             {
                 return Jwt.Errors.NoExpiration;
             }
 
-            var expiration = DateTimeOffset.FromUnixTimeSeconds(exp.Value);
-            var remaining = expiration - DateTimeOffset.UtcNow;
+            DateTimeOffset expiration = DateTimeOffset.FromUnixTimeSeconds(exp.Value);
+            TimeSpan remaining = expiration - DateTimeOffset.UtcNow;
 
             return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
@@ -172,14 +172,14 @@ public sealed class JwtTokenService : IJwtTokenService
         try
         {
             // Basic format validation - should have 3 parts separated by dots
-            var parts = token.Split('.');
+            string[] parts = token.Split('.');
             if (parts.Length != Jwt.Constraints.TokenParts)
             {
                 return Error.Validation(Jwt.Errors.InvalidFormat.Code, "JWT must have exactly 3 parts separated by dots");
             }
 
             // Try to read the token structure
-            var jwtToken = _tokenHandler.ReadJwtToken(token);
+            JwtSecurityToken? jwtToken = _tokenHandler.ReadJwtToken(token);
 
             // Basic header validation
             if (string.IsNullOrEmpty(jwtToken.Header.Alg))
@@ -214,7 +214,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
         try
         {
-            var jwtToken = _tokenHandler.ReadJwtToken(token);
+            JwtSecurityToken? jwtToken = _tokenHandler.ReadJwtToken(token);
             return jwtToken;
         }
         catch (ArgumentException ex)
@@ -239,12 +239,12 @@ public sealed class JwtTokenService : IJwtTokenService
         try
         {
             // Clone validation parameters to modify lifetime validation
-            var validationParams = _validationParameters.Clone();
+            TokenValidationParameters? validationParams = _validationParameters.Clone();
             validationParams.ValidateLifetime = validateLifetime;
 
-            var principal = _tokenHandler.ValidateToken(token, validationParams, out var validatedToken);
+            ClaimsPrincipal? principal = _tokenHandler.ValidateToken(token, validationParams, out SecurityToken? validatedToken);
 
-            var result = new JwtTokenValidationResult
+            JwtTokenValidationResult result = new JwtTokenValidationResult
             {
                 IsValid = true,
                 ClaimsIdentity = principal.Identities.FirstOrDefault(),
@@ -256,7 +256,7 @@ public sealed class JwtTokenService : IJwtTokenService
         }
         catch (SecurityTokenExpiredException ex)
         {
-            var result = new JwtTokenValidationResult
+            JwtTokenValidationResult result = new JwtTokenValidationResult
             {
                 IsValid = false,
                 Exception = ex
@@ -286,8 +286,8 @@ public sealed class JwtTokenService : IJwtTokenService
 
         try
         {
-            var jwtToken = _tokenHandler.ReadJwtToken(token);
-            var claims = jwtToken.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
+            JwtSecurityToken? jwtToken = _tokenHandler.ReadJwtToken(token);
+            Dictionary<string, object> claims = jwtToken.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
             return claims;
         }
         catch (ArgumentException ex)

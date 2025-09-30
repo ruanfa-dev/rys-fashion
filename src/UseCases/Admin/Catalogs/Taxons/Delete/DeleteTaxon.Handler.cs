@@ -23,11 +23,11 @@ public partial class DeleteTaxon
         {
             try
             {
-                var entity = await context.Set<Taxon>()
+                Taxon? entity = await context.Set<Taxon>()
                     .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
                 if (entity is null) return Taxon.Errors.NotFound(request.Id);
 
-                var validation = entity.Delete();
+                ErrorOr<Deleted> validation = entity.Delete();
                 if (validation.IsError) return validation.Errors;
 
                 context.Set<Taxon>().Remove(entity);

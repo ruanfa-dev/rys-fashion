@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -24,7 +26,7 @@ public sealed class EmailEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -32,9 +34,9 @@ public sealed class EmailEndpoint : ICarterModule
 
         group.MapPost(ChangeEmail.Route, async ([FromBody] ChangeEmail.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ChangeEmail.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Email change request sent successfully");
+            ChangeEmail.Command command = new ChangeEmail.Command(param);
+            ErrorOr<ChangeEmail.Result> result = await mediator.Send(command);
+            ApiResponse<ChangeEmail.Result> apiResponse = result.ToApiResponse("Email change request sent successfully");
             
             // Add email change metadata and links
             if (apiResponse.IsSuccess)
@@ -63,9 +65,9 @@ public sealed class EmailEndpoint : ICarterModule
 
         group.MapPost(ConfirmEmail.Route, async ([FromBody] ConfirmEmail.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ConfirmEmail.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Email confirmed successfully");
+            ConfirmEmail.Command command = new ConfirmEmail.Command(param);
+            ErrorOr<ConfirmEmail.Result> result = await mediator.Send(command);
+            ApiResponse<ConfirmEmail.Result> apiResponse = result.ToApiResponse("Email confirmed successfully");
             
             // Add email confirmation metadata and links
             if (apiResponse.IsSuccess)
@@ -91,9 +93,9 @@ public sealed class EmailEndpoint : ICarterModule
 
         group.MapPost(ResendEmailConfirmation.Route, async ([FromBody] ResendEmailConfirmation.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ResendEmailConfirmation.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Email confirmation resent successfully");
+            ResendEmailConfirmation.Command command = new ResendEmailConfirmation.Command(param);
+            ErrorOr<ResendEmailConfirmation.Result> result = await mediator.Send(command);
+            ApiResponse<ResendEmailConfirmation.Result> apiResponse = result.ToApiResponse("Email confirmation resent successfully");
             
             // Add resend confirmation metadata and links
             if (apiResponse.IsSuccess)

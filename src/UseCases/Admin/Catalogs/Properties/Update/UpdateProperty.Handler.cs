@@ -43,23 +43,23 @@ public static partial class UpdateProperty
         {
             try
             {
-                var dbContext = unitOfWork.Context;
-                var entity = await dbContext.Set<Property>()
+                IApplicationDbContext dbContext = unitOfWork.Context;
+                Property? entity = await dbContext.Set<Property>()
                     .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
                 if (entity is null)
                     return Property.Errors.NotFound(request.Id);
 
-                var param = request.Param;
+                Param param = request.Param;
 
                 // Check: for name uniqueness
-                var name = param.Name.Parameterize();
-                var nameExists = await dbContext.Set<Property>()
+                string name = param.Name.Parameterize();
+                bool nameExists = await dbContext.Set<Property>()
                     .AnyAsync(p => p.Id != request.Id && p.Name == name, cancellationToken);
                 if (nameExists)
                     return Property.Errors.NameAlreadyExists(name);
 
                 // Update: entity
-                var updateResult = entity.Update(
+                ErrorOr<Property> updateResult = entity.Update(
                     name: name,
                     presentation: param.Presentation,
                     kind: param.Kind,
@@ -74,7 +74,7 @@ public static partial class UpdateProperty
 
                 // Save: changes
                 dbContext.Set<Property>().Update(updateResult.Value);
-                var result = updateResult.Value.Adapt<Result>();
+                Result result = updateResult.Value.Adapt<Result>();
                 return result;
             }
             catch (Exception ex)

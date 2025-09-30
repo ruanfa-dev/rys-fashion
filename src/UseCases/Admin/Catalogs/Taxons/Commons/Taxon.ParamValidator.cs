@@ -55,7 +55,7 @@ public sealed class TaxonParamValidator : AbstractValidator<TaxonParam>
             .When(x => !string.IsNullOrWhiteSpace(x.MetaKeywords));
 
         RuleFor(x => x.ImageUrl)
-            .Must(x => x == null || Uri.TryCreate(x, UriKind.Absolute, out var uri) &&
+            .Must(x => x == null || Uri.TryCreate(x, UriKind.Absolute, out Uri? uri) &&
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
             Taxon.Constraints.ValidImageExtensions.Contains(Path.GetExtension(x).ToLowerInvariant()))
             .WithErrorCode(Taxon.Errors.InvalidImageContentType.Code)
@@ -63,7 +63,7 @@ public sealed class TaxonParamValidator : AbstractValidator<TaxonParam>
             .When(x => !string.IsNullOrWhiteSpace(x.ImageUrl));
 
         RuleFor(x => x.SquareImageUrl)
-            .Must(x => x == null || Uri.TryCreate(x, UriKind.Absolute, out var uri) &&
+            .Must(x => x == null || Uri.TryCreate(x, UriKind.Absolute, out Uri? uri) &&
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
             Taxon.Constraints.ValidImageExtensions.Contains(Path.GetExtension(x).ToLowerInvariant()))
             .WithErrorCode(Taxon.Errors.InvalidSquareImageContentType.Code)

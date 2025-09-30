@@ -63,8 +63,8 @@ public abstract class ValueObject : IEquatable<ValueObject>, IComparable<ValueOb
     {
         if (obj is null) return 1;
 
-        var thisType = GetUnproxiedType(this);
-        var otherType = GetUnproxiedType(obj);
+        Type thisType = GetUnproxiedType(this);
+        Type otherType = GetUnproxiedType(obj);
 
         if (thisType != otherType)
             return string.Compare(thisType.ToString(), otherType.ToString(), StringComparison.Ordinal);
@@ -72,12 +72,12 @@ public abstract class ValueObject : IEquatable<ValueObject>, IComparable<ValueOb
         if (obj is not ValueObject other)
             return 1;
 
-        var components = GetEqualityComponents().ToArray();
-        var otherComponents = other.GetEqualityComponents().ToArray();
+        object?[] components = GetEqualityComponents().ToArray();
+        object?[] otherComponents = other.GetEqualityComponents().ToArray();
 
-        for (var i = 0; i < Math.Min(components.Length, otherComponents.Length); i++)
+        for (int i = 0; i < Math.Min(components.Length, otherComponents.Length); i++)
         {
-            var comparison = CompareComponents(components[i], otherComponents[i]);
+            int comparison = CompareComponents(components[i], otherComponents[i]);
             if (comparison != 0)
                 return comparison;
         }
@@ -137,8 +137,8 @@ public abstract class ValueObject : IEquatable<ValueObject>, IComparable<ValueOb
         const string EFCoreProxyPrefix = "Castle.Proxies.";
         const string NHibernateProxyPostfix = "Proxy";
 
-        var type = obj.GetType();
-        var typeString = type.ToString();
+        Type type = obj.GetType();
+        string typeString = type.ToString();
 
         if (typeString.Contains(EFCoreProxyPrefix) || typeString.EndsWith(NHibernateProxyPostfix))
             return type.BaseType!;

@@ -16,13 +16,13 @@ public static class ITranslationExtensions
         value = null;
         if (translation is null) return false;
         if (translation.Fields is null) return false;
-        if (translation.Fields.TryGetValue(fieldName, out var v) && !string.IsNullOrEmpty(v))
+        if (translation.Fields.TryGetValue(fieldName, out string? v) && !string.IsNullOrEmpty(v))
         {
             value = v; return true;
         }
 
         // case-insensitive fallback
-        var matched = translation.Fields.FirstOrDefault(kv => string.Equals(kv.Key, fieldName, StringComparison.OrdinalIgnoreCase));
+        KeyValuePair<string, string?> matched = translation.Fields.FirstOrDefault(kv => string.Equals(kv.Key, fieldName, StringComparison.OrdinalIgnoreCase));
         if (!string.IsNullOrEmpty(matched.Value))
         {
             value = matched.Value; return true;
@@ -36,7 +36,7 @@ public static class ITranslationExtensions
     /// </summary>
     public static string? GetField(this ITranslation translation, string fieldName)
     {
-        return translation.TryGetField(fieldName, out var v) ? v : null;
+        return translation.TryGetField(fieldName, out string? v) ? v : null;
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public static class ITranslationExtensions
     public static Error[] Validate(this ITranslation translation, string? prefix = null)
     {
         if (translation is null) throw new ArgumentNullException(nameof(translation));
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         // Culture
         if (string.IsNullOrWhiteSpace(translation.Culture))
@@ -70,10 +70,10 @@ public static class ITranslationExtensions
             if (translation.Fields.Count > TranslatableConstraints.MaxFields)
                 errors.Add(TranslatableErrors.FieldsTooManyEntries(prefix));
 
-            foreach (var kv in translation.Fields)
+            foreach (KeyValuePair<string, string?> kv in translation.Fields)
             {
-                var key = kv.Key ?? string.Empty;
-                var val = kv.Value;
+                string key = kv.Key ?? string.Empty;
+                string? val = kv.Value;
 
                 if (key.Length < TranslatableConstraints.FieldKeyMinLength || key.Length > TranslatableConstraints.FieldKeyMaxLength)
                 {

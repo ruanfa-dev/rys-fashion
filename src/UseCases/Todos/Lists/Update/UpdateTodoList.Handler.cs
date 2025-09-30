@@ -21,7 +21,7 @@ public static partial class UpdateTodoList
         public async Task<ErrorOr<Updated>> Handle(Command request, CancellationToken cancellationToken)
         {
             await unitOfWork.BeginTransactionAsync(cancellationToken);
-            var param = request.Param;
+            TodoListParam param = request.Param;
             // Check: todo list existing
             TodoList? todoList = await unitOfWork.Context.TodoLists
                .SingleOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
@@ -29,13 +29,13 @@ public static partial class UpdateTodoList
                 return TodoList.Errors.TodoListNotFound;
 
             // Check: duplicate title
-            var duplicateTittle = await unitOfWork.Context.TodoLists
+            bool duplicateTittle = await unitOfWork.Context.TodoLists
                 .AnyAsync(m => m.Title == todoList.Title && m.Id != request.Id, cancellationToken: cancellationToken);
             if (duplicateTittle)
                 return TodoList.Errors.TodoListAlreadyExists(param.Title);
 
             // Check: colors
-            var createColorResult = Colour.Create(param.Colour);
+            ErrorOr<Colour> createColorResult = Colour.Create(param.Colour);
             if (createColorResult.IsError) return createColorResult.Errors;
 
             // Update: todo list

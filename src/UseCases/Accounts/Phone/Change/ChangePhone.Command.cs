@@ -29,35 +29,35 @@ public static partial class ChangePhone
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
             // Check: user exists
-            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            User? user = await userManager.FindByIdAsync(userId.Value.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
-            var param = request.Param;
+            Param param = request.Param;
 
             // Check: new phone is different from current phone
             if (string.Equals(user.PhoneNumber, param.NewPhone, StringComparison.OrdinalIgnoreCase))
                 return Error.Validation("ChangePhone.SamePhone", "The new phone number must be different from the current phone number.");
 
             // Check: new phone is not already in use by another user
-            var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.NewPhone && u.Id != user.Id);
-            var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
+            IQueryable<User> existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.NewPhone && u.Id != user.Id);
+            User? existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
             if (existingUser != null)
                 return User.Errors.PhoneNumberAlreadyExists(param.NewPhone);
 
             // Generate verification code for the new phone number
-            var code = await userManager.GenerateChangePhoneNumberTokenAsync(user, param.NewPhone);
+            string code = await userManager.GenerateChangePhoneNumberTokenAsync(user, param.NewPhone);
 
             // Send SMS verification to new phone number
-            var sendSmsResult = await userManager.GenerateAndSendConfirmationSmsAsync(
+            ErrorOr<Success> sendSmsResult = await userManager.GenerateAndSendConfirmationSmsAsync(
                 notificationService,
                 configuration,
                 user,

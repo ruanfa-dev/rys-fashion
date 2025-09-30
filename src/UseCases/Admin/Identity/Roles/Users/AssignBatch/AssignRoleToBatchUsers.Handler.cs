@@ -67,13 +67,13 @@ public static partial class AssignRoleToBatchUsers
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
-            var roleId = request.RoleId;
+            Param param = request.Param;
+            Guid roleId = request.RoleId;
 
             try
             {
                 // Validate role exists upfront
-                var role = await roleManager.FindByIdAsync(roleId.ToString());
+                Role? role = await roleManager.FindByIdAsync(roleId.ToString());
                 if (role == null)
                 {
                     logger.LogWarning("Role not found: {RoleId}", roleId);
@@ -81,11 +81,11 @@ public static partial class AssignRoleToBatchUsers
                 }
 
                 // 🚀 Performance: Batch load all users at once instead of one by one
-                var users = await BatchLoadUsersAsync(param.UserIds);
+                ErrorOr<List<User>> users = await BatchLoadUsersAsync(param.UserIds);
                 if (users.IsError)
                     return users.Errors;
 
-                var validUsers = users.Value;
+                List<User> validUsers = users.Value;
 
                 // Begin transaction for all operations
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -93,13 +93,13 @@ public static partial class AssignRoleToBatchUsers
                 try
                 {
                     // 🔒 Security: Process assignments with detailed tracking
-                    var (assignedUsers, skippedUsers) = await ProcessRoleAssignmentsAsync(
+                    (List<User> assignedUsers, List<User> skippedUsers) = await ProcessRoleAssignmentsAsync(
                         validUsers, role, cancellationToken);
 
                     // All operations succeeded - commit transaction
                     await unitOfWork.CommitTransactionAsync(cancellationToken);
 
-                    var message = BuildResultMessage(assignedUsers.Count, skippedUsers.Count, role.Name!);
+                    string message = BuildResultMessage(assignedUsers.Count, skippedUsers.Count, role.Name!);
 
                     logger.LogInformation("🔒 Batch role assignment completed for role {RoleId} ({RoleName}): {AssignedCount} assigned, {SkippedCount} skipped",
                         roleId, role.Name, assignedUsers.Count, skippedUsers.Count);
@@ -135,13 +135,13 @@ public static partial class AssignRoleToBatchUsers
             try
             {
                 // Load all users in a single database query
-                var users = await userManager.Users
+                List<User> users = await userManager.Users
                     .Where(u => userIds.Contains(u.Id))
                     .ToListAsync();
 
                 // Check if all requested users were found
-                var foundUserIds = users.Select(u => u.Id).ToHashSet();
-                var missingUserIds = userIds.Except(foundUserIds).ToList();
+                HashSet<Guid> foundUserIds = users.Select(u => u.Id).ToHashSet();
+                List<Guid> missingUserIds = userIds.Except(foundUserIds).ToList();
 
                 if (missingUserIds.Count > 0)
                 {
@@ -167,13 +167,13 @@ public static partial class AssignRoleToBatchUsers
         private async Task<(List<User> AssignedUsers, List<User> SkippedUsers)> ProcessRoleAssignmentsAsync(
             List<User> users, Role role, CancellationToken cancellationToken)
         {
-            var assignedUsers = new List<User>();
-            var skippedUsers = new List<User>();
+            List<User> assignedUsers = new List<User>();
+            List<User> skippedUsers = new List<User>();
 
-            foreach (var user in users)
+            foreach (User user in users)
             {
                 // 🔒 Security: Check if user already has the role to prevent unnecessary operations
-                var hasRole = await userManager.IsInRoleAsync(user, role.Name!);
+                bool hasRole = await userManager.IsInRoleAsync(user, role.Name!);
 
                 if (hasRole)
                 {
@@ -184,10 +184,10 @@ public static partial class AssignRoleToBatchUsers
                 }
 
                 // Assign the role
-                var result = await userManager.AddToRoleAsync(user, role.Name!);
+                IdentityResult result = await userManager.AddToRoleAsync(user, role.Name!);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to assign role {RoleName} to user {UserId}: {Errors}",
                         role.Name, user.Id, errors);
 

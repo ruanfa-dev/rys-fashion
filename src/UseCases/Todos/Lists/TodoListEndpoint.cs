@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.Filter;
+using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -36,7 +39,7 @@ public sealed class TodoListEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(TodoEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -44,9 +47,9 @@ public sealed class TodoListEndpoint : ICarterModule
 
         group.MapPost("", async (TodoListParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new CreateTodoList.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("Todo list created successfully");
+            CreateTodoList.Command command = new CreateTodoList.Command(param);
+            ErrorOr<TodoListResult> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<TodoListResult> apiResponse = result.ToApiResponseCreated("Todo list created successfully");
 
             // Add HATEOAS links for the created todo list
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -80,23 +83,23 @@ public sealed class TodoListEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetTodoListPagedList.Param
+            GetTodoListPagedList.Param param = new GetTodoListPagedList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetTodoListPagedList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Todo lists retrieved successfully");
+            GetTodoListPagedList.Query query = new GetTodoListPagedList.Query(param);
+            ErrorOr<PagedList<GetTodoListPagedList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<GetTodoListPagedList.Result>> apiResponse = result.ToApiResponsePaged("Todo lists retrieved successfully");
 
             // Add HATEOAS links for pagination
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
                 // Use PageIndex instead of PageNumber (based on PagingParams structure)
-                var currentPage = (pagination.PageIndex ?? 0) + 1; // Convert 0-based index to 1-based page number
-                var pageSize = pagination.PageSize ?? 10;
+                int currentPage = (pagination.PageIndex ?? 0) + 1; // Convert 0-based index to 1-based page number
+                int pageSize = pagination.PageSize ?? 10;
 
                 apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
 
@@ -131,9 +134,9 @@ public sealed class TodoListEndpoint : ICarterModule
 
         group.MapGet("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var query = new GetTodoListById.Query(id);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Todo list retrieved successfully");
+            GetTodoListById.Query query = new GetTodoListById.Query(id);
+            ErrorOr<TodoListResult> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<TodoListResult> apiResponse = result.ToApiResponse("Todo list retrieved successfully");
 
             // Add HATEOAS links for the todo list
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -160,9 +163,9 @@ public sealed class TodoListEndpoint : ICarterModule
 
         group.MapPut("/{id:int}", async (int id, TodoListParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new UpdateTodoList.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Todo list updated successfully");
+            UpdateTodoList.Command command = new UpdateTodoList.Command(id, param);
+            ErrorOr<Updated> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<Updated> apiResponse = result.ToApiResponse("Todo list updated successfully");
 
             // Add HATEOAS links for the updated todo list - use the id parameter since Updated doesn't have properties
             if (apiResponse.IsSuccess)
@@ -191,9 +194,9 @@ public sealed class TodoListEndpoint : ICarterModule
 
         group.MapDelete("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new DeleteTodoList.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseDeleted("Todo list deleted successfully");
+            DeleteTodoList.Command command = new DeleteTodoList.Command(id);
+            ErrorOr<Deleted> result = await mediator.Send(command, cancellationToken);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Todo list deleted successfully");
 
             // Add metadata for audit purposes
             apiResponse

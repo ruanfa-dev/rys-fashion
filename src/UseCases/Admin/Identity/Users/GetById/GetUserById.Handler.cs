@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 using Core.Identity.Roles;
 using Core.Identity.Users;
 
@@ -30,30 +32,30 @@ public static partial class GetUserById
         {
             try
             {
-                var user = await userManager.FindByIdAsync(request.Id.ToString());
+                User? user = await userManager.FindByIdAsync(request.Id.ToString());
                 if (user == null)
                 {
                     return User.Errors.UserNotFound;
                 }
 
                 // Get: user roles
-                var roles = await userManager.GetRolesAsync(user);
+                IList<string>? roles = await userManager.GetRolesAsync(user);
 
                 // Collect: permissions assigned to roles (case-insensitive)
-                var rolePermissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                HashSet<string> rolePermissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 if (roles?.Count > 0)
                 {
-                    var roleNameSet = new HashSet<string>(roles, StringComparer.OrdinalIgnoreCase);
-                    var matchedRoles = await roleManager.Roles
+                    HashSet<string> roleNameSet = new HashSet<string>(roles, StringComparer.OrdinalIgnoreCase);
+                    List<Role> matchedRoles = await roleManager.Roles
                         .Where(r => roleNameSet.Contains(r.Name!))
                         .ToListAsync(cancellationToken);
 
-                    foreach (var r in matchedRoles)
+                    foreach (Role r in matchedRoles)
                     {
-                        var claimList = await roleManager.GetClaimsAsync(r);
+                        IList<Claim>? claimList = await roleManager.GetClaimsAsync(r);
                         if (claimList == null) continue;
 
-                        foreach (var perm in claimList
+                        foreach (string perm in claimList
                                      .Where(c => string.Equals(c.Type, CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
                                      .Select(c => c.Value)
                                      .Where(v => !string.IsNullOrWhiteSpace(v)))
@@ -64,22 +66,22 @@ public static partial class GetUserById
                 }
 
                 // Get: user claims
-                var userClaims = await userManager.GetClaimsAsync(user);
+                IList<Claim> userClaims = await userManager.GetClaimsAsync(user);
 
                 // Build dictionary of first claim value per claim type (case-insensitive keys)
-                var claimsDict = userClaims
+                Dictionary<string, string> claimsDict = userClaims
                     .GroupBy(c => c.Type, StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.First().Value, StringComparer.OrdinalIgnoreCase);
 
                 // Extract user-level permissions from claims
-                var userPermissions = userClaims
+                IEnumerable<string> userPermissions = userClaims
                     .Where(c => string.Equals(c.Type, CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
                     .Select(c => c.Value!)
                     .Where(v => !string.IsNullOrWhiteSpace(v));
 
                 rolePermissions.UnionWith(userPermissions);
 
-                var result = new Result
+                Result result = new Result
                 {
                     Id = user.Id,
                     Email = user.Email!,

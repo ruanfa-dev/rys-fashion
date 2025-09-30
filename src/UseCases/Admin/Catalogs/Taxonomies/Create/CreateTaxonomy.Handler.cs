@@ -34,24 +34,24 @@ public static partial class CreateTaxonomy
         {
             try
             {
-                var param = request.Param;
+                Param param = request.Param;
 
-                var trimmed = param.Name?.Trim() ?? string.Empty;
+                string trimmed = param.Name?.Trim() ?? string.Empty;
 
-                var exists = await context.Set<Taxonomy>()
+                bool exists = await context.Set<Taxonomy>()
                     .AnyAsync(t => t.Name == trimmed && (param.StoreId == null || t.StoreId == param.StoreId), cancellationToken);
                 if (exists)
                     return Taxonomy.Errors.NameAlreadyExists(trimmed);
 
-                var storeId = param.StoreId ?? Guid.Empty;
-                var createResult = Taxonomy.Create(trimmed, storeId: storeId, position: param.Position);
+                Guid storeId = param.StoreId ?? Guid.Empty;
+                ErrorOr<Taxonomy> createResult = Taxonomy.Create(trimmed, storeId: storeId, position: param.Position);
                 if (createResult.IsError)
                     return createResult.Errors;
 
                 context.Set<Taxonomy>().Add(createResult.Value);
                 await context.SaveChangesAsync(cancellationToken);
 
-                var result = createResult.Value.Adapt<Result>();
+                Result result = createResult.Value.Adapt<Result>();
                 return result;
             }
             catch (Exception ex)

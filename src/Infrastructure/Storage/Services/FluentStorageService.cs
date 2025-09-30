@@ -63,7 +63,7 @@ public sealed class LocalStorageService : IStorageService
                 ? Path.Combine(path, dateFolder, safeFileName).Replace("\\", "/")
                 : Path.Combine(dateFolder, safeFileName).Replace("\\", "/");
 
-            await using var stream = file.OpenReadStream();
+            await using Stream stream = file.OpenReadStream();
             await _storage.WriteAsync(blobPath, stream, cancellationToken: cancellationToken);
 
             return Path.Combine(_options.BaseUrl, blobPath).Replace("\\", "/");
@@ -121,7 +121,7 @@ public sealed class LocalStorageService : IStorageService
             if (!await _storage.ExistsAsync(blobPath, cancellationToken))
                 return StorageErrors.FileNotFound(blobPath);
 
-            var memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new MemoryStream();
             await _storage.ReadToStreamAsync(blobPath, memoryStream, cancellationToken);
             memoryStream.Position = 0;
 
@@ -168,12 +168,12 @@ public sealed class LocalStorageService : IStorageService
     {
         try
         {
-            var blobs = await _storage.ListAsync(
+            IReadOnlyCollection<Blob>? blobs = await _storage.ListAsync(
                 folderPath: folder,
                 recurse: recursive,
                 cancellationToken: cancellationToken);
 
-            var fileInfos = blobs
+            List<StorageFileInfo> fileInfos = blobs
                 .Where(b => !b.IsFolder)
                 .Select(blob => new StorageFileInfo
                 {

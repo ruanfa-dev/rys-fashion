@@ -124,7 +124,7 @@ public sealed class RequestAuthorizeAttribute : AuthorizeAttribute
         if (string.IsNullOrWhiteSpace(input))
             return null;
 
-        var values = input.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        string[] values = input.Split(',', StringSplitOptions.RemoveEmptyEntries)
                           .Select(x => x.Trim())
                           .Where(x => !string.IsNullOrEmpty(x))
                           .ToArray();
@@ -139,7 +139,7 @@ public sealed class RequestAuthorizeAttribute : AuthorizeAttribute
     /// <returns>Policy string for the authorization system</returns>
     private string BuildPolicy()
     {
-        var policyParts = new List<string>(3); // Pre-size for better performance
+        List<string> policyParts = new List<string>(3); // Pre-size for better performance
 
         AddClaimParts(policyParts, CustomClaim.Permission, Permissions);
         AddClaimParts(policyParts, CustomClaim.Policy, Policies);
@@ -164,7 +164,7 @@ public sealed class RequestAuthorizeAttribute : AuthorizeAttribute
         if (values?.Length > 0)
         {
             // Validate claim values
-            foreach (var value in values)
+            foreach (string value in values)
             {
                 if (string.IsNullOrWhiteSpace(value))
                 {
@@ -182,7 +182,7 @@ public sealed class RequestAuthorizeAttribute : AuthorizeAttribute
     /// <returns>String describing the authorization requirements</returns>
     public override string ToString()
     {
-        var parts = new List<string>();
+        List<string> parts = new List<string>();
 
         if (Permissions?.Length > 0)
             parts.Add($"Permissions: [{string.Join(", ", Permissions)}]");

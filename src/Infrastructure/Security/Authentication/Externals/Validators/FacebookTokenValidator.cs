@@ -67,7 +67,7 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
             if (!string.IsNullOrWhiteSpace(authorizationCode))
             {
                 _logger.LogDebug("Exchanging Facebook authorization code for access token");
-                var tokenExchangeResult = await ExchangeAuthorizationCodeAsync(authorizationCode, redirectUri, cancellationToken);
+                ErrorOr<string> tokenExchangeResult = await ExchangeAuthorizationCodeAsync(authorizationCode, redirectUri, cancellationToken);
                 if (tokenExchangeResult.IsError)
                 {
                     return tokenExchangeResult.Errors;
@@ -101,15 +101,15 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
         string? redirectUri,
         CancellationToken cancellationToken)
     {
-        var appId = _facebookOptions?.AppId;
-        var appSecret = _facebookOptions?.AppSecret;
+        string? appId = _facebookOptions?.AppId;
+        string? appSecret = _facebookOptions?.AppSecret;
 
         if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appSecret))
         {
             return Error.NotFound("Facebook.Configuration.Missing", "Facebook OAuth configuration is incomplete");
         }
 
-        var tokenRequest = new Dictionary<string, string>
+        Dictionary<string, string> tokenRequest = new Dictionary<string, string>
         {
             ["grant_type"] = "authorization_code",
             ["client_id"] = appId,
@@ -124,13 +124,13 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
 
         try
         {
-            var response = await _httpClient.PostAsync(
+            HttpResponseMessage response = await _httpClient.PostAsync(
                 "https://graph.facebook.com/v18.0/oauth/access_token",
                 new FormUrlEncodedContent(tokenRequest),
                 cancellationToken
             );
 
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -139,7 +139,7 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
                 return Error.Failure("Facebook.TokenExchange.Failed", "Failed to exchange authorization code with Facebook");
             }
 
-            var tokenData = JsonSerializer.Deserialize<FacebookTokenResponse>(responseContent);
+            FacebookTokenResponse? tokenData = JsonSerializer.Deserialize<FacebookTokenResponse>(responseContent);
 
             if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken))
             {
@@ -166,12 +166,12 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
         string accessToken, 
         CancellationToken cancellationToken)
     {
-        var appAccessToken = _appAccessToken.Value!;
+        string appAccessToken = _appAccessToken.Value!;
 
         try
         {
             // First, validate the token using Facebook's debug endpoint for security
-            var debugResponse = await _httpClient.GetAsync(
+            HttpResponseMessage debugResponse = await _httpClient.GetAsync(
                 $"https://graph.facebook.com/debug_token?input_token={Uri.EscapeDataString(accessToken)}&access_token={Uri.EscapeDataString(appAccessToken)}",
                 cancellationToken
             );
@@ -182,11 +182,11 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
                 return Error.Unauthorized("Facebook.Token.Invalid", "Invalid Facebook token");
             }
 
-            var debugContent = await debugResponse.Content.ReadAsStringAsync(cancellationToken);
-            var debugInfo = JsonSerializer.Deserialize<FacebookDebugResponse>(debugContent);
+            string debugContent = await debugResponse.Content.ReadAsStringAsync(cancellationToken);
+            FacebookDebugResponse? debugInfo = JsonSerializer.Deserialize<FacebookDebugResponse>(debugContent);
 
             // Validate token debug response
-            var validationResult = ValidateTokenDebugInfo(debugInfo);
+            ErrorOr<Success> validationResult = ValidateTokenDebugInfo(debugInfo);
             if (validationResult.IsError)
             {
                 return validationResult.Errors;
@@ -231,7 +231,7 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
         // Check token expiration if available
         if (debugInfo.Data.ExpiresAt.HasValue)
         {
-            var expiresAt = DateTimeOffset.FromUnixTimeSeconds(debugInfo.Data.ExpiresAt.Value);
+            DateTimeOffset expiresAt = DateTimeOffset.FromUnixTimeSeconds(debugInfo.Data.ExpiresAt.Value);
             if (expiresAt <= DateTimeOffset.UtcNow.AddMinutes(1)) // 1 minute buffer
             {
                 _logger.LogWarning("Facebook token has expired or expires very soon");
@@ -242,8 +242,8 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
         // Validate required scopes for e-commerce
         if (debugInfo.Data.Scopes != null)
         {
-            var requiredScopes = new[] { "email", "public_profile" };
-            var hasRequiredScopes = requiredScopes.All(scope => 
+            string[] requiredScopes = new[] { "email", "public_profile" };
+            bool hasRequiredScopes = requiredScopes.All(scope => 
                 debugInfo.Data.Scopes.Contains(scope, StringComparer.OrdinalIgnoreCase));
 
             if (!hasRequiredScopes)
@@ -265,7 +265,7 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
         try
         {
             // Get user information with essential fields only for e-commerce
-            var userResponse = await _httpClient.GetAsync(
+            HttpResponseMessage userResponse = await _httpClient.GetAsync(
                 $"https://graph.facebook.com/v18.0/me?fields=id,email,first_name,last_name,name,picture.width(200).height(200),verified,locale&access_token={Uri.EscapeDataString(accessToken)}",
                 cancellationToken
             );
@@ -276,8 +276,8 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
                 return Error.Failure("Facebook.UserInfo.Failed", "Failed to get user information from Facebook");
             }
 
-            var userContent = await userResponse.Content.ReadAsStringAsync(cancellationToken);
-            var userInfo = JsonSerializer.Deserialize<FacebookUserInfo>(userContent);
+            string userContent = await userResponse.Content.ReadAsStringAsync(cancellationToken);
+            FacebookUserInfo? userInfo = JsonSerializer.Deserialize<FacebookUserInfo>(userContent);
 
             if (userInfo == null || string.IsNullOrWhiteSpace(userInfo.Id))
             {
@@ -286,8 +286,8 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
             }
 
             // Handle email requirements for e-commerce
-            var email = userInfo.Email;
-            var emailVerified = !string.IsNullOrWhiteSpace(email);
+            string? email = userInfo.Email;
+            bool emailVerified = !string.IsNullOrWhiteSpace(email);
             
             if (string.IsNullOrWhiteSpace(email))
             {

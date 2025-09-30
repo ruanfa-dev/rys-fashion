@@ -45,8 +45,8 @@ public static class ParameterizableNameExtensions
         if (entity is null) return;
 
         // Use Name, otherwise Presentation, otherwise empty string as source for slugification.
-        var source = entity.Name ?? entity.Presentation ?? string.Empty;
-        var normalized = Slugifier.Parameterize(source).Trim();
+        string source = entity.Name ?? entity.Presentation ?? string.Empty;
+        string normalized = Slugifier.Parameterize(source).Trim();
 
         // Keep the property non-nullable by using empty string when result is empty.
         entity.Name = string.IsNullOrEmpty(normalized) ? string.Empty : normalized;
@@ -68,7 +68,7 @@ public static class ParameterizableNameExtensions
     private static string? TrimToNull(string? value)
     {
         if (value is null) return null;
-        var t = value.Trim();
+        string t = value.Trim();
         return t.Length == 0 ? null : t;
     }
 
@@ -85,9 +85,9 @@ public static class ParameterizableNameExtensions
         if (source == null) throw new ArgumentNullException(nameof(source));
         if (string.IsNullOrWhiteSpace(query)) return source;
 
-        var q = query.Trim();
+        string q = query.Trim();
 
-        var builder = QueryFilterBuilder.Create()
+        QueryFilterBuilder builder = QueryFilterBuilder.Create()
             .Or("Name", FilterOperator.Contains, q)
             .Or("Presentation", FilterOperator.Contains, q);
 
@@ -109,9 +109,9 @@ public static class ParameterizableNameExtensions
         if (translationsNav == null) throw new ArgumentNullException(nameof(translationsNav));
         if (string.IsNullOrWhiteSpace(query)) return source;
 
-        var q = query.Trim();
+        string q = query.Trim();
 
-        var builder = QueryFilterBuilder.Create()
+        QueryFilterBuilder builder = QueryFilterBuilder.Create()
             .Or("Name", FilterOperator.Contains, q)
             .Or("Presentation", FilterOperator.Contains, q)
             .Or("Translations.Presentation", FilterOperator.Contains, q)

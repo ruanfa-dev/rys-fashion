@@ -1,4 +1,6 @@
-﻿using Core.Identity.Permissions;
+﻿using System.Security.Claims;
+
+using Core.Identity.Permissions;
 using Core.Identity.Roles;
 using Core.Identity.Users;
 
@@ -19,10 +21,10 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        using var scope = serviceProvider.CreateScope();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        RoleManager<Role> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
+        UserManager<User> userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         Log.Information("[IdentitySeed] Starting identity seeding");
 
@@ -48,17 +50,17 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         Log.Information("[IdentitySeed:Permissions] Ensuring all permissions exist in database");
 
         // Get all predefined permissions from the Feature class
-        var allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions ?? Array.Empty<Permission>();
+        Permission[] allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions ?? Array.Empty<Permission>();
 
         // Get existing permission names from database (normalize to lower-case for comparison)
-        var existingPermissionNames = await dbContext.Permissions
+        HashSet<string> existingPermissionNames = await dbContext.Permissions
             .Select(p => p.Name.ToLowerInvariant())
             .ToHashSetAsync(cancellationToken);
 
         // Deduplicate the source permissions by name (case-insensitive) to avoid adding the same logical
         // permission multiple times. Also create fresh Permission instances when inserting so the
         // in-memory provider doesn't see duplicated primary keys from any shared/static instances.
-        var permissionsToAdd = allPermissions
+        List<Permission> permissionsToAdd = allPermissions
             .GroupBy(p => (p.Name).ToLowerInvariant())
             .Select(g => g.First())
             .Where(p => !existingPermissionNames.Contains((p.Name ?? string.Empty).ToLowerInvariant()))
@@ -67,7 +69,7 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
 
         if (permissionsToAdd.Count > 0)
         {
-            foreach (var permission in permissionsToAdd)
+            foreach (Permission permission in permissionsToAdd)
             {
                 Log.Information("[IdentitySeed:Permissions] Adding permission: {PermissionName}", permission.Name);
             }
@@ -86,24 +88,24 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
     {
         Log.Information("[IdentitySeed:Roles] Ensuring all roles exist");
 
-        var allRoleNames = DefaultRole.SystemRoles.Concat(DefaultRole.StorefrontRoles).Distinct().ToList();
+        List<string> allRoleNames = DefaultRole.SystemRoles.Concat(DefaultRole.StorefrontRoles).Distinct().ToList();
 
-        foreach (var roleName in allRoleNames)
+        foreach (string roleName in allRoleNames)
         {
-            var existingRole = await roleManager.FindByNameAsync(roleName);
+            Role? existingRole = await roleManager.FindByNameAsync(roleName);
             if (existingRole == null)
             {
-                var isSystemRole = DefaultRole.SystemRoles.Contains(roleName);
-                var newRole = Role.Create(
+                bool isSystemRole = DefaultRole.SystemRoles.Contains(roleName);
+                Role newRole = Role.Create(
                     name: roleName,
                     description: $"System role: {roleName}",
                     isSystemRole: isSystemRole
                 );
                 
-                var result = await roleManager.CreateAsync(newRole);
+                IdentityResult result = await roleManager.CreateAsync(newRole);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     Log.Error("[IdentitySeed:Roles] Failed creating role {RoleName}: {Errors}", roleName, errors);
                 }
                 else
@@ -120,19 +122,19 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         // scenarios when seeders run multiple times across test host lifecycles.
         try
         {
-            var allRolesList = await roleManager.Roles.ToListAsync(cancellationToken);
-            var duplicates = allRolesList
+            List<Role> allRolesList = await roleManager.Roles.ToListAsync(cancellationToken);
+            List<IGrouping<string?, Role>> duplicates = allRolesList
                 .GroupBy(r => r.NormalizedName)
                 .Where(g => g.Count() > 1)
                 .ToList();
 
-            foreach (var dupGroup in duplicates)
+            foreach (IGrouping<string?, Role> dupGroup in duplicates)
             {
                 // Keep the first and delete the rest
-                var keep = dupGroup.First();
-                foreach (var remove in dupGroup.Skip(1))
+                Role keep = dupGroup.First();
+                foreach (Role remove in dupGroup.Skip(1))
                 {
-                    var delResult = await roleManager.DeleteAsync(remove);
+                    IdentityResult delResult = await roleManager.DeleteAsync(remove);
                     if (!delResult.Succeeded)
                     {
                         Log.Warning("[IdentitySeed:Roles] Failed to remove duplicate role {RoleName}: {Errors}", remove.Name, string.Join(";", delResult.Errors.Select(e => e.Description)));
@@ -155,25 +157,25 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         RoleManager<Role> roleManager,
         CancellationToken cancellationToken)
     {
-        var allRoles = await roleManager.Roles.ToListAsync(cancellationToken);
+        List<Role> allRoles = await roleManager.Roles.ToListAsync(cancellationToken);
 
-        foreach (var role in allRoles)
+        foreach (Role role in allRoles)
         {
-            var userEmail = $"{role.Name?.ToLowerInvariant()}@seeder.com";
-            var userName = role.Name?.ToLowerInvariant();
-            var password = "Seeder@123"; // Change for production!
+            string userEmail = $"{role.Name?.ToLowerInvariant()}@seeder.com";
+            string? userName = role.Name?.ToLowerInvariant();
+            string password = "Seeder@123"; // Change for production!
 
-            var user = await userManager.FindByEmailAsync(userEmail);
+            User? user = await userManager.FindByEmailAsync(userEmail);
             if (user == null)
             {
                 user = User.Create(
                     email: userEmail,
                     emailConfirmed: true,
                     userName: userName);
-                var result = await userManager.CreateAsync(user, password);
+                IdentityResult result = await userManager.CreateAsync(user, password);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     Log.Error("[IdentitySeed:Users] Failed creating user for role {RoleName}: {Errors}", role.Name, errors);
                     continue;
                 }
@@ -194,7 +196,7 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         CancellationToken cancellationToken)
     {
         const string systemAdminRoleName = DefaultRole.Admin;
-        var systemAdminRole = await roleManager.FindByNameAsync(systemAdminRoleName);
+        Role? systemAdminRole = await roleManager.FindByNameAsync(systemAdminRoleName);
 
         if (systemAdminRole == null)
         {
@@ -203,16 +205,16 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         }
 
         // Get all permissions from Feature class
-        var allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions;
-        var existingClaims = await roleManager.GetClaimsAsync(systemAdminRole);
+        Permission[] allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions;
+        IList<Claim> existingClaims = await roleManager.GetClaimsAsync(systemAdminRole);
 
-        var addedCount = 0;
-        foreach (var permission in allPermissions)
+        int addedCount = 0;
+        foreach (Permission permission in allPermissions)
         {
             // Check if permission claim already exists for this role
             if (!existingClaims.Any(c => c.Type == CustomClaim.Permission && c.Value == permission.Name))
             {
-                var claim = new System.Security.Claims.Claim(CustomClaim.Permission, permission.Name);
+                Claim claim = new System.Security.Claims.Claim(CustomClaim.Permission, permission.Name);
                 await roleManager.AddClaimAsync(systemAdminRole, claim);
                 addedCount++;
             }

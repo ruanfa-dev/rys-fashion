@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -27,7 +29,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -36,9 +38,9 @@ public sealed class AuthenticationEndpoint : ICarterModule
         // Login with password
         group.MapPost(LoginWithPassword.Route, async ([FromBody] LoginWithPassword.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new LoginWithPassword.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("User logged in successfully");
+            LoginWithPassword.Command command = new LoginWithPassword.Command(param);
+            ErrorOr<LoginWithPassword.Result> result = await mediator.Send(command);
+            ApiResponse<LoginWithPassword.Result> apiResponse = result.ToApiResponse("User logged in successfully");
             
             // Add authentication-related metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -66,9 +68,9 @@ public sealed class AuthenticationEndpoint : ICarterModule
         // Customer registration
         group.MapPost(CustomerRegister.Route, async ([FromBody] CustomerRegister.Param param, [FromServices] ISender sender) =>
         {
-            var command = new CustomerRegister.Command(param);
-            var result = await sender.Send(command);
-            var apiResponse = result.ToApiResponseCreated("Account created successfully");
+            CustomerRegister.Command command = new CustomerRegister.Command(param);
+            ErrorOr<Guid> result = await sender.Send(command);
+            ApiResponse<Guid> apiResponse = result.ToApiResponseCreated("Account created successfully");
             
             // Add registration-related metadata and links
             if (apiResponse.IsSuccess)
@@ -95,9 +97,9 @@ public sealed class AuthenticationEndpoint : ICarterModule
         // Get current session
         group.MapGet(GetSession.Route, async ([FromServices] ISender mediator) =>
         {
-            var query = new GetSession.Query();
-            var result = await mediator.Send(query);
-            var apiResponse = result.ToApiResponse("Session information retrieved successfully");
+            GetSession.Query query = new GetSession.Query();
+            ErrorOr<AccountSessionResult> result = await mediator.Send(query);
+            ApiResponse<AccountSessionResult> apiResponse = result.ToApiResponse("Session information retrieved successfully");
             
             // Add session-related metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -123,9 +125,9 @@ public sealed class AuthenticationEndpoint : ICarterModule
         // Logout current session
         group.MapPost(Logout.Route, async ([FromBody] Logout.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new Logout.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponseDeleted("Successfully logged out");
+            Logout.Command command = new Logout.Command(param);
+            ErrorOr<Deleted> result = await mediator.Send(command);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Successfully logged out");
             
             // Add logout metadata and links
             apiResponse
@@ -150,9 +152,9 @@ public sealed class AuthenticationEndpoint : ICarterModule
         // Logout from all devices
         group.MapPost(LogoutFromAll.Route, async ([FromBody] LogoutFromAll.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new LogoutFromAll.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponseDeleted("Successfully logged out from all devices");
+            LogoutFromAll.Command command = new LogoutFromAll.Command(param);
+            ErrorOr<Deleted> result = await mediator.Send(command);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Successfully logged out from all devices");
             
             // Add logout-all metadata and links
             apiResponse

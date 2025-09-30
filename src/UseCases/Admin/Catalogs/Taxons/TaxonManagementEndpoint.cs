@@ -1,5 +1,7 @@
 using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.Filter;
+using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -38,7 +41,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -51,9 +54,9 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new CreateTaxon.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("Taxon created successfully");
+            CreateTaxon.Command command = new CreateTaxon.Command(param);
+            ErrorOr<CreateTaxon.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<CreateTaxon.Result> apiResponse = result.ToApiResponseCreated("Taxon created successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
@@ -88,21 +91,21 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetTaxonPagedList.Param
+            GetTaxonPagedList.Param param = new GetTaxonPagedList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetTaxonPagedList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Taxons retrieved successfully");
+            GetTaxonPagedList.Query query = new GetTaxonPagedList.Query(param);
+            ErrorOr<PagedList<GetTaxonPagedList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<GetTaxonPagedList.Result>> apiResponse = result.ToApiResponsePaged("Taxons retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
-                var currentPage = (pagination.PageIndex ?? 0) + 1;
-                var pageSize = pagination.PageSize ?? 10;
+                int currentPage = (pagination.PageIndex ?? 0) + 1;
+                int pageSize = pagination.PageSize ?? 10;
 
                 apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
 
@@ -144,16 +147,16 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetTaxonOptionList.Param
+            GetTaxonOptionList.Param param = new GetTaxonOptionList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetTaxonOptionList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxon option list retrieved successfully");
+            GetTaxonOptionList.Query query = new GetTaxonOptionList.Query(param);
+            ErrorOr<PagedList<GetTaxonOptionList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<PagedList<GetTaxonOptionList.Result>> apiResponse = result.ToApiResponse("Taxon option list retrieved successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
@@ -181,9 +184,9 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var query = new GetTaxonById.Query(id);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxon details retrieved successfully");
+            GetTaxonById.Query query = new GetTaxonById.Query(id);
+            ErrorOr<GetTaxonById.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetTaxonById.Result> apiResponse = result.ToApiResponse("Taxon details retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -216,9 +219,9 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateTaxon.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxon updated successfully");
+            UpdateTaxon.Command command = new UpdateTaxon.Command(id, param);
+            ErrorOr<UpdateTaxon.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<UpdateTaxon.Result> apiResponse = result.ToApiResponse("Taxon updated successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -252,9 +255,9 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new RepositionTaxon.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxon repositioned successfully");
+            RepositionTaxon.Command command = new RepositionTaxon.Command(param);
+            ErrorOr<RepositionTaxon.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<RepositionTaxon.Result> apiResponse = result.ToApiResponse("Taxon repositioned successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -287,9 +290,9 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new DeleteTaxon.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxon deleted successfully");
+            DeleteTaxon.Command command = new DeleteTaxon.Command(id);
+            ErrorOr<Deleted> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<Deleted> apiResponse = result.ToApiResponse("Taxon deleted successfully");
 
             apiResponse
                 .WithLink("all-taxons", Route)
@@ -323,19 +326,19 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             CancellationToken cancellationToken) =>
         {
             // Default to false so that tree endpoint returns full hierarchy unless explicitly asked for leaves-only
-            var param = new GetTaxonTree.Param(taxonomyId, storeId, includeLeavesOnly ?? false);
+            GetTaxonTree.Param param = new GetTaxonTree.Param(taxonomyId, storeId, includeLeavesOnly ?? false);
 
-            var query = new GetTaxonTree.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxon tree retrieved successfully");
+            GetTaxonTree.Query query = new GetTaxonTree.Query(param);
+            ErrorOr<List<GetTaxonTree.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<GetTaxonTree.Result>> apiResponse = result.ToApiResponse("Taxon tree retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
-                var qs = new List<string>();
+                List<string> qs = new List<string>();
                 if (taxonomyId.HasValue) qs.Add($"taxonomy_id={taxonomyId}");
                 if (storeId.HasValue) qs.Add($"store_id={storeId}");
                 if (includeLeavesOnly.HasValue) qs.Add($"include_leaves_only={includeLeavesOnly.Value.ToString().ToLowerInvariant()}");
-                var q = qs.Count > 0 ? "?" + string.Join("&", qs) : string.Empty;
+                string q = qs.Count > 0 ? "?" + string.Join("&", qs) : string.Empty;
 
                 apiResponse
                     .WithLink("self", $"{Route}/tree{q}")

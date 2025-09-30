@@ -11,7 +11,7 @@ public sealed class FacebookOption : IValidateOptions<FacebookOption>
 
     public ValidateOptionsResult Validate(string? name, FacebookOption options)
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(options.AppId))
         {

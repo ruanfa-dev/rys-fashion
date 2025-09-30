@@ -32,13 +32,13 @@ internal sealed class ActionTrackingEntityInterceptor(IUserContext userContext)
         if (context == null || !userContext.IsAuthenticated)
             return;
 
-        var userString = userContext.UserId == null ? "System" : userContext.UserName;
+        string? userString = userContext.UserId == null ? "System" : userContext.UserName;
 
-        var entries = context.ChangeTracker
+        IEnumerable<EntityEntry> entries = context.ChangeTracker
             .Entries()
             .Where(e => e.Entity is IAuditable || e.Entity is IAssignable);
 
-        foreach (var entry in entries)
+        foreach (EntityEntry entry in entries)
         {
             if (entry.Entity is IAuditable auditable)
             {

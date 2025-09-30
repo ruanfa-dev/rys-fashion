@@ -46,7 +46,7 @@ public sealed class PropertyPrototype : AuditableEntity
         if (prototypeId == Guid.Empty) return Errors.PrototypeRequired;
         if (propertyId == Guid.Empty) return Errors.PropertyRequired;
 
-        var pp = new PropertyPrototype
+        PropertyPrototype pp = new PropertyPrototype
         {
             PrototypeId = prototypeId,
             PropertyId = propertyId
@@ -62,7 +62,7 @@ public sealed class PropertyPrototype : AuditableEntity
 
     public ErrorOr<PropertyPrototype> Update(Guid? prototypeId = null, Guid? propertyId = null)
     {
-        var changed = false;
+        bool changed = false;
 
         if (prototypeId.HasValue && prototypeId.Value != PrototypeId)
         {

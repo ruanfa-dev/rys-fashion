@@ -3,6 +3,10 @@
 using Infrastructure.Persistence.Converters;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using SharedKernel.Domain.Attributes.Metadata;
 
@@ -12,20 +16,20 @@ internal static class MetadataSupportModelBuilderExtensions
 {
     public static void ApplyMetadataSupportConversions(this ModelBuilder builder)
     {
-        var metadataInterface = typeof(IMetadataSupport);
-        var converter = DictionaryJsonConverter.GetConverter();
-        var comparer = DictionaryJsonConverter.GetComparer();
+        Type metadataInterface = typeof(IMetadataSupport);
+        ValueConverter<IDictionary<string, string?>?, string?> converter = DictionaryJsonConverter.GetConverter();
+        ValueComparer<IDictionary<string, string?>?> comparer = DictionaryJsonConverter.GetComparer();
 
-        foreach (var entityType in builder.Model.GetEntityTypes())
+        foreach (IMutableEntityType entityType in builder.Model.GetEntityTypes())
         {
-            var clrType = entityType.ClrType;
+            Type? clrType = entityType.ClrType;
             if (clrType == null) continue;
             if (!metadataInterface.IsAssignableFrom(clrType)) continue;
 
-            var entityBuilder = builder.Entity(clrType);
+            EntityTypeBuilder entityBuilder = builder.Entity(clrType);
 
             // PublicMetadata
-            var pubProp = clrType.GetProperty(nameof(IMetadataSupport.PublicMetadata), BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo? pubProp = clrType.GetProperty(nameof(IMetadataSupport.PublicMetadata), BindingFlags.Public | BindingFlags.Instance);
             if (pubProp != null)
             {
                 entityBuilder
@@ -37,7 +41,7 @@ internal static class MetadataSupportModelBuilderExtensions
             }
 
             // PrivateMetadata
-            var privProp = clrType.GetProperty(nameof(IMetadataSupport.PrivateMetadata), BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo? privProp = clrType.GetProperty(nameof(IMetadataSupport.PrivateMetadata), BindingFlags.Public | BindingFlags.Instance);
             if (privProp != null)
             {
                 entityBuilder

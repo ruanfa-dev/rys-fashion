@@ -1,7 +1,9 @@
 using Infrastructure.Persistence.Converters;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using SharedKernel.Domain.Attributes.TranslatableResource;
 
@@ -26,8 +28,8 @@ public sealed class TranslationEntityConfiguration<TTranslation> : IEntityTypeCo
             .IsRequired();
 
         // Fields dictionary stored as JSON using the nullable-aware converter/comparer
-        var converter = DictionaryJsonConverter.GetConverter();
-        var comparer = DictionaryJsonConverter.GetComparer();
+        ValueConverter<IDictionary<string, string?>?, string?> converter = DictionaryJsonConverter.GetConverter();
+        ValueComparer<IDictionary<string, string?>?> comparer = DictionaryJsonConverter.GetComparer();
 
         builder.Property(t => t.Fields)
             .HasConversion(converter);

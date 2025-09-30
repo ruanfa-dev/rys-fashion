@@ -4,6 +4,7 @@ using ErrorOr;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace UseCases.Common.Extensions;
 
@@ -177,12 +178,12 @@ public static class ErrorOrTypedResultsExtensions
         if (errors.Count == 0)
             return Results.Problem("An unknown error occurred.", statusCode: DefaultStatusCode);
 
-        var firstError = errors[0];
+        Error firstError = errors[0];
 
         if (firstError.Type == ErrorType.Validation)
             return CreateValidationProblem(errors);
 
-        var statusCode = GetStatusCode(firstError.Type);
+        int statusCode = GetStatusCode(firstError.Type);
         return Results.Problem(
             title: firstError.Code,
             detail: firstError.Description,
@@ -196,7 +197,7 @@ public static class ErrorOrTypedResultsExtensions
 
     private static IResult CreateValidationProblem(IReadOnlyList<Error> errors)
     {
-        var errorsByProperty = errors
+        Dictionary<string, string[]> errorsByProperty = errors
             .ToLookup(e => e.Code, e => e.Description)
             .ToDictionary(g => g.Key, g => g.ToArray());
 
@@ -227,7 +228,7 @@ public sealed class TypedResultsExampleService
         if (id <= 0)
             return Error.Validation("Product.Id", "Product ID must be greater than 0");
 
-        var product = await FindProductInDatabaseAsync(id);
+        TestProductModel? product = await FindProductInDatabaseAsync(id);
         if (product == null)
             return Error.NotFound("Product.NotFound", $"Product with ID {id} was not found");
 
@@ -236,26 +237,26 @@ public sealed class TypedResultsExampleService
 
     public async Task<ErrorOr<TestProductModel>> CreateProductAsync(CreateProductRequest request)
     {
-        var validationErrors = ValidateCreateProductRequest(request);
+        List<Error> validationErrors = ValidateCreateProductRequest(request);
         if (validationErrors.Any())
             return validationErrors;
 
-        var existingProduct = await FindProductByNameAsync(request.Name);
+        TestProductModel? existingProduct = await FindProductByNameAsync(request.Name);
         if (existingProduct != null)
             return Error.Conflict("Product.NameExists", "A product with this name already exists");
 
-        var product = new TestProductModel(request.Name, request.Price);
+        TestProductModel product = new TestProductModel(request.Name, request.Price);
         await SaveProductAsync(product);
         return product;
     }
 
     public async Task<ErrorOr<Updated>> UpdateProductAsync(int id, UpdateProductRequest request)
     {
-        var getProductResult = await GetProductByIdAsync(id);
+        ErrorOr<TestProductModel> getProductResult = await GetProductByIdAsync(id);
         if (getProductResult.IsError)
             return getProductResult.Errors;
 
-        var product = getProductResult.Value;
+        TestProductModel product = getProductResult.Value;
         product.UpdateName(request.Name);
         await SaveProductAsync(product);
         return Result.Updated;
@@ -263,7 +264,7 @@ public sealed class TypedResultsExampleService
 
     public async Task<ErrorOr<Deleted>> DeleteProductAsync(int id)
     {
-        var getProductResult = await GetProductByIdAsync(id);
+        ErrorOr<TestProductModel> getProductResult = await GetProductByIdAsync(id);
         if (getProductResult.IsError)
             return getProductResult.Errors;
 
@@ -273,7 +274,7 @@ public sealed class TypedResultsExampleService
 
     private List<Error> ValidateCreateProductRequest(CreateProductRequest request)
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         if (string.IsNullOrWhiteSpace(request.Name))
             errors.Add(Error.Validation("Name", "Product name is required"));
@@ -298,14 +299,14 @@ public static class TypedResultsApiExamples
 {
     public static void MapProductEndpoints(this WebApplication app)
     {
-        var products = app.MapGroup("/api/products")
+        RouteGroupBuilder products = app.MapGroup("/api/products")
             .WithTags("Products")
             .WithOpenApi();
 
         // GET /api/products/{id} - Returns 200 OK with product or 404 Not Found
         products.MapGet("/{id:int}", async (int id, TypedResultsExampleService productService) =>
         {
-            var result = await productService.GetProductByIdAsync(id);
+            ErrorOr<TestProductModel> result = await productService.GetProductByIdAsync(id);
             return result.ToTypedResult();
         })
         .WithName("GetProduct")
@@ -318,7 +319,7 @@ public static class TypedResultsApiExamples
         // POST /api/products - Returns 201 Created or 400/409 for errors
         products.MapPost("/", async (CreateProductRequest request, TypedResultsExampleService productService) =>
         {
-            var result = await productService.CreateProductAsync(request);
+            ErrorOr<TestProductModel> result = await productService.CreateProductAsync(request);
             return result.ToTypedResultCreated($"/api/products/{result.Value?.Id}");
         })
         .WithName("CreateProduct")
@@ -331,7 +332,7 @@ public static class TypedResultsApiExamples
         // PUT /api/products/{id} - Returns 204 No Content or error details
         products.MapPut("/{id:int}", async (int id, UpdateProductRequest request, TypedResultsExampleService productService) =>
         {
-            var result = await productService.UpdateProductAsync(id, request);
+            ErrorOr<Updated> result = await productService.UpdateProductAsync(id, request);
             return result.ToTypedResultNoContent();
         })
         .WithName("UpdateProduct")
@@ -344,7 +345,7 @@ public static class TypedResultsApiExamples
         // DELETE /api/products/{id} - Returns 204 No Content or error details
         products.MapDelete("/{id:int}", async (int id, TypedResultsExampleService productService) =>
         {
-            var result = await productService.DeleteProductAsync(id);
+            ErrorOr<Deleted> result = await productService.DeleteProductAsync(id);
             return result.ToTypedResultDeleted();
         })
         .WithName("DeleteProduct")
@@ -359,12 +360,12 @@ public static class TypedResultsApiExamples
             // Simulate search logic
             if (string.IsNullOrWhiteSpace(name) && !minPrice.HasValue && !maxPrice.HasValue)
             {
-                var emptySearchError = Error.Validation("Search.Empty", "At least one search parameter is required");
+                Error emptySearchError = Error.Validation("Search.Empty", "At least one search parameter is required");
                 return Results.BadRequest(emptySearchError);
             }
 
             // Your search implementation here
-            var searchResults = new List<TestProductModel>();
+            List<TestProductModel> searchResults = new List<TestProductModel>();
             return Results.Ok(searchResults);
         })
         .WithName("SearchProducts")

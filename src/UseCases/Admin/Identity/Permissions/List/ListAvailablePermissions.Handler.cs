@@ -24,8 +24,8 @@ public static partial class ListAvailablePermissions
     {
         public async Task<ErrorOr<PagedList<Result>>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
-            var permissions = await dbContext.Set<Permission>()
+            Param param = request.Param;
+            PagedList<Result> permissions = await dbContext.Set<Permission>()
                 .Select(p => new Result()
                 {
                     Id = p.Id,

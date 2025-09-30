@@ -26,7 +26,7 @@ public sealed class OptionValueVariant : AuditableEntity
         if (optionValueId == Guid.Empty) return Error.Validation("OptionValueVariant.OptionValueRequired", "OptionValue is required.");
         if (variantId == Guid.Empty) return Error.Validation("OptionValueVariant.VariantRequired", "Variant is required.");
 
-        var ovv = new OptionValueVariant(optionValueId, variantId);
+        OptionValueVariant ovv = new OptionValueVariant(optionValueId, variantId);
         ovv.AddDomainEvent(new Events.Created(ovv.Id));
         return ovv;
     }

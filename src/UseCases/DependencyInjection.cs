@@ -62,7 +62,7 @@ public static class DependencyInjection
     {
         Log.Debug(LogTemplate.ComponentStarted, "CQRS services registration");
 
-        var executingAssembly = Assembly.GetExecutingAssembly();
+        Assembly executingAssembly = Assembly.GetExecutingAssembly();
 
         // Register: MediatR with assembly scanning and behaviors
         services.AddMediatR(cfg =>
@@ -96,12 +96,12 @@ public static class DependencyInjection
     {
         Log.Debug(LogTemplate.ComponentStarted, "Validation services registration");
 
-        var executingAssembly = Assembly.GetExecutingAssembly();
+        Assembly executingAssembly = Assembly.GetExecutingAssembly();
 
         // Register: FluentValidation validators from assembly
         services.AddValidatorsFromAssembly(executingAssembly);
 
-        var validatorTypes = executingAssembly.GetTypes()
+        List<Type> validatorTypes = executingAssembly.GetTypes()
             .Where(t => t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IValidator<>)))
             .ToList();
 
@@ -127,10 +127,10 @@ public static class DependencyInjection
     {
         Log.Debug(LogTemplate.ComponentStarted, "Object mapping services registration");
 
-        var executingAssembly = Assembly.GetExecutingAssembly();
+        Assembly executingAssembly = Assembly.GetExecutingAssembly();
 
         // Register: Mapster global configuration
-        var config = TypeAdapterConfig.GlobalSettings;
+        TypeAdapterConfig config = TypeAdapterConfig.GlobalSettings;
         config.Scan(executingAssembly);
 
         // Register: Global mapping configuration as singleton
@@ -142,7 +142,7 @@ public static class DependencyInjection
         Log.Debug(LogTemplate.RegisterServiceWithLifetime, nameof(IMapper), ServiceLifetime.Scoped);
 
         // Get mapping statistics for logging
-        var mappingCount = config.RuleMap?.Count ?? 0;
+        int mappingCount = config.RuleMap?.Count ?? 0;
 
         Log.Information(LogTemplate.RegisterServiceWithOptions, "Mapster", new
         {

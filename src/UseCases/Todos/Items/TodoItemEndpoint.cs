@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -31,7 +33,7 @@ public sealed class TodoItemEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(TodoEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -39,14 +41,14 @@ public sealed class TodoItemEndpoint : ICarterModule
 
         group.MapPost("", async (TodoItemParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new CreateTodoItem.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("Todo item created successfully");
+            CreateTodoItem.Command command = new CreateTodoItem.Command(param);
+            ErrorOr<int> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<int> apiResponse = result.ToApiResponseCreated("Todo item created successfully");
             
             // Add HATEOAS links for the created todo item
             if (apiResponse.IsSuccess)
             {
-                var itemId = apiResponse.Data; // apiResponse.Data is an int (the ID)
+                int itemId = apiResponse.Data; // apiResponse.Data is an int (the ID)
                 apiResponse
                     .WithLink("self", $"{Route}/{itemId}")
                     .WithLink("update", $"{Route}/{itemId}")
@@ -69,9 +71,9 @@ public sealed class TodoItemEndpoint : ICarterModule
 
         group.MapGet("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var query = new GetTodoItemById.Query(id);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Todo item retrieved successfully");
+            GetTodoItemById.Query query = new GetTodoItemById.Query(id);
+            ErrorOr<TodoItemResult> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<TodoItemResult> apiResponse = result.ToApiResponse("Todo item retrieved successfully");
             
             // Add HATEOAS links for the todo item
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -98,9 +100,9 @@ public sealed class TodoItemEndpoint : ICarterModule
 
         group.MapPut("/{id:int}", async (int id, TodoItemParam param, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new UpdateTodoItem.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseUpdated("Todo item updated successfully");
+            UpdateTodoItem.Command command = new UpdateTodoItem.Command(id, param);
+            ErrorOr<Updated> result = await mediator.Send(command, cancellationToken);
+            ApiResponse apiResponse = result.ToApiResponseUpdated("Todo item updated successfully");
             
             // Add HATEOAS links for the updated todo item - use the id parameter since Updated doesn't have properties
             if (apiResponse.IsSuccess)
@@ -126,9 +128,9 @@ public sealed class TodoItemEndpoint : ICarterModule
 
         group.MapPatch("/{id:int}/complete", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new CompleteTodoItem.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseUpdated("Todo item completed successfully");
+            CompleteTodoItem.Command command = new CompleteTodoItem.Command(id);
+            ErrorOr<Updated> result = await mediator.Send(command, cancellationToken);
+            ApiResponse apiResponse = result.ToApiResponseUpdated("Todo item completed successfully");
             
             // Add HATEOAS links and completion metadata - use the id parameter since Updated doesn't have properties
             if (apiResponse.IsSuccess)
@@ -157,9 +159,9 @@ public sealed class TodoItemEndpoint : ICarterModule
 
         group.MapDelete("/{id:int}", async (int id, ISender mediator, CancellationToken cancellationToken) =>
         {
-            var command = new DeleteTodoItem.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseDeleted("Todo item deleted successfully");
+            DeleteTodoItem.Command command = new DeleteTodoItem.Command(id);
+            ErrorOr<Deleted> result = await mediator.Send(command, cancellationToken);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Todo item deleted successfully");
             
             // Add metadata for audit purposes
             apiResponse

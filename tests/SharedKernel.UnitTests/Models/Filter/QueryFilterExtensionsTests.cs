@@ -43,12 +43,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithEmptyQueryParams_ReturnsOriginalQuery()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>();
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(5);
@@ -59,8 +59,8 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithNullQueryParams_ThrowsArgumentNullException()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         // Act & Assert
         Should.Throw<ArgumentNullException>(() => query.ApplyFilters((Dictionary<string, string>)null!));
@@ -74,14 +74,14 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithBasicQueryParameters_FiltersCorrectly(string key, string value, int expectedCount)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string> { { key, value } };
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string> { { key, value } };
 
         _output.WriteLine($"Testing filter: {key}={value}, expected count: {expectedCount}");
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(expectedCount);
@@ -91,15 +91,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithContainsOperator_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "name[contains]", "john" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(2); // John Doe and Bob Johnson
@@ -110,16 +110,16 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithOrLogic_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "or_name[contains]", "john" },
             { "age[gte]", "30" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(4); // John, Jane, Bob, Charlie (John contains john OR age >= 30)
@@ -129,16 +129,16 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithAndLogic_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "and_department[eq]", "IT" },
             { "isactive[eq]", "true" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(1); // Only John (IT AND active)
@@ -149,15 +149,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithInOperator_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "department[in]", "IT,HR" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(4); // John, Jane, Bob, Charlie
@@ -168,15 +168,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithNotInOperator_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "department[notin]", "IT,HR" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(1); // Only Alice (Finance)
@@ -187,15 +187,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithRangeOperator_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "age[range]", "25,32" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(4); // John (25), Jane (30), Alice (28), Charlie (32)
@@ -206,15 +206,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithNestedProperties_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "address.city[eq]", "New York" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(1);
@@ -225,15 +225,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithNullCheck_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "address[isnull]", "" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(1);
@@ -244,15 +244,15 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithNotNullCheck_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "address[isnotnull]", "" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(4); // All except Alice
@@ -263,9 +263,9 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithComplexMixedLogic_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "or_department[eq]", "IT" },
             { "or_age[gte]", "30" },
@@ -273,7 +273,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert  
         // Should get users who are (IT OR age >= 30) AND active
@@ -290,9 +290,9 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithGrouping_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "or_name[contains]", "john" },
             { "or_age[gte]", "30" },
@@ -302,7 +302,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         // Group 0: (name contains john OR age >= 30)
@@ -316,16 +316,16 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithAlternativeFormat_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "name_eq", "John Doe" },
             { "age_gt", "20" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(1);
@@ -336,9 +336,9 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithGlobalLogicOperator_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "logic", "or" },
             { "name[eq]", "John Doe" },
@@ -346,7 +346,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(2); // John (name match) OR Jane (HR department)
@@ -357,16 +357,16 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithInvalidOperator_IgnoresFilter()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "name[invalidop]", "John" },
             { "age[gt]", "20" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         // Invalid operator should be ignored, only age filter should apply
@@ -377,16 +377,16 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithInvalidPropertyName_IgnoresFilter()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { "invalidproperty[eq]", "value" },
             { "age[gt]", "30" }
         };
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         // Invalid property should be ignored, only age filter should apply
@@ -400,9 +400,9 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithStringOperators_FiltersCorrectly(string op, string value, int expectedCount)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { $"name[{op}]", value }
         };
@@ -410,7 +410,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         _output.WriteLine($"Testing string operator: {op} with value: {value}");
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(expectedCount);
@@ -423,9 +423,9 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithComparisonOperators_FiltersCorrectly(string op, string value, int expectedCount)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryParams = new Dictionary<string, string>
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             { $"age[{op}]", value }
         };
@@ -433,7 +433,7 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         _output.WriteLine($"Testing comparison operator: {op} with value: {value}");
 
         // Act
-        var result = query.ApplyFilters(queryParams);
+        IQueryable<User> result = query.ApplyFilters(queryParams);
 
         // Assert
         result.Count().ShouldBe(expectedCount);
@@ -445,8 +445,8 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithEmptyQueryString_ReturnsOriginalQuery()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         // Act & Assert
         query.ApplyFilters("").Count().ShouldBe(5);
@@ -473,13 +473,13 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithBasicQueryString_FiltersCorrectly(string queryString, int expectedCount)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         _output.WriteLine($"Testing query string: {queryString}, expected count: {expectedCount}");
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(expectedCount);
@@ -489,12 +489,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithQueryStringLeadingQuestionMark_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "?name[contains]=john&department[eq]=IT";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "?name[contains]=john&department[eq]=IT";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(2); // John Doe and Bob Johnson
@@ -506,12 +506,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithMultipleParameters_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "department[eq]=IT&isactive[eq]=true";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "department[eq]=IT&isactive[eq]=true";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(1);
@@ -522,12 +522,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithOrLogicQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "or_name[contains]=john&or_age[gte]=30";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "or_name[contains]=john&or_age[gte]=30";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(4); // John, Jane, Bob, Charlie
@@ -537,12 +537,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithInOperatorQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "department[in]=IT,HR";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "department[in]=IT,HR";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(4);
@@ -553,12 +553,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithRangeOperatorQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "age[range]=25,32";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "age[range]=25,32";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(4);
@@ -569,13 +569,13 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithUrlEncodedQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
         // URL encoded: "name[contains]=john doe&department[eq]=IT"
-        var queryString = "name%5Bcontains%5D=john%20doe&department%5Beq%5D=IT";
+        string queryString = "name%5Bcontains%5D=john%20doe&department%5Beq%5D=IT";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(1);
@@ -586,12 +586,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithNestedPropertyQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "address.city[eq]=New York";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "address.city[eq]=New York";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(1);
@@ -606,13 +606,13 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithStringOperatorsQueryString_FiltersCorrectly(string queryString, int expectedCount)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         _output.WriteLine($"Testing string operator: {queryString}, expected count: {expectedCount}");
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(expectedCount);
@@ -626,13 +626,13 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithComparisonOperatorsQueryString_FiltersCorrectly(string queryString, int expectedCount)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         _output.WriteLine($"Testing comparison operator: {queryString}, expected count: {expectedCount}");
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(expectedCount);
@@ -642,12 +642,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithGlobalLogicQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "logic=or&department[eq]=Finance&age[gte]=30";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "logic=or&department[eq]=Finance&age[gte]=30";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(4); // Alice (Finance) OR users with age >= 30
@@ -657,12 +657,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithComplexQueryString_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "name[contains]=o&and_age[gte]=25&or_department[eq]=Finance&isactive[eq]=true";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "name[contains]=o&and_age[gte]=25&or_department[eq]=Finance&isactive[eq]=true";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(1); // Only John Doe matches: name contains 'o' AND age >= 25 AND isActive = true
@@ -672,12 +672,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithInvalidQueryString_HandlesGracefully()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "invalid_format=value&another_invalid";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "invalid_format=value&another_invalid";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(5); // Should return all users (no valid filters applied)
@@ -687,14 +687,14 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithMalformedQueryString_HandlesGracefully()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "name[eq=john&age]gte]=25&=&invalid";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "name[eq=john&age]gte]=25&=&invalid";
 
         // Act & Assert
         Should.NotThrow(() =>
         {
-            var result = query.ApplyFilters(queryString);
+            IQueryable<User> result = query.ApplyFilters(queryString);
             result.Count().ShouldBeGreaterThanOrEqualTo(0);
         });
     }
@@ -706,17 +706,17 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithEncodedValues_DecodesCorrectly(string queryString, string expectedValue)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         _output.WriteLine($"Testing encoded query: {queryString}, expected value: {expectedValue}");
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(1);
-        var user = result.First();
+        User user = result.First();
         (user.Name == expectedValue || user.Email == expectedValue).ShouldBeTrue();
     }
 
@@ -724,12 +724,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_StringVsDictionary_ProducesSameResults()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query1 = users.AsQueryable();
-        var query2 = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query1 = users.AsQueryable();
+        IQueryable<User> query2 = users.AsQueryable();
 
-        var queryString = "name[contains]=john&department[eq]=IT&isactive[eq]=true";
-        var queryDict = new Dictionary<string, string>
+        string queryString = "name[contains]=john&department[eq]=IT&isactive[eq]=true";
+        Dictionary<string, string> queryDict = new Dictionary<string, string>
         {
             { "name[contains]", "john" },
             { "department[eq]", "IT" },
@@ -737,13 +737,13 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
         };
 
         // Act
-        var stringResult = query1.ApplyFilters(queryString);
-        var dictResult = query2.ApplyFilters(queryDict);
+        IQueryable<User> stringResult = query1.ApplyFilters(queryString);
+        IQueryable<User> dictResult = query2.ApplyFilters(queryDict);
 
         // Assert
         stringResult.Count().ShouldBe(dictResult.Count());
-        var stringUsers = stringResult.ToList();
-        var dictUsers = dictResult.ToList();
+        List<User> stringUsers = stringResult.ToList();
+        List<User> dictUsers = dictResult.ToList();
 
         stringUsers.Count.ShouldBe(dictUsers.Count);
         for (int i = 0; i < stringUsers.Count; i++)
@@ -756,12 +756,12 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithUnderscoreNotation_FiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var queryString = "name_contains=john&department_eq=IT";
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "name_contains=john&department_eq=IT";
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(2); // John Doe and Bob Johnson
@@ -776,11 +776,11 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithEmptyOrInvalidQueryStrings_ReturnsAllItems(string queryString)
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(5);
@@ -790,16 +790,16 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithSpecialCharactersInValue_HandlesCorrectly()
     {
         // Arrange
-        var users = new List<User>
+        List<User> users = new List<User>
         {
             new() { Id = 1, Name = "Test & User", Email = "test@example.com", Age = 25, IsActive = true, Department = "IT" },
             new() { Id = 2, Name = "Regular User", Email = "regular@example.com", Age = 30, IsActive = true, Department = "HR" }
         };
-        var query = users.AsQueryable();
-        var queryString = "name[contains]=Test%20%26%20User"; // "Test & User" encoded
+        IQueryable<User> query = users.AsQueryable();
+        string queryString = "name[contains]=Test%20%26%20User"; // "Test & User" encoded
 
         // Act
-        var result = query.ApplyFilters(queryString);
+        IQueryable<User> result = query.ApplyFilters(queryString);
 
         // Assert
         result.Count().ShouldBe(1);

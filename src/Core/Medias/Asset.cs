@@ -1,4 +1,6 @@
-﻿using SharedKernel.Domain.Primitives;
+﻿using System.Reflection;
+
+using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging;
 using Core.Catalog.Products;
 using SharedKernel.Domain.Attributes.Metadata;
@@ -33,7 +35,7 @@ public class Asset : AuditableEntity, IMetadataSupport
         IDictionary<string, string?>? privateMetadata = null,
         IDictionary<string, string?>? publicMetadata = null)
     {
-        var asset = new Asset
+        Asset asset = new Asset
         {
             ViewableType = viewableType ?? string.Empty,
             ViewableId = viewableId,
@@ -109,15 +111,15 @@ public class Asset : AuditableEntity, IMetadataSupport
     /// </summary>
     public async Task<Product?> ResolveProductAsync(Func<string, Guid?, Task<object?>> resolver)
     {
-        var viewable = await ResolveViewableAsync(resolver);
+        object? viewable = await ResolveViewableAsync(resolver);
         if (viewable == null) return null;
 
         // If the resolved object is a Variant with a Product property, try to read it.
-        var variantType = viewable.GetType();
-        var productProp = variantType.GetProperty("Product");
+        Type variantType = viewable.GetType();
+        PropertyInfo? productProp = variantType.GetProperty("Product");
         if (productProp != null)
         {
-            var productVal = productProp.GetValue(viewable);
+            object? productVal = productProp.GetValue(viewable);
             return productVal as Product;
         }
 

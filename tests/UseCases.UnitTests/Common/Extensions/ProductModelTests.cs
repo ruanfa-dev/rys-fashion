@@ -15,12 +15,12 @@ public class ProductModelTests
     public void Product_Constructor_WithAllParameters_SetsPropertiesCorrectly()
     {
         // Arrange
-        var id = 1;
-        var name = "Test Product";
-        var price = 99.99m;
+        int id = 1;
+        string name = "Test Product";
+        decimal price = 99.99m;
 
         // Act
-        var product = new TestProductModel(id, name, price);
+        TestProductModel product = new TestProductModel(id, name, price);
 
         // Assert
         product.Id.ShouldBe(id);
@@ -32,11 +32,11 @@ public class ProductModelTests
     public void Product_Constructor_WithNameAndPrice_SetsIdToZero()
     {
         // Arrange
-        var name = "Test Product";
-        var price = 99.99m;
+        string name = "Test Product";
+        decimal price = 99.99m;
 
         // Act
-        var product = new TestProductModel(name, price);
+        TestProductModel product = new TestProductModel(name, price);
 
         // Assert
         product.Id.ShouldBe(0);
@@ -48,11 +48,11 @@ public class ProductModelTests
     public void Product_UpdateName_ReturnsNewInstanceWithUpdatedName()
     {
         // Arrange
-        var originalProduct = new TestProductModel(1, "Original Name", 99.99m);
-        var newName = "Updated Name";
+        TestProductModel originalProduct = new TestProductModel(1, "Original Name", 99.99m);
+        string newName = "Updated Name";
 
         // Act
-        var updatedProduct = originalProduct.UpdateName(newName);
+        TestProductModel updatedProduct = originalProduct.UpdateName(newName);
 
         // Assert
         updatedProduct.Id.ShouldBe(originalProduct.Id);
@@ -67,10 +67,10 @@ public class ProductModelTests
     public void Product_UpdateName_WithEmptyString_SetsEmptyName()
     {
         // Arrange
-        var originalProduct = new TestProductModel(1, "Original Name", 99.99m);
+        TestProductModel originalProduct = new TestProductModel(1, "Original Name", 99.99m);
 
         // Act
-        var updatedProduct = originalProduct.UpdateName("");
+        TestProductModel updatedProduct = originalProduct.UpdateName("");
 
         // Assert
         updatedProduct.Name.ShouldBe("");
@@ -80,10 +80,10 @@ public class ProductModelTests
     public void Product_UpdateName_WithNull_SetsNullName()
     {
         // Arrange
-        var originalProduct = new TestProductModel(1, "Original Name", 99.99m);
+        TestProductModel originalProduct = new TestProductModel(1, "Original Name", 99.99m);
 
         // Act
-        var updatedProduct = originalProduct.UpdateName(null!);
+        TestProductModel updatedProduct = originalProduct.UpdateName(null!);
 
         // Assert
         updatedProduct.Name.ShouldBeNull();
@@ -93,8 +93,8 @@ public class ProductModelTests
     public void Product_Equality_TwoProductsWithSameValues_AreEqual()
     {
         // Arrange
-        var product1 = new TestProductModel(1, "Test Product", 99.99m);
-        var product2 = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product1 = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product2 = new TestProductModel(1, "Test Product", 99.99m);
 
         // Act & Assert
         product1.ShouldBe(product2);
@@ -106,8 +106,8 @@ public class ProductModelTests
     public void Product_Equality_TwoProductsWithDifferentValues_AreNotEqual()
     {
         // Arrange
-        var product1 = new TestProductModel(1, "Test Product", 99.99m);
-        var product2 = new TestProductModel(2, "Test Product", 99.99m);
+        TestProductModel product1 = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product2 = new TestProductModel(2, "Test Product", 99.99m);
 
         // Act & Assert
         product1.ShouldNotBe(product2);
@@ -119,8 +119,8 @@ public class ProductModelTests
     public void Product_GetHashCode_TwoEqualProducts_HaveSameHashCode()
     {
         // Arrange
-        var product1 = new TestProductModel(1, "Test Product", 99.99m);
-        var product2 = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product1 = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product2 = new TestProductModel(1, "Test Product", 99.99m);
 
         // Act & Assert
         product1.GetHashCode().ShouldBe(product2.GetHashCode());
@@ -130,10 +130,10 @@ public class ProductModelTests
     public void Product_ToString_ReturnsExpectedFormat()
     {
         // Arrange
-        var product = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
 
         // Act
-        var toString = product.ToString();
+        string? toString = product.ToString();
 
         // Assert
         toString.ShouldContain("1");
@@ -149,11 +149,11 @@ public class ProductModelTests
     public void CreateProductRequest_Constructor_SetsPropertiesCorrectly()
     {
         // Arrange
-        var name = "Test Product";
-        var price = 99.99m;
+        string name = "Test Product";
+        decimal price = 99.99m;
 
         // Act
-        var request = new CreateProductRequest(name, price);
+        CreateProductRequest request = new CreateProductRequest(name, price);
 
         // Assert
         request.Name.ShouldBe(name);
@@ -164,8 +164,8 @@ public class ProductModelTests
     public void CreateProductRequest_Equality_TwoRequestsWithSameValues_AreEqual()
     {
         // Arrange
-        var request1 = new CreateProductRequest("Test Product", 99.99m);
-        var request2 = new CreateProductRequest("Test Product", 99.99m);
+        CreateProductRequest request1 = new CreateProductRequest("Test Product", 99.99m);
+        CreateProductRequest request2 = new CreateProductRequest("Test Product", 99.99m);
 
         // Act & Assert
         request1.ShouldBe(request2);
@@ -176,8 +176,8 @@ public class ProductModelTests
     public void CreateProductRequest_Equality_TwoRequestsWithDifferentValues_AreNotEqual()
     {
         // Arrange
-        var request1 = new CreateProductRequest("Test Product", 99.99m);
-        var request2 = new CreateProductRequest("Different Product", 99.99m);
+        CreateProductRequest request1 = new CreateProductRequest("Test Product", 99.99m);
+        CreateProductRequest request2 = new CreateProductRequest("Different Product", 99.99m);
 
         // Act & Assert
         request1.ShouldNotBe(request2);
@@ -188,7 +188,7 @@ public class ProductModelTests
     public void CreateProductRequest_WithNullName_HandlesCorrectly()
     {
         // Arrange & Act
-        var request = new CreateProductRequest(null!, 99.99m);
+        CreateProductRequest request = new CreateProductRequest(null!, 99.99m);
 
         // Assert
         request.Name.ShouldBeNull();
@@ -203,7 +203,7 @@ public class ProductModelTests
     public void CreateProductRequest_WithWhitespaceName_HandlesCorrectly(string whitespace)
     {
         // Arrange & Act
-        var request = new CreateProductRequest(whitespace, 99.99m);
+        CreateProductRequest request = new CreateProductRequest(whitespace, 99.99m);
 
         // Assert
         request.Name.ShouldBe(whitespace);
@@ -218,7 +218,7 @@ public class ProductModelTests
     public void CreateProductRequest_WithVariousPrices_HandlesCorrectly(decimal price)
     {
         // Arrange & Act
-        var request = new CreateProductRequest("Test Product", price);
+        CreateProductRequest request = new CreateProductRequest("Test Product", price);
 
         // Assert
         request.Name.ShouldBe("Test Product");
@@ -233,11 +233,11 @@ public class ProductModelTests
     public void UpdateProductRequest_Constructor_SetsPropertiesCorrectly()
     {
         // Arrange
-        var name = "Updated Product";
-        var price = 199.99m;
+        string name = "Updated Product";
+        decimal price = 199.99m;
 
         // Act
-        var request = new UpdateProductRequest(name, price);
+        UpdateProductRequest request = new UpdateProductRequest(name, price);
 
         // Assert
         request.Name.ShouldBe(name);
@@ -248,8 +248,8 @@ public class ProductModelTests
     public void UpdateProductRequest_Equality_TwoRequestsWithSameValues_AreEqual()
     {
         // Arrange
-        var request1 = new UpdateProductRequest("Updated Product", 199.99m);
-        var request2 = new UpdateProductRequest("Updated Product", 199.99m);
+        UpdateProductRequest request1 = new UpdateProductRequest("Updated Product", 199.99m);
+        UpdateProductRequest request2 = new UpdateProductRequest("Updated Product", 199.99m);
 
         // Act & Assert
         request1.ShouldBe(request2);
@@ -260,8 +260,8 @@ public class ProductModelTests
     public void UpdateProductRequest_Equality_TwoRequestsWithDifferentValues_AreNotEqual()
     {
         // Arrange
-        var request1 = new UpdateProductRequest("Updated Product", 199.99m);
-        var request2 = new UpdateProductRequest("Updated Product", 299.99m);
+        UpdateProductRequest request1 = new UpdateProductRequest("Updated Product", 199.99m);
+        UpdateProductRequest request2 = new UpdateProductRequest("Updated Product", 299.99m);
 
         // Act & Assert
         request1.ShouldNotBe(request2);
@@ -272,7 +272,7 @@ public class ProductModelTests
     public void UpdateProductRequest_WithNullName_HandlesCorrectly()
     {
         // Arrange & Act
-        var request = new UpdateProductRequest(null!, 199.99m);
+        UpdateProductRequest request = new UpdateProductRequest(null!, 199.99m);
 
         // Assert
         request.Name.ShouldBeNull();
@@ -287,10 +287,10 @@ public class ProductModelTests
     public void Product_WithExtremelyLongName_HandlesCorrectly()
     {
         // Arrange
-        var longName = new string('A', 10000);
+        string longName = new string('A', 10000);
 
         // Act
-        var product = new TestProductModel(1, longName, 99.99m);
+        TestProductModel product = new TestProductModel(1, longName, 99.99m);
 
         // Assert
         product.Name.ShouldBe(longName);
@@ -301,10 +301,10 @@ public class ProductModelTests
     public void Product_WithSpecialCharactersInName_HandlesCorrectly()
     {
         // Arrange
-        var specialName = "Product with special chars: <>&\"'åäö中文🚀";
+        string specialName = "Product with special chars: <>&\"'åäö中文🚀";
 
         // Act
-        var product = new TestProductModel(1, specialName, 99.99m);
+        TestProductModel product = new TestProductModel(1, specialName, 99.99m);
 
         // Assert
         product.Name.ShouldBe(specialName);
@@ -314,10 +314,10 @@ public class ProductModelTests
     public void Product_WithNegativeId_HandlesCorrectly()
     {
         // Arrange
-        var negativeId = -1;
+        int negativeId = -1;
 
         // Act
-        var product = new TestProductModel(negativeId, "Test Product", 99.99m);
+        TestProductModel product = new TestProductModel(negativeId, "Test Product", 99.99m);
 
         // Assert
         product.Id.ShouldBe(negativeId);
@@ -327,10 +327,10 @@ public class ProductModelTests
     public void Product_WithMaxIntId_HandlesCorrectly()
     {
         // Arrange
-        var maxId = int.MaxValue;
+        int maxId = int.MaxValue;
 
         // Act
-        var product = new TestProductModel(maxId, "Max Product", 99.99m);
+        TestProductModel product = new TestProductModel(maxId, "Max Product", 99.99m);
 
         // Assert
         product.Id.ShouldBe(maxId);
@@ -341,10 +341,10 @@ public class ProductModelTests
     public void Product_WithMinIntId_HandlesCorrectly()
     {
         // Arrange
-        var minId = int.MinValue;
+        int minId = int.MinValue;
 
         // Act
-        var product = new TestProductModel(minId, "Min Product", 99.99m);
+        TestProductModel product = new TestProductModel(minId, "Min Product", 99.99m);
 
         // Assert
         product.Id.ShouldBe(minId);
@@ -355,12 +355,12 @@ public class ProductModelTests
     public void Product_UpdateName_ChainedUpdates_WorksCorrectly()
     {
         // Arrange
-        var originalProduct = new TestProductModel(1, "Original", 99.99m);
+        TestProductModel originalProduct = new TestProductModel(1, "Original", 99.99m);
 
         // Act
-        var updated1 = originalProduct.UpdateName("First Update");
-        var updated2 = updated1.UpdateName("Second Update");
-        var updated3 = updated2.UpdateName("Final Update");
+        TestProductModel updated1 = originalProduct.UpdateName("First Update");
+        TestProductModel updated2 = updated1.UpdateName("Second Update");
+        TestProductModel updated3 = updated2.UpdateName("Final Update");
 
         // Assert
         originalProduct.Name.ShouldBe("Original");
@@ -382,10 +382,10 @@ public class ProductModelTests
     public void Product_Deconstruction_WorksCorrectly()
     {
         // Arrange
-        var product = new TestProductModel(42, "Deconstructed Product", 299.99m);
+        TestProductModel product = new TestProductModel(42, "Deconstructed Product", 299.99m);
 
         // Act
-        var (id, name, price) = product;
+        (int id, string name, decimal price) = product;
 
         // Assert
         id.ShouldBe(42);
@@ -397,10 +397,10 @@ public class ProductModelTests
     public void CreateProductRequest_Deconstruction_WorksCorrectly()
     {
         // Arrange
-        var request = new CreateProductRequest("Create Product", 399.99m);
+        CreateProductRequest request = new CreateProductRequest("Create Product", 399.99m);
 
         // Act
-        var (name, price) = request;
+        (string name, decimal price) = request;
 
         // Assert
         name.ShouldBe("Create Product");
@@ -411,10 +411,10 @@ public class ProductModelTests
     public void UpdateProductRequest_Deconstruction_WorksCorrectly()
     {
         // Arrange
-        var request = new UpdateProductRequest("Update Product", 499.99m);
+        UpdateProductRequest request = new UpdateProductRequest("Update Product", 499.99m);
 
         // Act
-        var (name, price) = request;
+        (string name, decimal price) = request;
 
         // Assert
         name.ShouldBe("Update Product");

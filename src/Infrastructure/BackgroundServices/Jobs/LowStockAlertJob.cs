@@ -26,7 +26,7 @@ public sealed class LowStockAlertJob(IUnitOfWork unitOfWork, ILogger<LowStockAle
 
         try
         {
-            var lowStockItems = await FindLowStockItems(cancellationToken);
+            List<LowStockItem> lowStockItems = await FindLowStockItems(cancellationToken);
 
             if (lowStockItems.Count > 0)
             {

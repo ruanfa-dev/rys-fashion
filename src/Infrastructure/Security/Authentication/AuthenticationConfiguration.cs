@@ -8,6 +8,7 @@ using Infrastructure.Security.Authentication.Options;
 using Infrastructure.Security.Authentication.Services;
 using Infrastructure.Security.Authentication.Tokens.Services;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
@@ -53,11 +54,11 @@ public static class AuthenticationConfiguration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var jwtOptions = GetRequiredOptions<JwtOptions>(configuration, JwtOptions.Section);
-        var googleOptions = GetOptionalOptions<GoogleOption>(configuration, GoogleOption.Section);
-        var facebookOptions = GetOptionalOptions<FacebookOption>(configuration, FacebookOption.Section);
+        JwtOptions jwtOptions = GetRequiredOptions<JwtOptions>(configuration, JwtOptions.Section);
+        GoogleOption? googleOptions = GetOptionalOptions<GoogleOption>(configuration, GoogleOption.Section);
+        FacebookOption? facebookOptions = GetOptionalOptions<FacebookOption>(configuration, FacebookOption.Section);
 
-        var authBuilder = services.AddAuthentication(options =>
+        AuthenticationBuilder authBuilder = services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -98,7 +99,7 @@ public static class AuthenticationConfiguration
             {
                 OnAuthenticationFailed = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                    ILogger<JwtBearerEvents>? logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
                     logger?.LogWarning("JWT authentication failed: {Exception}", context.Exception.Message);
                     
                     // Clear any existing authentication
@@ -107,14 +108,14 @@ public static class AuthenticationConfiguration
                 },
                 OnTokenValidated = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                    ILogger<JwtBearerEvents>? logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
                     logger?.LogDebug("JWT token validated for user: {UserId}",
                         context.Principal?.FindFirst("sub")?.Value ?? "Unknown");
                     return Task.CompletedTask;
                 },
                 OnChallenge = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                    ILogger<JwtBearerEvents>? logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
                     logger?.LogInformation("JWT authentication challenge triggered");
                     return Task.CompletedTask;
                 }
@@ -144,7 +145,7 @@ public static class AuthenticationConfiguration
                 
                 options.Events.OnRedirectToAuthorizationEndpoint = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger>();
+                    ILogger? logger = context.HttpContext.RequestServices.GetService<ILogger>();
                     logger?.LogDebug("Redirecting to Google authorization endpoint");
                     context.Response.Redirect(context.RedirectUri);
                     return Task.CompletedTask;
@@ -180,7 +181,7 @@ public static class AuthenticationConfiguration
                 
                 options.Events.OnRedirectToAuthorizationEndpoint = context =>
                 {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger>();
+                    ILogger? logger = context.HttpContext.RequestServices.GetService<ILogger>();
                     logger?.LogDebug("Redirecting to Facebook authorization endpoint");
                     context.Response.Redirect(context.RedirectUri);
                     return Task.CompletedTask;
@@ -193,14 +194,14 @@ public static class AuthenticationConfiguration
 
     private static T GetRequiredOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
     {
-        var options = configuration.GetSection(sectionName).Get<T>();
+        T? options = configuration.GetSection(sectionName).Get<T>();
         Guard.Against.Null(options, $"{typeof(T).Name} options must be configured in appsettings at section '{sectionName}'.");
         return options;
     }
 
     private static T? GetOptionalOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
     {
-        var section = configuration.GetSection(sectionName);
+        IConfigurationSection section = configuration.GetSection(sectionName);
         return section.Exists() ? section.Get<T>() : null;
     }
 

@@ -11,7 +11,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void Constructor_DefaultValues_AreNull()
     {
-        var @params = new PagingParams();
+        PagingParams @params = new PagingParams();
 
         @params.PageSize.ShouldBeNull();
         @params.PageIndex.ShouldBeNull();
@@ -20,7 +20,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void Constructor_WithPageSize_SetsPageSize()
     {
-        var @params = new PagingParams(PageSize: 10);
+        PagingParams @params = new PagingParams(PageSize: 10);
 
         @params.PageSize.ShouldBe(10);
         @params.PageIndex.ShouldBeNull();
@@ -29,7 +29,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void Constructor_WithPageIndex_SetsPageIndex()
     {
-        var @params = new PagingParams(PageIndex: 5);
+        PagingParams @params = new PagingParams(PageIndex: 5);
 
         @params.PageSize.ShouldBeNull();
         @params.PageIndex.ShouldBe(5);
@@ -38,7 +38,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void Constructor_WithBothValues_SetsBothValues()
     {
-        var @params = new PagingParams(PageSize: 10, PageIndex: 5);
+        PagingParams @params = new PagingParams(PageSize: 10, PageIndex: 5);
 
         @params.PageSize.ShouldBe(10);
         @params.PageIndex.ShouldBe(5);
@@ -47,7 +47,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void Constructor_WithNegativeValues_AllowsNegativeValues()
     {
-        var @params = new PagingParams(PageSize: -1, PageIndex: -2);
+        PagingParams @params = new PagingParams(PageSize: -1, PageIndex: -2);
 
         @params.PageSize.ShouldBe(-1);
         @params.PageIndex.ShouldBe(-2);
@@ -60,7 +60,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageNumber_NullPageIndex_ReturnsOne()
     {
-        var @params = new PagingParams();
+        PagingParams @params = new PagingParams();
 
         @params.EffectivePageNumber().ShouldBe(1);
     }
@@ -68,7 +68,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageNumber_ZeroPageIndex_ReturnsOne()
     {
-        var @params = new PagingParams(PageIndex: 0);
+        PagingParams @params = new PagingParams(PageIndex: 0);
 
         @params.EffectivePageNumber().ShouldBe(1);
     }
@@ -76,7 +76,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageNumber_PositivePageIndex_ReturnsPageIndexPlusOne()
     {
-        var @params = new PagingParams(PageIndex: 5);
+        PagingParams @params = new PagingParams(PageIndex: 5);
 
         @params.EffectivePageNumber().ShouldBe(6);
     }
@@ -84,7 +84,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageNumber_NegativePageIndex_ReturnsOne()
     {
-        var @params = new PagingParams(PageIndex: -5);
+        PagingParams @params = new PagingParams(PageIndex: -5);
 
         @params.EffectivePageNumber().ShouldBe(1);
     }
@@ -96,7 +96,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageIndex_NullPageIndex_ReturnsZero()
     {
-        var @params = new PagingParams();
+        PagingParams @params = new PagingParams();
 
         @params.EffectivePageIndex().ShouldBe(0);
     }
@@ -104,7 +104,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageIndex_ZeroPageIndex_ReturnsZero()
     {
-        var @params = new PagingParams(PageIndex: 0);
+        PagingParams @params = new PagingParams(PageIndex: 0);
 
         @params.EffectivePageIndex().ShouldBe(0);
     }
@@ -112,7 +112,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageIndex_PositivePageIndex_ReturnsPageIndex()
     {
-        var @params = new PagingParams(PageIndex: 5);
+        PagingParams @params = new PagingParams(PageIndex: 5);
 
         @params.EffectivePageIndex().ShouldBe(5);
     }
@@ -120,7 +120,7 @@ public sealed class PagingParamsTests
     [Fact]
     public void EffectivePageIndex_NegativePageIndex_ReturnsZero()
     {
-        var @params = new PagingParams(PageIndex: -5);
+        PagingParams @params = new PagingParams(PageIndex: -5);
 
         @params.EffectivePageIndex().ShouldBe(0);
     }
@@ -139,42 +139,42 @@ public sealed class PagingParamsTests
     [Fact]
     public void HasPagingValues_EmptyParams_ReturnsFalse()
     {
-        var @params = new PagingParams();
+        PagingParams @params = new PagingParams();
         @params.HasPagingValues().ShouldBeFalse();
     }
 
     [Fact]
     public void HasPagingValues_WithPageSize_ReturnsTrue()
     {
-        var @params = new PagingParams(PageSize: 10);
+        PagingParams @params = new PagingParams(PageSize: 10);
         @params.HasPagingValues().ShouldBeTrue();
     }
 
     [Fact]
     public void HasPagingValues_WithPageIndex_ReturnsTrue()
     {
-        var @params = new PagingParams(PageIndex: 0);
+        PagingParams @params = new PagingParams(PageIndex: 0);
         @params.HasPagingValues().ShouldBeTrue();
     }
 
     [Fact]
     public void HasPagingValues_WithBothValues_ReturnsTrue()
     {
-        var @params = new PagingParams(PageSize: 10, PageIndex: 5);
+        PagingParams @params = new PagingParams(PageSize: 10, PageIndex: 5);
         @params.HasPagingValues().ShouldBeTrue();
     }
 
     [Fact]
     public void HasPagingValues_WithNegativePageSize_ReturnsTrue()
     {
-        var @params = new PagingParams(PageSize: -1);
+        PagingParams @params = new PagingParams(PageSize: -1);
         @params.HasPagingValues().ShouldBeTrue();
     }
 
     [Fact]
     public void HasPagingValues_WithNegativePageIndex_ReturnsTrue()
     {
-        var @params = new PagingParams(PageIndex: -1);
+        PagingParams @params = new PagingParams(PageIndex: -1);
         @params.HasPagingValues().ShouldBeTrue();
     }
 

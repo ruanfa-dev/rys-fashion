@@ -202,7 +202,7 @@ public sealed class QueryFilterBuilder
     public List<QueryFilterParameter> Build()
     {
         // Validate all filters before returning
-        foreach (var filter in _filters)
+        foreach (QueryFilterParameter filter in _filters)
         {
             filter.Validate();
         }

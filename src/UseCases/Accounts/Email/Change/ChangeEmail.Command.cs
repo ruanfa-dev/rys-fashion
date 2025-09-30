@@ -39,32 +39,32 @@ public static partial class ChangeEmail
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
             // Check: user exists
-            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            User? user = await userManager.FindByIdAsync(userId.Value.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
-            var param = request.Param;
+            Param param = request.Param;
 
             // Check: current password is correct (security verification)
-            var isCurrentPasswordValid = await userManager.CheckPasswordAsync(user, param.Password);
+            bool isCurrentPasswordValid = await userManager.CheckPasswordAsync(user, param.Password);
             if (!isCurrentPasswordValid)
                 return User.Errors.InvalidCredentials;
 
             // Check: new email is not already in use by another user
-            var existingUser = await userManager.FindByEmailAsync(param.NewEmail);
+            User? existingUser = await userManager.FindByEmailAsync(param.NewEmail);
             if (existingUser != null && existingUser.Id != user.Id)
                 return User.Errors.EmailAlreadyExists(param.NewEmail);
 
             // Send: email change confirmation to new email address
-            var sendEmailResult = await userManager.GenerateAndSendConfirmationEmailAsync(
+            ErrorOr<Success> sendEmailResult = await userManager.GenerateAndSendConfirmationEmailAsync(
                 notificationService,
                 configuration,
                 user: user,

@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -47,11 +48,11 @@ public static class JsonOptionsConfiguration
         {
             if (reader.TokenType == JsonTokenType.String)
             {
-                var dateString = reader.GetString();
+                string? dateString = reader.GetString();
                 if (string.IsNullOrEmpty(dateString))
                     throw new JsonException("Cannot convert empty string to DateTimeOffset.");
 
-                if (DateTimeOffset.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dto))
+                if (DateTimeOffset.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset dto))
                     return dto;
 
                 throw new JsonException($"Invalid date format: {dateString}");
@@ -79,11 +80,11 @@ public static class JsonOptionsConfiguration
 
             if (reader.TokenType == JsonTokenType.String)
             {
-                var dateString = reader.GetString();
+                string? dateString = reader.GetString();
                 if (string.IsNullOrEmpty(dateString))
                     return null;
 
-                if (DateTimeOffset.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dto))
+                if (DateTimeOffset.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset dto))
                     return dto;
 
                 throw new JsonException($"Invalid date format: {dateString}");
@@ -122,8 +123,8 @@ public static class JsonOptionsConfiguration
     {
         public Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            var modelType = bindingContext.ModelMetadata.ModelType;
-            var model = Activator.CreateInstance(modelType);
+            Type modelType = bindingContext.ModelMetadata.ModelType;
+            object? model = Activator.CreateInstance(modelType);
 
             if (model == null)
             {
@@ -131,16 +132,16 @@ public static class JsonOptionsConfiguration
                 return Task.CompletedTask;
             }
 
-            foreach (var property in modelType.GetProperties())
+            foreach (PropertyInfo property in modelType.GetProperties())
             {
-                var snakeCaseName = ConvertToSnakeCase(property.Name);
-                var value = bindingContext.ValueProvider.GetValue(snakeCaseName);
+                string snakeCaseName = ConvertToSnakeCase(property.Name);
+                ValueProviderResult value = bindingContext.ValueProvider.GetValue(snakeCaseName);
 
                 if (value != ValueProviderResult.None && !string.IsNullOrEmpty(value.FirstValue))
                 {
                     try
                     {
-                        var convertedValue = Convert.ChangeType(value.FirstValue, property.PropertyType);
+                        object convertedValue = Convert.ChangeType(value.FirstValue, property.PropertyType);
                         property.SetValue(model, convertedValue);
                     }
                     catch

@@ -23,31 +23,31 @@ internal static class TranslationModelBuilderExtensions
 
         // Apply TEntity : ITranslatable<TTranslation> => TranslatableEntityConfiguration<TEntity, TTranslation>
         // We look for types implementing ITranslatable<...> and create a closed TranslatableEntityConfiguration<TEntity, TTranslation>
-        var translatableInterfaceDef = typeof(ITranslatable<>);
-        var translatableConfigDef = typeof(TranslatableEntityConfiguration<,>);
+        Type translatableInterfaceDef = typeof(ITranslatable<>);
+        Type translatableConfigDef = typeof(TranslatableEntityConfiguration<,>);
 
-        var modelEntityTypes = builder.Model.GetEntityTypes().Select(et => et.ClrType).Where(t => t != null).ToArray();
+        Type[] modelEntityTypes = builder.Model.GetEntityTypes().Select(et => et.ClrType).Where(t => t != null).ToArray();
 
-        foreach (var entityType in modelEntityTypes)
+        foreach (Type entityType in modelEntityTypes)
         {
-            var translatableIfaces = entityType.GetInterfaces()
+            Type[] translatableIfaces = entityType.GetInterfaces()
                 .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == translatableInterfaceDef)
                 .ToArray();
 
             if (translatableIfaces.Length == 0) continue;
 
             // For each ITranslatable<TTranslation> implemented by the entity, create and apply a config instance
-            foreach (var iface in translatableIfaces)
+            foreach (Type iface in translatableIfaces)
             {
-                var translationType = iface.GetGenericArguments()[0];
-                var closedConfigType = translatableConfigDef.MakeGenericType(entityType, translationType);
-                var configInstance = Activator.CreateInstance(closedConfigType);
+                Type translationType = iface.GetGenericArguments()[0];
+                Type closedConfigType = translatableConfigDef.MakeGenericType(entityType, translationType);
+                object? configInstance = Activator.CreateInstance(closedConfigType);
                 if (configInstance == null) continue;
 
-                var applyMethod = typeof(ModelBuilder).GetMethod(nameof(ModelBuilder.ApplyConfiguration), BindingFlags.Instance | BindingFlags.Public);
+                MethodInfo? applyMethod = typeof(ModelBuilder).GetMethod(nameof(ModelBuilder.ApplyConfiguration), BindingFlags.Instance | BindingFlags.Public);
                 if (applyMethod == null) continue;
 
-                var genericApply = applyMethod.MakeGenericMethod(entityType);
+                MethodInfo genericApply = applyMethod.MakeGenericMethod(entityType);
                 genericApply.Invoke(builder, new[] { configInstance! });
             }
         }
@@ -55,21 +55,21 @@ internal static class TranslationModelBuilderExtensions
 
     private static void ApplyGenericConfigurationForInterface(ModelBuilder builder, Type markerInterface, Type genericConfigDef)
     {
-        var applyMethod = typeof(ModelBuilder).GetMethod(nameof(ModelBuilder.ApplyConfiguration), BindingFlags.Instance | BindingFlags.Public);
+        MethodInfo? applyMethod = typeof(ModelBuilder).GetMethod(nameof(ModelBuilder.ApplyConfiguration), BindingFlags.Instance | BindingFlags.Public);
         if (applyMethod == null) return;
 
-        var modelEntityTypes = builder.Model.GetEntityTypes().Select(et => et.ClrType).Where(t => t != null).ToArray();
+        Type[] modelEntityTypes = builder.Model.GetEntityTypes().Select(et => et.ClrType).Where(t => t != null).ToArray();
 
-        foreach (var clrType in modelEntityTypes)
+        foreach (Type clrType in modelEntityTypes)
         {
             // translation entity types implement markerInterface directly
             if (!markerInterface.IsAssignableFrom(clrType)) continue;
 
-            var closedConfigType = genericConfigDef.MakeGenericType(clrType);
-            var configInstance = Activator.CreateInstance(closedConfigType);
+            Type closedConfigType = genericConfigDef.MakeGenericType(clrType);
+            object? configInstance = Activator.CreateInstance(closedConfigType);
             if (configInstance == null) continue;
 
-            var genericApply = applyMethod.MakeGenericMethod(clrType);
+            MethodInfo genericApply = applyMethod.MakeGenericMethod(clrType);
             genericApply.Invoke(builder, new[] { configInstance! });
         }
     }

@@ -41,12 +41,12 @@ public static partial class UpdateUser
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
 
             try
             {
                 await unitOfWork.BeginTransactionAsync(cancellationToken);
-                var user = await userManager.FindByIdAsync(request.Id.ToString());
+                User? user = await userManager.FindByIdAsync(request.Id.ToString());
                 if (user == null)
                 {
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);
@@ -63,11 +63,11 @@ public static partial class UpdateUser
                   profileImagePath: param.ProfileImagePath ?? user.ProfileImagePath,
                   phoneNumber: param.PhoneNumber ?? user.PhoneNumber,
                   phoneNumberConfirmed: user.PhoneNumberConfirmed);
-                var result = await userManager.UpdateAsync(user);
+                IdentityResult result = await userManager.UpdateAsync(user);
 
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to update user {UserId}: {Errors}", request.Id, errors);
 
                     await unitOfWork.RollbackTransactionAsync(cancellationToken);

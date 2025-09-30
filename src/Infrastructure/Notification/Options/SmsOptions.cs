@@ -12,7 +12,7 @@ public sealed class SmsOptions : IValidateOptions<SmsOptions>
 
     public ValidateOptionsResult Validate(string? name, SmsOptions options)
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         // Validate that EnableSmsNotifications is true if DefaultSenderNumber is set
         if (options.EnableSmsNotifications)

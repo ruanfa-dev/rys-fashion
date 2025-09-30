@@ -27,7 +27,7 @@ public partial class GetTaxonById
         {
             try
             {
-                var taxon = await _context.Set<Taxon>()
+                Taxon? taxon = await _context.Set<Taxon>()
                     .AsNoTracking()
                     .Include(t => t.Taxonomy)
                     .Include(t => t.Parent)
@@ -38,7 +38,7 @@ public partial class GetTaxonById
                 if (taxon == null)
                     return Taxon.Errors.NotFound(request.Id);
 
-                var result = taxon.Adapt<Result>();
+                Result result = taxon.Adapt<Result>();
                 _logger.LogDebug("Retrieved taxon {TaxonId}", request.Id);
                 return result;
             }

@@ -28,9 +28,9 @@ public partial class CreateTodoItem
     {
         public async Task<ErrorOr<int>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            TodoItemParam param = request.Param;
             // Check: todo list exist
-            var todoList = await context.TodoLists
+            TodoList? todoList = await context.TodoLists
                 .FirstOrDefaultAsync(m => m.Id == param.ListId, cancellationToken: cancellationToken);
             if (todoList is null)
                 return TodoList.Errors.TodoListNotFound;

@@ -70,7 +70,7 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
             if (!string.IsNullOrWhiteSpace(authorizationCode))
             {
                 _logger.LogDebug("Exchanging Google authorization code for tokens");
-                var tokenExchangeResult = await ExchangeAuthorizationCodeAsync(authorizationCode, redirectUri, cancellationToken);
+                ErrorOr<(string AccessToken, string? IdToken)> tokenExchangeResult = await ExchangeAuthorizationCodeAsync(authorizationCode, redirectUri, cancellationToken);
                 if (tokenExchangeResult.IsError)
                 {
                     return tokenExchangeResult.Errors;
@@ -112,14 +112,14 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
     {
         try
         {
-            var validationSettings = _validationSettings.Value;
+            GoogleJsonWebSignature.ValidationSettings? validationSettings = _validationSettings.Value;
             if (validationSettings == null)
             {
                 return Error.NotFound("Google.Configuration.Missing", "Google ClientId is not configured");
             }
 
             // Use Google.Apis.Auth SDK to validate ID token with proper signature verification
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
+            GoogleJsonWebSignature.Payload? payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
 
             // Additional security validations
             if (string.IsNullOrWhiteSpace(payload.Email))
@@ -171,15 +171,15 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
         string? redirectUri,
         CancellationToken cancellationToken)
     {
-        var clientId = _googleOptions?.ClientId;
-        var clientSecret = _googleOptions?.ClientSecret;
+        string? clientId = _googleOptions?.ClientId;
+        string? clientSecret = _googleOptions?.ClientSecret;
 
         if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
         {
             return Error.NotFound("Google.Configuration.Missing", "Google OAuth configuration is incomplete");
         }
 
-        var tokenRequest = new Dictionary<string, string>
+        Dictionary<string, string> tokenRequest = new Dictionary<string, string>
         {
             ["grant_type"] = "authorization_code",
             ["client_id"] = clientId,
@@ -194,13 +194,13 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
 
         try
         {
-            var response = await _httpClient.PostAsync(
+            HttpResponseMessage response = await _httpClient.PostAsync(
                 "https://oauth2.googleapis.com/token",
                 new FormUrlEncodedContent(tokenRequest),
                 cancellationToken
             );
 
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -209,7 +209,7 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
                 return Error.Failure("Google.TokenExchange.Failed", "Failed to exchange authorization code with Google");
             }
 
-            var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(responseContent);
+            GoogleTokenResponse? tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(responseContent);
 
             if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken))
             {
@@ -230,7 +230,7 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
     {
         try
         {
-            var response = await _httpClient.GetAsync(
+            HttpResponseMessage response = await _httpClient.GetAsync(
                 $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={Uri.EscapeDataString(accessToken)}",
                 cancellationToken
             );
@@ -241,8 +241,8 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
                 return Error.Unauthorized("Google.AccessToken.Invalid", "Invalid Google access token");
             }
 
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            var userInfo = JsonSerializer.Deserialize<GoogleUserInfo>(responseContent);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            GoogleUserInfo? userInfo = JsonSerializer.Deserialize<GoogleUserInfo>(responseContent);
 
             if (userInfo == null || string.IsNullOrWhiteSpace(userInfo.Email))
             {

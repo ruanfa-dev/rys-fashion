@@ -35,7 +35,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
         try
         {
             Log.Debug("Saving changes to database context");
-            var result = await _context.SaveChangesAsync(cancellationToken);
+            int result = await _context.SaveChangesAsync(cancellationToken);
             Log.Information("Successfully saved {ChangesCount} changes to database", result);
             return result;
         }
@@ -99,7 +99,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
                 throw new InvalidOperationException("No transaction is in progress.");
             }
 
-            var transactionId = _transaction.TransactionId;
+            Guid transactionId = _transaction.TransactionId;
             Log.Information("Committing database transaction with ID: {TransactionId}", transactionId);
 
             await _transaction.CommitAsync(cancellationToken);
@@ -130,7 +130,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
                 return; // Don't throw - just return if no transaction
             }
 
-            var transactionId = _transaction.TransactionId;
+            Guid transactionId = _transaction.TransactionId;
             Log.Information("Rolling back database transaction with ID: {TransactionId}", transactionId);
 
             await _transaction.RollbackAsync(cancellationToken);
@@ -161,7 +161,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
         try
         {
             Log.Debug("Executing SQL: {Sql}", sql);
-            var result = await _context.Database.ExecuteSqlRawAsync(sql, parameters, cancellationToken);
+            int result = await _context.Database.ExecuteSqlRawAsync(sql, parameters, cancellationToken);
             Log.Information("SQL execution completed. Rows affected: {RowsAffected}", result);
             return result;
         }

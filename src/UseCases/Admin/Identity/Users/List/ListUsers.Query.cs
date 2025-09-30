@@ -41,12 +41,12 @@ public static partial class ListUsers
         {
             try
             {
-                var query = userManager.Users.AsQueryable();
+                IQueryable<User> query = userManager.Users.AsQueryable();
 
                 // Apply filters
                 if (!string.IsNullOrWhiteSpace(request.SearchTerm))
                 {
-                    var searchTerm = request.SearchTerm.ToLower();
+                    string searchTerm = request.SearchTerm.ToLower();
                     query = query.Where(u => 
                         u.Email!.ToLower().Contains(searchTerm) ||
                         u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm) ||
@@ -61,20 +61,20 @@ public static partial class ListUsers
                 }
 
                 // Get total count before pagination
-                var totalCount = await query.CountAsync(cancellationToken);
+                int totalCount = await query.CountAsync(cancellationToken);
 
                 // Apply pagination
-                var users = await query
+                List<User> users = await query
                     .OrderBy(u => u.Email)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToListAsync(cancellationToken);
 
                 // Get roles for each user
-                var results = new List<Result>();
-                foreach (var user in users)
+                List<Result> results = new List<Result>();
+                foreach (User user in users)
                 {
-                    var roles = await userManager.GetRolesAsync(user);
+                    IList<string> roles = await userManager.GetRolesAsync(user);
                     
                     // Apply role filter if specified
                     if (!string.IsNullOrWhiteSpace(request.Role) && !roles.Contains(request.Role))
@@ -106,7 +106,7 @@ public static partial class ListUsers
                     totalCount = results.Count;
                 }
 
-                var pagedResult = new PagedList<Result>(
+                PagedList<Result> pagedResult = new PagedList<Result>(
                     results,
                     request.Page,
                     request.PageSize,

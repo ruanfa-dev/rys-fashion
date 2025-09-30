@@ -91,9 +91,9 @@ public sealed class PaginationMetadata
     /// <returns>Pagination metadata</returns>
     public static PaginationMetadata Create(int currentPage, int pageSize, int totalItems)
     {
-        var totalPages = pageSize > 0 ? (int)Math.Ceiling(totalItems / (double)pageSize) : 0;
-        var firstItemIndex = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-        var lastItemIndex = Math.Min(currentPage * pageSize, totalItems);
+        int totalPages = pageSize > 0 ? (int)Math.Ceiling(totalItems / (double)pageSize) : 0;
+        int firstItemIndex = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+        int lastItemIndex = Math.Min(currentPage * pageSize, totalItems);
 
         return new PaginationMetadata
         {

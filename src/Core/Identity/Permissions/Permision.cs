@@ -101,9 +101,9 @@ public partial class Permission : AuditableEntity
     /// <returns>A sentence describing the permission's intent and scope.</returns>
     public static string GenerateDescription(string area, string resource, string action)
     {
-        var areaDisplay = FormatDisplayName(area);
-        var resourceDisplay = FormatDisplayName(resource);
-        var actionDisplay = FormatDisplayName(action);
+        string areaDisplay = FormatDisplayName(area);
+        string resourceDisplay = FormatDisplayName(resource);
+        string actionDisplay = FormatDisplayName(action);
 
         return $"{actionDisplay} {resourceDisplay} in {areaDisplay} area";
     }
@@ -118,8 +118,8 @@ public partial class Permission : AuditableEntity
     /// <returns>A short, human-friendly label for the permission.</returns>
     public static string GenerateDisplayName(string area, string resource, string action)
     {
-        var resourceDisplay = FormatDisplayName(resource);
-        var actionDisplay = FormatDisplayName(action);
+        string resourceDisplay = FormatDisplayName(resource);
+        string actionDisplay = FormatDisplayName(action);
 
         return $"{actionDisplay} {resourceDisplay}";
     }
@@ -151,7 +151,7 @@ public partial class Permission : AuditableEntity
     /// <exception cref="ArgumentException">Thrown when the <paramref name="name"/> does not have the expected format.</exception>
     public static Permission Create(string name, string? description = null, string? displayName = null)
     {
-        var parsed = ParsePermissionName(name);
+        (string Area, string Resource, string Action)? parsed = ParsePermissionName(name);
         if (parsed == null)
             throw new ArgumentException($"Invalid permission name format. Expected format: 'area.resource.action'. Received: '{name}'", nameof(name));
         return new Permission(parsed.Value.Area, parsed.Value.Resource, parsed.Value.Action, description, displayName, PermissionCategory.Both);
@@ -183,17 +183,17 @@ public partial class Permission : AuditableEntity
         if (permissionName.Length < Constraints.MinNameLength || permissionName.Length > Constraints.MaxNameLength)
             return false;
 
-        var parts = permissionName.Split(Constants.Separator);
+        string[] parts = permissionName.Split(Constants.Separator);
         if (parts.Length != Constraints.Segments)
             return false;
 
-        foreach (var p in parts)
+        foreach (string p in parts)
         {
             if (p.Length < Constraints.MinSegmentLength || p.Length > Constraints.MaxSegmentLength)
                 return false;
 
             // Normalize to lowercase before validation since we store everything in lowercase
-            var normalizedPart = p.ToLowerInvariant();
+            string normalizedPart = p.ToLowerInvariant();
 
             // Use System.Text.RegularExpressions.Regex to validate allowed characters
             if (!System.Text.RegularExpressions.Regex.IsMatch(normalizedPart, Constraints.SegmentAllowedPattern))
@@ -215,7 +215,7 @@ public partial class Permission : AuditableEntity
         if (!IsValidPermissionName(permissionName))
             return null;
 
-        var parts = permissionName.Split(Constants.Separator);
+        string[] parts = permissionName.Split(Constants.Separator);
         // Return lowercase normalized segments since that's how we store them
         return (parts[0].ToLowerInvariant(), parts[1].ToLowerInvariant(), parts[2].ToLowerInvariant());
     }

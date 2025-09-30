@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -10,24 +11,24 @@ public static class MinimalApiBindHelper
     // Create T from query collection by matching camelCase or snake_case keys against property names
     public static T BindFromQuery<T>(IQueryCollection query) where T : new()
     {
-        var instance = new T();
-        var type = typeof(T);
+        T? instance = new T();
+        Type type = typeof(T);
 
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (!prop.CanWrite) continue;
 
             // try multiple candidate keys
-            var candidates = new[]
+            string[] candidates = new[]
             {
                 prop.Name,                          // PageIndex
                 ToCamelCase(prop.Name),             // pageIndex (redundant when prop.Name is pascal)
                 ToSnakeCase(prop.Name)              // page_index
             };
 
-            foreach (var key in candidates)
+            foreach (string key in candidates)
             {
-                if (query.TryGetValue(key, out var value) && value.Count > 0)
+                if (query.TryGetValue(key, out StringValues value) && value.Count > 0)
                 {
                     try
                     {
@@ -51,25 +52,25 @@ public static class MinimalApiBindHelper
 
     private static object? ConvertValue(StringValues value, Type targetType)
     {
-        var s = value.ToString();
+        string s = value.ToString();
         if (string.IsNullOrWhiteSpace(s)) return null;
 
         // handle arrays
         if (targetType == typeof(string[]))
         {
-            var arr = s.Contains(',') ? s.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToArray()
+            string?[] arr = s.Contains(',') ? s.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToArray()
                                       : value.ToArray();
             return arr;
         }
 
-        var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        Type underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         if (underlying == typeof(string)) return s;
-        if (underlying == typeof(int) && int.TryParse(s, out var i)) return i;
-        if (underlying == typeof(long) && long.TryParse(s, out var l)) return l;
-        if (underlying == typeof(bool) && bool.TryParse(s, out var b)) return b;
-        if (underlying == typeof(DateTime) && DateTime.TryParse(s, out var dt)) return dt;
-        if (underlying == typeof(Guid) && Guid.TryParse(s, out var g)) return g;
+        if (underlying == typeof(int) && int.TryParse(s, out int i)) return i;
+        if (underlying == typeof(long) && long.TryParse(s, out long l)) return l;
+        if (underlying == typeof(bool) && bool.TryParse(s, out bool b)) return b;
+        if (underlying == typeof(DateTime) && DateTime.TryParse(s, out DateTime dt)) return dt;
+        if (underlying == typeof(Guid) && Guid.TryParse(s, out Guid g)) return g;
 
         // fallback to ChangeType
         return Convert.ChangeType(s, underlying);
@@ -78,10 +79,10 @@ public static class MinimalApiBindHelper
     private static string ToSnakeCase(string name)
     {
         if (string.IsNullOrEmpty(name)) return name;
-        var sb = new System.Text.StringBuilder();
+        StringBuilder sb = new System.Text.StringBuilder();
         for (int i = 0; i < name.Length; i++)
         {
-            var c = name[i];
+            char c = name[i];
             if (char.IsUpper(c) && i > 0) sb.Append('_');
             sb.Append(char.ToLowerInvariant(c));
         }

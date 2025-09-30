@@ -46,8 +46,8 @@ public static partial class ResendEmailConfirmation
         public async Task<ErrorOr<Result>> Handle(
             Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Param param = request.Param;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             if (isAuthenticated)
                 return await HandleAuthenticatedUserAsync(param, cancellationToken);
@@ -60,9 +60,9 @@ public static partial class ResendEmailConfirmation
 
         private async Task<ErrorOr<Result>> HandleAuthenticatedUserAsync(Param param, CancellationToken cancellationToken)
         {
-            var userId = userContext.UserId!.Value;
+            Guid userId = userContext.UserId!.Value;
 
-            var user = await userManager.FindByIdAsync(userId.ToString());
+            User? user = await userManager.FindByIdAsync(userId.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
@@ -82,7 +82,7 @@ public static partial class ResendEmailConfirmation
 
             Log.Information("Resending confirmation email for authenticated user {UserId} to {Email}", userId, user.Email);
 
-            var sendResult = await userManager.GenerateAndSendConfirmationEmailAsync(
+            ErrorOr<Success> sendResult = await userManager.GenerateAndSendConfirmationEmailAsync(
                 notificationService,
                 configuration,
                 user,
@@ -99,7 +99,7 @@ public static partial class ResendEmailConfirmation
 
         private async Task<ErrorOr<Result>> HandleAnonymousUserAsync(Param param, CancellationToken cancellationToken)
         {
-            var user = await userManager.FindByEmailAsync(param.Email ?? string.Empty);
+            User? user = await userManager.FindByEmailAsync(param.Email ?? string.Empty);
 
             if (user is null)
             {
@@ -115,7 +115,7 @@ public static partial class ResendEmailConfirmation
 
             Log.Information("Resending confirmation email for anonymous request to {Email}", user.Email);
 
-            var sendResult = await userManager.GenerateAndSendConfirmationEmailAsync(
+            ErrorOr<Success> sendResult = await userManager.GenerateAndSendConfirmationEmailAsync(
                 notificationService,
                 configuration,
                 user,

@@ -20,7 +20,7 @@ public sealed class OptionTypePrototype : AuditableEntity
         if (optionTypeId == Guid.Empty) return Error.Validation("OptionTypePrototype.OptionTypeRequired", "OptionType is required.");
         if (prototypeId == Guid.Empty) return Error.Validation("OptionTypePrototype.PrototypeRequired", "Prototype is required.");
 
-        var otp = new OptionTypePrototype
+        OptionTypePrototype otp = new OptionTypePrototype
         {
             OptionTypeId = optionTypeId,
             PrototypeId = prototypeId

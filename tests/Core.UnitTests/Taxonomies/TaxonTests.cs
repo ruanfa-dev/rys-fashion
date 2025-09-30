@@ -1,5 +1,8 @@
 using Core.Catalog.Products;
 using Core.Catalog.Taxonomies;
+
+using ErrorOr;
+
 using Test.Common;
 
 using Shouldly;
@@ -14,14 +17,14 @@ public sealed class TaxonTests
     public void Create_ShouldGeneratePrettyNameAndPermalink()
     {
         // Arrange
-        var taxonomyId = Guid.NewGuid();
+        Guid taxonomyId = Guid.NewGuid();
 
         // Act
-        var res = Taxon.Create("Shirts", taxonomyId);
+        ErrorOr<Taxon> res = Taxon.Create("Shirts", taxonomyId);
 
         // Assert
         res.IsError.ShouldBeFalse();
-        var taxon = res.Value;
+        Taxon taxon = res.Value;
         taxon.Name.ShouldBe("Shirts");
         taxon.PrettyName.ShouldBe("Shirts");
         taxon.Permalink.ShouldBe("shirts");
@@ -30,16 +33,16 @@ public sealed class TaxonTests
     [Fact]
     public void GenerateSlug_IncludesParentPermalink_WhenParentPresent()
     {
-        var taxonomyId = Guid.NewGuid();
-    var parentRes = Taxon.Create("Clothing", taxonomyId);
+        Guid taxonomyId = Guid.NewGuid();
+    ErrorOr<Taxon> parentRes = Taxon.Create("Clothing", taxonomyId);
         parentRes.IsError.ShouldBeFalse();
-        var parent = parentRes.Value;
+        Taxon parent = parentRes.Value;
 
     TaxonTestHelper.Register(parent);
 
-    var childRes = Taxon.Create("T-Shirts", taxonomyId, parentId: parent.Id);
+    ErrorOr<Taxon> childRes = Taxon.Create("T-Shirts", taxonomyId, parentId: parent.Id);
         childRes.IsError.ShouldBeFalse();
-        var child = childRes.Value;
+        Taxon child = childRes.Value;
 
     TaxonTestHelper.Register(child);
 
@@ -47,23 +50,23 @@ public sealed class TaxonTests
         child.Permalink.ShouldBe("t-shirts");
         child.SetPermalink();
         // ensure child's slug is joined with parent's
-        var expected = string.Join('/', new[] { parent.Permalink.TrimEnd('/'), "t-shirts" });
+        string expected = string.Join('/', new[] { parent.Permalink.TrimEnd('/'), "t-shirts" });
         child.GenerateSlug().ShouldBe(expected);
     }
 
     [Fact]
     public void SetParent_Succeeds_WhenSameTaxonomy()
     {
-        var taxonomyId = Guid.NewGuid();
-        var parentRes = Taxon.Create("Parent", taxonomyId);
+        Guid taxonomyId = Guid.NewGuid();
+        ErrorOr<Taxon> parentRes = Taxon.Create("Parent", taxonomyId);
         parentRes.IsError.ShouldBeFalse();
-        var parent = parentRes.Value;
+        Taxon parent = parentRes.Value;
 
-        var childRes = Taxon.Create("Child", taxonomyId);
+        ErrorOr<Taxon> childRes = Taxon.Create("Child", taxonomyId);
         childRes.IsError.ShouldBeFalse();
-        var child = childRes.Value;
+        Taxon child = childRes.Value;
 
-        var setResult = child.SetParent(parent);
+        ErrorOr<Taxon> setResult = child.SetParent(parent);
         setResult.IsError.ShouldBeFalse();
         child.ParentId.ShouldBe(parent.Id);
         child.Parent.ShouldBe(parent);
@@ -72,14 +75,14 @@ public sealed class TaxonTests
     [Fact]
     public void RegeneratePrettyNameAndPermalink_PropagatesToChildren()
     {
-        var taxonomyId = Guid.NewGuid();
-        var rootRes = Taxon.Create("Root", taxonomyId);
+        Guid taxonomyId = Guid.NewGuid();
+        ErrorOr<Taxon> rootRes = Taxon.Create("Root", taxonomyId);
         rootRes.IsError.ShouldBeFalse();
-        var root = rootRes.Value;
+        Taxon root = rootRes.Value;
 
-        var childRes = Taxon.Create("Child", taxonomyId, parentId: root.Id);
+        ErrorOr<Taxon> childRes = Taxon.Create("Child", taxonomyId, parentId: root.Id);
         childRes.IsError.ShouldBeFalse();
-        var child = childRes.Value;
+        Taxon child = childRes.Value;
         root.Children.Add(child);
 
         // mutate root name and regenerate
@@ -93,17 +96,17 @@ public sealed class TaxonTests
     [Fact]
     public void ValidateForCreateAgainst_Fails_WhenRootAlreadyExists()
     {
-        var storeId = Guid.NewGuid();
-        var res = Taxonomy.Create("T", storeId);
+        Guid storeId = Guid.NewGuid();
+        ErrorOr<Taxonomy> res = Taxonomy.Create("T", storeId);
         res.IsError.ShouldBeFalse();
-        var taxonomy = res.Value;
+        Taxonomy taxonomy = res.Value;
 
         // Attempt to create another root under same taxonomy
-        var newRootRes = Taxon.Create("AnotherRoot", taxonomy.Id);
+        ErrorOr<Taxon> newRootRes = Taxon.Create("AnotherRoot", taxonomy.Id);
         newRootRes.IsError.ShouldBeFalse();
-        var newRoot = newRootRes.Value;
+        Taxon newRoot = newRootRes.Value;
 
-        var val = newRoot.ValidateForCreateAgainst(taxonomy);
+        ErrorOr<Success> val = newRoot.ValidateForCreateAgainst(taxonomy);
         val.IsError.ShouldBeTrue();
         val.FirstError.Code.ShouldContain("RootConflict");
     }
@@ -113,19 +116,19 @@ public sealed class TaxonTests
     public void SetParent_ShouldFail_WhenParentBelongsToDifferentTaxonomy()
     {
         // Arrange
-        var taxonomyA = Guid.NewGuid();
-        var taxonomyB = Guid.NewGuid();
+        Guid taxonomyA = Guid.NewGuid();
+        Guid taxonomyB = Guid.NewGuid();
 
-        var parentRes = Taxon.Create("Parent", taxonomyA);
+        ErrorOr<Taxon> parentRes = Taxon.Create("Parent", taxonomyA);
         parentRes.IsError.ShouldBeFalse();
-        var parent = parentRes.Value;
+        Taxon parent = parentRes.Value;
 
-        var childRes = Taxon.Create("Child", taxonomyB);
+        ErrorOr<Taxon> childRes = Taxon.Create("Child", taxonomyB);
         childRes.IsError.ShouldBeFalse();
-        var child = childRes.Value;
+        Taxon child = childRes.Value;
 
         // Act
-        var setResult = child.SetParent(parent);
+        ErrorOr<Taxon> setResult = child.SetParent(parent);
 
         // Assert
         setResult.IsError.ShouldBeTrue();
@@ -136,19 +139,19 @@ public sealed class TaxonTests
     public void Delete_ShouldPrevent_WhenHasChildrenOrClassifications()
     {
         // Arrange
-        var taxonomyId = Guid.NewGuid();
-        var parentRes = Taxon.Create("Parent", taxonomyId);
+        Guid taxonomyId = Guid.NewGuid();
+        ErrorOr<Taxon> parentRes = Taxon.Create("Parent", taxonomyId);
         parentRes.IsError.ShouldBeFalse();
-        var parent = parentRes.Value;
+        Taxon parent = parentRes.Value;
 
-        var childRes = Taxon.Create("Child", taxonomyId, parentId: parent.Id);
+        ErrorOr<Taxon> childRes = Taxon.Create("Child", taxonomyId, parentId: parent.Id);
         childRes.IsError.ShouldBeFalse();
-        var child = childRes.Value;
+        Taxon child = childRes.Value;
 
         parent.Children.Add(child);
 
         // Act
-        var deleteRes = parent.Delete();
+        ErrorOr<Deleted> deleteRes = parent.Delete();
 
         // Assert
         deleteRes.IsError.ShouldBeTrue();
@@ -158,7 +161,7 @@ public sealed class TaxonTests
         parent.Children.Remove(child);
         parent.Classifications.Add(new Classification { Id = Guid.NewGuid(), TaxonId = parent.Id });
 
-        var deleteRes2 = parent.Delete();
+        ErrorOr<Deleted> deleteRes2 = parent.Delete();
         deleteRes2.IsError.ShouldBeTrue();
         deleteRes2.FirstError.Code.ShouldContain("HasClassifications");
     }

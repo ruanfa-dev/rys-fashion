@@ -1,7 +1,16 @@
 using System.Net.Http.Json;
+
+using Core.Catalog.Taxonomies;
+
 using Infrastructure.Persistence.Contexts;
 using Microsoft.Extensions.DependencyInjection;
+
+using SharedKernel.Models;
+
 using Shouldly;
+
+using UseCases.Admin.Catalogs.Taxons.Commons;
+
 using Web.Api.AcceptanceTests.TestHost;
 
 namespace Web.Api.AcceptanceTests;
@@ -14,10 +23,10 @@ public class TaxonFlowTests(CustomWebApplicationFactory factory) : IClassFixture
     public async Task Create_Update_Taxon_Flow_Works_EndToEnd()
     {
         // Seed a taxonomy
-        var taxonomyId = Guid.NewGuid();
+        Guid taxonomyId = Guid.NewGuid();
         factory.Seed(db =>
         {
-            var tax = Core.Catalog.Taxonomies.Taxonomy.Create("seed", taxonomyId).Value;
+            Taxonomy tax = Core.Catalog.Taxonomies.Taxonomy.Create("seed", taxonomyId).Value;
             db.Taxonomies.Add(tax);
             db.SaveChanges();
         });
@@ -29,10 +38,10 @@ public class TaxonFlowTests(CustomWebApplicationFactory factory) : IClassFixture
             TaxonomyId = taxonomyId
         };
 
-    var createParentResp = await _client.PostAsJsonAsync("/api/admin/taxons", parentReq, TestContext.Current.CancellationToken);
+    HttpResponseMessage createParentResp = await _client.PostAsJsonAsync("/api/admin/taxons", parentReq, TestContext.Current.CancellationToken);
         createParentResp.EnsureSuccessStatusCode();
-    var parentApiResp = await createParentResp.Content.ReadFromJsonAsync<SharedKernel.Models.ApiResponse<UseCases.Admin.Catalogs.Taxons.Commons.TaxonResult.ListItem>>(TestContext.Current.CancellationToken);
-    var parentApi = parentApiResp!.Data!;
+    ApiResponse<TaxonResult.ListItem>? parentApiResp = await createParentResp.Content.ReadFromJsonAsync<SharedKernel.Models.ApiResponse<UseCases.Admin.Catalogs.Taxons.Commons.TaxonResult.ListItem>>(TestContext.Current.CancellationToken);
+    TaxonResult.ListItem parentApi = parentApiResp!.Data!;
         parentApi.ShouldNotBeNull();
     parentApi.Id.ShouldNotBe(Guid.Empty);
 
@@ -44,10 +53,10 @@ public class TaxonFlowTests(CustomWebApplicationFactory factory) : IClassFixture
             ParentId = parentApi.Id
         };
 
-    var createChildResp = await _client.PostAsJsonAsync("/api/admin/taxons", childReq, TestContext.Current.CancellationToken);
+    HttpResponseMessage createChildResp = await _client.PostAsJsonAsync("/api/admin/taxons", childReq, TestContext.Current.CancellationToken);
         createChildResp.EnsureSuccessStatusCode();
-    var childApiResp = await createChildResp.Content.ReadFromJsonAsync<SharedKernel.Models.ApiResponse<UseCases.Admin.Catalogs.Taxons.Commons.TaxonResult.ListItem>>(TestContext.Current.CancellationToken);
-    var childApi = childApiResp!.Data!;
+    ApiResponse<TaxonResult.ListItem>? childApiResp = await createChildResp.Content.ReadFromJsonAsync<SharedKernel.Models.ApiResponse<UseCases.Admin.Catalogs.Taxons.Commons.TaxonResult.ListItem>>(TestContext.Current.CancellationToken);
+    TaxonResult.ListItem childApi = childApiResp!.Data!;
     childApi.ShouldNotBeNull();
     childApi.Permalink.ShouldNotBeNull();
     childApi.Permalink.ShouldContain("child-t");
@@ -59,11 +68,11 @@ public class TaxonFlowTests(CustomWebApplicationFactory factory) : IClassFixture
             ParentId = parentApi.Id
         };
 
-    var updateUrl = string.Concat("/api/admin/taxons/", childApi.Id.ToString());
-    var updateResp = await _client.PutAsJsonAsync(updateUrl, updateReq, TestContext.Current.CancellationToken);
+    string updateUrl = string.Concat("/api/admin/taxons/", childApi.Id.ToString());
+    HttpResponseMessage updateResp = await _client.PutAsJsonAsync(updateUrl, updateReq, TestContext.Current.CancellationToken);
         updateResp.EnsureSuccessStatusCode();
-    var updatedResp = await updateResp.Content.ReadFromJsonAsync<SharedKernel.Models.ApiResponse<UseCases.Admin.Catalogs.Taxons.Commons.TaxonResult.ListItem>>(TestContext.Current.CancellationToken);
-    var updated = updatedResp!.Data!;
+    ApiResponse<TaxonResult.ListItem>? updatedResp = await updateResp.Content.ReadFromJsonAsync<SharedKernel.Models.ApiResponse<UseCases.Admin.Catalogs.Taxons.Commons.TaxonResult.ListItem>>(TestContext.Current.CancellationToken);
+    TaxonResult.ListItem updated = updatedResp!.Data!;
     updated.ShouldNotBeNull();
     updated.PrettyName.ShouldNotBeNull();
     updated.PrettyName.ShouldContain("Parent");

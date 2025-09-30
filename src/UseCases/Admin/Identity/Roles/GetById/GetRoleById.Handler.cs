@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 using Core.Identity.Roles;
 using Core.Identity.Users;
 
@@ -37,21 +39,21 @@ public static partial class GetRoleById
         {
             try
             {
-                var param = request.Param;
+                Param param = request.Param;
                 // Check: role exists
-                var role = await roleManager.FindByIdAsync(request.Id.ToString());
+                Role? role = await roleManager.FindByIdAsync(request.Id.ToString());
                 if (role == null)
                     return Role.Errors.RoleNotFound(Name);
 
                 // Retrieve: role claims/permissions
-                var roleClaims = await roleManager.GetClaimsAsync(role);
-                var permissions = roleClaims
+                IList<Claim> roleClaims = await roleManager.GetClaimsAsync(role);
+                string[] permissions = roleClaims
                     .Where(c => c.Type == CustomClaim.Permission)
                     .Select(c => c.Value!)
                     .ToArray();
 
                 // Retrieve: users in role count
-                var usersInRole = await dbContext.Set<UserRole>()
+                PagedList<UserInRoleListItemResult> usersInRole = await dbContext.Set<UserRole>()
                     .Include(ur => ur.User)
                     .AsNoTracking()
                     .ApplyFilters(param.Filter)
@@ -71,7 +73,7 @@ public static partial class GetRoleById
                         defaultPageSize: 5,
                         cancellationToken: cancellationToken);
 
-                var result = new Result()
+                Result result = new Result()
                 {
                     Id = role.Id,
                     Name = role.Name!,

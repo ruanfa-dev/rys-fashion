@@ -39,7 +39,7 @@ public sealed class UserAuthorizationProvider(
 
     public async Task<UserAuthorizationData?> GetUserAuthorizationAsync(Guid userId)
     {
-        var cacheKey = $"UserAuth_{userId}";
+        string cacheKey = $"UserAuth_{userId}";
 
         if (await TryGetCachedAuthAsync(cacheKey) is { } cached)
             return cached;
@@ -57,7 +57,7 @@ public sealed class UserAuthorizationProvider(
     {
         try
         {
-            var cachedData = await cache.GetStringAsync(cacheKey).ConfigureAwait(false);
+            string? cachedData = await cache.GetStringAsync(cacheKey).ConfigureAwait(false);
             return string.IsNullOrEmpty(cachedData)
                 ? null
                 : JsonSerializer.Deserialize<UserAuthorizationData>(cachedData, JsonOptions);
@@ -72,7 +72,7 @@ public sealed class UserAuthorizationProvider(
 
     private async Task<UserAuthorizationData?> FetchAndCacheAuthData(Guid userId, string cacheKey)
     {
-        var user = await userManager.Users
+        User? user = await userManager.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -82,9 +82,9 @@ public sealed class UserAuthorizationProvider(
             return null;
         }
 
-        var (roles, roleClaims) = await GetRolesAndClaimsAsync(user);
+        (IList<string> roles, List<Claim> roleClaims) = await GetRolesAndClaimsAsync(user);
 
-        var authData = new UserAuthorizationData(
+        UserAuthorizationData authData = new UserAuthorizationData(
             UserId: userId,
             UserName: user.UserName ?? string.Empty,
             Email: user.Email ?? string.Empty,
@@ -98,12 +98,12 @@ public sealed class UserAuthorizationProvider(
 
     private async Task<(IList<string> Roles, List<Claim> Claims)> GetRolesAndClaimsAsync(User user)
     {
-        var roleNames = await userManager.GetRolesAsync(user);
+        IList<string> roleNames = await userManager.GetRolesAsync(user);
         if (roleNames.Count == 0)
             return (roleNames, new());
 
         // Try to load role claims mapping from cache
-        var cachedJson = await cache.GetStringAsync(RoleClaimsCacheKey);
+        string? cachedJson = await cache.GetStringAsync(RoleClaimsCacheKey);
         Dictionary<string, List<Claim>>? roleClaimsMap = null;
 
         if (!string.IsNullOrEmpty(cachedJson))
@@ -122,19 +122,19 @@ public sealed class UserAuthorizationProvider(
         // Refresh role claims cache if missing
         if (roleClaimsMap is null)
         {
-            var roles = await roleManager.Roles.AsNoTracking().ToListAsync();
+            List<Role> roles = await roleManager.Roles.AsNoTracking().ToListAsync();
             roleClaimsMap = new Dictionary<string, List<Claim>>(roles.Count);
 
-            foreach (var role in roles)
+            foreach (Role role in roles)
             {
-                var claimsForRole = await roleManager.GetClaimsAsync(role); // Renamed variable
+                IList<Claim> claimsForRole = await roleManager.GetClaimsAsync(role); // Renamed variable
                 roleClaimsMap[role.Name!] = [.. claimsForRole];
             }
 
             try
             {
-                var serialized = JsonSerializer.Serialize(roleClaimsMap, JsonOptions);
-                var options = new DistributedCacheEntryOptions
+                string serialized = JsonSerializer.Serialize(roleClaimsMap, JsonOptions);
+                DistributedCacheEntryOptions options = new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_jwtOptions.RoleClaimsCacheExpiryInMinutes),
                     SlidingExpiration = TimeSpan.FromMinutes(_jwtOptions.RoleClaimsCacheExpiryInMinutes / 2)
@@ -148,16 +148,16 @@ public sealed class UserAuthorizationProvider(
         }
 
         // Collect all claims from roles
-        var roleClaims = roleNames
+        List<Claim> roleClaims = roleNames
             .Where(roleClaimsMap.ContainsKey)
             .SelectMany(r => roleClaimsMap[r])
             .ToList();
 
         // Collect claims directly assigned to the user
-        var userClaims = await userManager.GetClaimsAsync(user);
+        IList<Claim> userClaims = await userManager.GetClaimsAsync(user);
 
         // Combine role claims and user claims
-        var allClaims = new List<Claim>(roleClaims.Count + userClaims.Count);
+        List<Claim> allClaims = new List<Claim>(roleClaims.Count + userClaims.Count);
         allClaims.AddRange(roleClaims);
         allClaims.AddRange(userClaims);
 
@@ -176,8 +176,8 @@ public sealed class UserAuthorizationProvider(
     {
         try
         {
-            var serialized = JsonSerializer.Serialize(data, JsonOptions);
-            var options = new DistributedCacheEntryOptions
+            string serialized = JsonSerializer.Serialize(data, JsonOptions);
+            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_jwtOptions.UserAuthCacheExpiryInMinutes),
                 SlidingExpiration = TimeSpan.FromMinutes(_jwtOptions.UserAuthCacheSlidingInMinutes)
@@ -193,7 +193,7 @@ public sealed class UserAuthorizationProvider(
 
     public async Task InvalidateUserAuthorizationAsync(Guid userId)
     {
-        var cacheKey = $"UserAuth_{userId}";
+        string cacheKey = $"UserAuth_{userId}";
         await SafeCacheRemoveAsync(cacheKey);
         Log.Information("Cache invalidated for {UserId}", userId);
     }

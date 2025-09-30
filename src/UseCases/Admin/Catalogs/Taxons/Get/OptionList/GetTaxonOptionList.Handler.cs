@@ -32,8 +32,8 @@ public partial class GetTaxonOptionList
         {
             try
             {
-                var param = request.Param;
-                var paginatedList = await context.Set<Taxon>()
+                Param param = request.Param;
+                PagedList<Result> paginatedList = await context.Set<Taxon>()
                     .AsQueryable()
                     .AsNoTracking()
                     .ApplySearch(param.Search)

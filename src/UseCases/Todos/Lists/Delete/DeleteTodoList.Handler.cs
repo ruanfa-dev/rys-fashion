@@ -31,8 +31,8 @@ public static partial class DeleteTodoList
                 return TodoList.Errors.TodoListNotFound;
 
             // Remove: all items in the lists
-            var items = todoList.Items;
-            foreach (var item in items)
+            ICollection<TodoItem> items = todoList.Items;
+            foreach (TodoItem item in items)
             {
                 item.AddDomainEvent(new TodoItemDeletedEvent(item));
                 unitOfWork.Context.TodoItems.Remove(item);

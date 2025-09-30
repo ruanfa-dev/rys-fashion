@@ -33,8 +33,8 @@ internal sealed class NotificationService(
         if (notificationData.SendMethodType is not (NotificationSendMethod.Email or NotificationSendMethod.SMS))
             return Errors.NotSupportedSendMethod;
 
-        using var scope = serviceScopeFactory.CreateScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        using IServiceScope scope = serviceScopeFactory.CreateScope();
+        IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         //var validContacts = await GetValidContactsAsync(unitOfWork, notificationData, notificationData.SendMethodType, cancellationToken);
         //if (validContacts.Count == 0)
@@ -42,7 +42,7 @@ internal sealed class NotificationService(
 
         //notificationData.Receivers = validContacts;
 
-        var validationResult = notificationData.Validate();
+        ErrorOr<NotificationData> validationResult = notificationData.Validate();
         if (validationResult.IsError)
             return validationResult.Errors;
 
@@ -55,7 +55,7 @@ internal sealed class NotificationService(
         NotificationSendMethod sendMethod,
         CancellationToken cancellationToken)
     {
-        var contactSet = new HashSet<string>(
+        HashSet<string> contactSet = new HashSet<string>(
             notificationData.Receivers!,
             StringComparer.OrdinalIgnoreCase
         );

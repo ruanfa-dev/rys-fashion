@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -47,15 +48,15 @@ public static class UtcDateAnnotation
 
     public static bool IsUtc(this IMutableProperty property)
     {
-        var annotation = property.FindAnnotation(IsUtcAnnotation);
+        IAnnotation? annotation = property.FindAnnotation(IsUtcAnnotation);
         return annotation == null || (bool?)annotation.Value != false;
     }
 
     public static void ApplyUtcDateTimeConverter(this ModelBuilder builder)
     {
-        foreach (var entityType in builder.Model.GetEntityTypes())
+        foreach (IMutableEntityType entityType in builder.Model.GetEntityTypes())
         {
-            foreach (var property in entityType.GetProperties())
+            foreach (IMutableProperty property in entityType.GetProperties())
             {
                 if (!property.IsUtc())
                     continue;

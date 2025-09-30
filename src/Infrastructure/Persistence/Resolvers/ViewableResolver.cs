@@ -15,10 +15,10 @@ public static class ViewableResolver
         if (string.IsNullOrWhiteSpace(viewableType)) return null;
 
         // Try several name forms. Example conversion: "Spree::Variant" -> "Variant"
-        var shortName = viewableType.Split([':', '/', '.'], StringSplitOptions.RemoveEmptyEntries).Last();
+        string shortName = viewableType.Split([':', '/', '.'], StringSplitOptions.RemoveEmptyEntries).Last();
 
         // Look for a CLR type with matching short name or full name
-        var type = AppDomain.CurrentDomain.GetAssemblies()
+        Type? type = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a =>
             {
                 try { return a.GetTypes(); } catch { return Array.Empty<Type>(); }
@@ -31,7 +31,7 @@ public static class ViewableResolver
         if (type == null) return null;
 
         // Use DbContext.FindAsync(Type, key) to load the entity by primary key (works for tracked/untracked)
-        var found = await dbContext.FindAsync(type, [viewableId.Value]);
+        object? found = await dbContext.FindAsync(type, [viewableId.Value]);
         return found;
     }
 }

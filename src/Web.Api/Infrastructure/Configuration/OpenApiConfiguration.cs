@@ -30,7 +30,7 @@ public static class OpenApiConfiguration
             };
 
             // Apply security requirements for all operations
-            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations))
+            foreach (KeyValuePair<OperationType, OpenApiOperation> operation in document.Paths.Values.SelectMany(path => path.Operations))
             {
                 operation.Value.Security.Add(CreateJwtSecurityRequirement());
                 operation.Value.Security.Add(CreateGoogleSecurityRequirement());
@@ -161,7 +161,7 @@ public static class OpenApiConfiguration
             // Transform component schemas
             if (document.Components?.Schemas != null)
             {
-                foreach (var schema in document.Components.Schemas.Values)
+                foreach (OpenApiSchema? schema in document.Components.Schemas.Values)
                 {
                     TransformSchema(schema);
                 }
@@ -174,12 +174,12 @@ public static class OpenApiConfiguration
         {
             if (schema.Properties != null)
             {
-                var propertiesToUpdate = schema.Properties.ToList();
+                List<KeyValuePair<string, OpenApiSchema>> propertiesToUpdate = schema.Properties.ToList();
                 schema.Properties.Clear();
 
-                foreach (var (key, value) in propertiesToUpdate)
+                foreach ((string key, OpenApiSchema value) in propertiesToUpdate)
                 {
-                    var snakeCaseKey = ToSnakeCase(key);
+                    string snakeCaseKey = ToSnakeCase(key);
                     schema.Properties[snakeCaseKey] = value;
                     TransformSchema(value);
                 }
@@ -212,7 +212,7 @@ public static class OpenApiConfiguration
             // Transform query parameter names to snake_case
             if (operation.Parameters != null)
             {
-                foreach (var parameter in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
+                foreach (OpenApiParameter? parameter in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
                 {
                     parameter.Name = ToSnakeCase(parameter.Name);
                 }

@@ -245,7 +245,7 @@ public class ApiResponse<T>
     /// </summary>
     public static ApiResponse<T> ValidationError(IEnumerable<string> validationErrors, string? requestId = null)
     {
-        var errors = new Dictionary<string, string[]> { ["Validation"] = validationErrors.ToArray() };
+        Dictionary<string, string[]> errors = new Dictionary<string, string[]> { ["Validation"] = validationErrors.ToArray() };
         return ValidationError(errors, requestId);
     }
 
@@ -274,7 +274,7 @@ public class ApiResponse<T>
     /// </summary>
     public static ApiResponse<T> ProductSuccess(T data, bool inStock = true, int? stockCount = null, string? requestId = null)
     {
-        var response = Success(data, null, requestId);
+        ApiResponse<T> response = Success(data, null, requestId);
         
         if (stockCount.HasValue || !inStock)
         {
@@ -291,7 +291,7 @@ public class ApiResponse<T>
     /// </summary>
     public static ApiResponse<T> CartSuccess(T data, decimal? subtotal = null, decimal? total = null, int? itemCount = null, string? requestId = null)
     {
-        var response = Success(data, null, requestId);
+        ApiResponse<T> response = Success(data, null, requestId);
         
         if (subtotal.HasValue)
             response.WithMetadata("subtotal", subtotal.Value);
@@ -358,7 +358,7 @@ public class ApiResponse<T>
     public ApiResponse<T> WithLinks(Dictionary<string, string> links)
     {
         Links ??= new Dictionary<string, string>();
-        foreach (var link in links)
+        foreach (KeyValuePair<string, string> link in links)
         {
             Links[link.Key] = link.Value;
         }

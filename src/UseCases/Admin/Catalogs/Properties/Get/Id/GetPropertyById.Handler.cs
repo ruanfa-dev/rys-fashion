@@ -27,7 +27,7 @@ public static partial class GetPropertyById
             try
             {
                 // Check: entity exists
-                var entity = await dbContext.Set<Property>()
+                Result? entity = await dbContext.Set<Property>()
                     .AsNoTracking()
                     .Where(p => p.Id == request.Id)
                     .ProjectToType<Result>()

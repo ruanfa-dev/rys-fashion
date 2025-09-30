@@ -9,7 +9,7 @@ public static class MetadataSupportExtensions
     // Public metadata helpers
     public static string? GetPublicMetadataValue(this IMetadataSupport holder, string key)
     {
-        return holder.PublicMetadata?.TryGetValue(key, out var v) == true ? v : null;
+        return holder.PublicMetadata?.TryGetValue(key, out string? v) == true ? v : null;
     }
 
     public static void SetPublicMetadataValue(this IMetadataSupport holder, string key, string? value)
@@ -33,7 +33,7 @@ public static class MetadataSupportExtensions
     // Private metadata helpers
     public static string? GetPrivateMetadataValue(this IMetadataSupport holder, string key)
     {
-        return holder.PrivateMetadata?.TryGetValue(key, out var v) == true ? v : null;
+        return holder.PrivateMetadata?.TryGetValue(key, out string? v) == true ? v : null;
     }
 
     public static void SetPrivateMetadataValue(this IMetadataSupport holder, string key, string? value)

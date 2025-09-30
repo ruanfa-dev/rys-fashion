@@ -21,10 +21,10 @@ public partial class DeleteProperty
         {
             try
             {
-                var dbContext = unitOfWork.Context;
+                IApplicationDbContext dbContext = unitOfWork.Context;
 
                 // Check: entity existing
-                var entity = await dbContext.Set<Property>()
+                Property? entity = await dbContext.Set<Property>()
                     .Include(m => m.ProductProperties)
                     .FirstOrDefaultAsync(m => m.Id == request.Id, cancellationToken);
 
@@ -32,7 +32,7 @@ public partial class DeleteProperty
                     return Property.Errors.NotFound(request.Id);
 
                 // Check: if entity is used
-                var deletedResult = entity.Delete();
+                ErrorOr<Deleted> deletedResult = entity.Delete();
                 if (deletedResult.IsError)
                     return deletedResult.Errors;
 

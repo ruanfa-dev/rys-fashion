@@ -29,13 +29,13 @@ public static class PagingExtensions
         if (pagingParams?.HasPagingValues() != true)
         {
             // No paging parameters provided, use default pagination
-            var pageSize = NormalizePageSize(fallbackDefaultPageSize);
+            int pageSize = NormalizePageSize(fallbackDefaultPageSize);
             return query.Take(pageSize);
         }
 
         // Apply specified pagination
-        var pageIndex = Math.Max(pagingParams.EffectivePageIndex(), 0);
-        var effectivePageSize = NormalizePageSize(pagingParams.PageSize ?? DefaultPageSize);
+        int pageIndex = Math.Max(pagingParams.EffectivePageIndex(), 0);
+        int effectivePageSize = NormalizePageSize(pagingParams.PageSize ?? DefaultPageSize);
 
         return query
             .Skip(pageIndex * effectivePageSize)
@@ -61,13 +61,13 @@ public static class PagingExtensions
         if (pagingParams?.HasPagingValues() != true)
         {
             // No paging parameters provided, return all items but cap at max limit
-            var effectiveLimit = Math.Min(Math.Max(maxAllItemsLimit, 1), MaxAllItemsLimit);
+            int effectiveLimit = Math.Min(Math.Max(maxAllItemsLimit, 1), MaxAllItemsLimit);
             return query.Take(effectiveLimit);
         }
 
         // Apply specified pagination
-        var pageIndex = Math.Max(pagingParams.EffectivePageIndex(), 0);
-        var effectivePageSize = NormalizePageSize(pagingParams.PageSize ?? DefaultPageSize);
+        int pageIndex = Math.Max(pagingParams.EffectivePageIndex(), 0);
+        int effectivePageSize = NormalizePageSize(pagingParams.PageSize ?? DefaultPageSize);
 
         return query
             .Skip(pageIndex * effectivePageSize)

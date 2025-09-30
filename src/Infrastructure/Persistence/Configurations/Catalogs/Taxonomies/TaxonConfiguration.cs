@@ -4,7 +4,9 @@ using Infrastructure.Persistence.Constants;
 using Infrastructure.Persistence.Converters;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Configurations.Taxonomies;
 
@@ -72,8 +74,8 @@ public sealed class TaxonConfiguration : IEntityTypeConfiguration<Taxon>
         builder.HasMany(t => t.PromotionRuleTaxons).WithOne(prt => prt.Taxon).HasForeignKey(prt => prt.TaxonId).OnDelete(DeleteBehavior.Cascade);
 
         // Metadata conversions (JSON) for dictionaries
-        var dictConverter = DictionaryJsonConverter.GetConverter();
-        var dictComparer = DictionaryJsonConverter.GetComparer();
+        ValueConverter<IDictionary<string, string?>?, string?> dictConverter = DictionaryJsonConverter.GetConverter();
+        ValueComparer<IDictionary<string, string?>?> dictComparer = DictionaryJsonConverter.GetComparer();
 
         builder.Property(t => t.PublicMetadata)
             .HasConversion(dictConverter);

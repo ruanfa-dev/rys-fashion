@@ -17,10 +17,10 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithNullSortParams_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySort((SortParams?)null).ToList();
+        List<TestEntity> result = query.ApplySort((SortParams?)null).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -33,11 +33,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithNullSortBy_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams(null);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams(null);
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -47,11 +47,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithEmptySortBy_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -61,11 +61,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithWhitespaceSortBy_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("   ");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("   ");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -75,11 +75,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_StringProperty_Ascending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("StringProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("StringProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -92,11 +92,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_StringProperty_Descending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("StringProperty", "desc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("StringProperty", "desc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -109,11 +109,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_IntProperty_Ascending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("IntProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("IntProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -126,11 +126,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_IntProperty_Descending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("IntProperty", "desc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("IntProperty", "desc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -143,11 +143,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_DecimalProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("DecimalProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("DecimalProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -160,11 +160,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_DateTimeProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("DateTimeProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("DateTimeProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -177,11 +177,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_BoolProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("BoolProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("BoolProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -194,11 +194,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_EnumProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("Status", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("Status", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -211,11 +211,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_CaseInsensitive_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("stringproperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("stringproperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -226,11 +226,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_InvalidProperty_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("NonExistentProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("NonExistentProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams);
+        IQueryable<TestEntity> result = query.ApplySort(sortParams);
 
         // Assert
         // Should return the same IQueryable reference when invalid property
@@ -241,11 +241,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_NullableStringProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("NullableStringProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("NullableStringProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -259,11 +259,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_NullableIntProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("NullableIntProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("NullableIntProperty", "asc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -281,10 +281,10 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithNullArray_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySort((SortParams[]?)null);
+        IQueryable<TestEntity> result = query.ApplySort((SortParams[]?)null);
 
         // Assert
         result.ShouldBeSameAs(query);
@@ -294,10 +294,10 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithEmptyArray_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySort(Array.Empty<SortParams>());
+        IQueryable<TestEntity> result = query.ApplySort(Array.Empty<SortParams>());
 
         // Assert
         result.ShouldBeSameAs(query);
@@ -307,15 +307,15 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_MultipleCriteria_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new[]
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams[] sortParams = new[]
         {
             new SortParams("BoolProperty", "asc"),
             new SortParams("IntProperty", "desc")
         };
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -329,8 +329,8 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithInvalidProperty_IgnoresInvalidAndProcessesValid()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new[]
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams[] sortParams = new[]
         {
         new SortParams("InvalidProperty", "asc"),
         new SortParams("IntProperty", "desc")
@@ -340,19 +340,19 @@ public sealed class SortParamExtensionsTests
         // The current implementation has a known limitation where invalid properties
         // in a multiple sort scenario can cause exceptions during enumeration
         // This test verifies the behavior is consistent
-        var result = query.ApplySort(sortParams);
+        IQueryable<TestEntity> result = query.ApplySort(sortParams);
         result.ShouldNotBeNull();
 
         // Test the enumeration behavior
         Should.Throw<IndexOutOfRangeException>(() => result.ToList());
 
         // Alternative approach: test with only valid properties to verify the method works
-        var validSortParams = new[]
+        SortParams[] validSortParams = new[]
         {
         new SortParams("IntProperty", "desc")
     };
 
-        var validResult = query.ApplySort(validSortParams).ToList();
+        List<TestEntity> validResult = query.ApplySort(validSortParams).ToList();
         validResult.Count.ShouldBe(3);
         validResult[0].IntProperty.ShouldBe(30);
         validResult[1].IntProperty.ShouldBe(20);
@@ -363,8 +363,8 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithNullOrEmptySortBy_IgnoresInvalid()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new[]
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams[] sortParams = new[]
         {
             new SortParams(null, "asc"),
             new SortParams("", "asc"),
@@ -372,14 +372,14 @@ public sealed class SortParamExtensionsTests
         };
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
         // Should only apply the valid IntProperty desc sort
-        var isDescendingSorted = result[0].IntProperty == 30 &&
-                               result[1].IntProperty == 20 &&
-                               result[2].IntProperty == 10;
+        bool isDescendingSorted = result[0].IntProperty == 30 &&
+                                  result[1].IntProperty == 20 &&
+                                  result[2].IntProperty == 10;
 
         if (isDescendingSorted)
         {
@@ -395,10 +395,10 @@ public sealed class SortParamExtensionsTests
     public void OrderBy_WithLambda_Ascending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.OrderBy(x => x.StringProperty).ToList();
+        List<TestEntity> result = query.OrderBy(x => x.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -411,10 +411,10 @@ public sealed class SortParamExtensionsTests
     public void OrderBy_WithLambda_Descending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.OrderBy(x => x.StringProperty, descending: true).ToList();
+        List<TestEntity> result = query.OrderBy(x => x.StringProperty, descending: true).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -427,10 +427,10 @@ public sealed class SortParamExtensionsTests
     public void OrderBy_WithComplexProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.OrderBy(x => x.DateTimeProperty).ToList();
+        List<TestEntity> result = query.OrderBy(x => x.DateTimeProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -443,10 +443,10 @@ public sealed class SortParamExtensionsTests
     public void OrderBy_WithNullableProperty_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.OrderBy(x => x.NullableIntProperty).ToList();
+        List<TestEntity> result = query.OrderBy(x => x.NullableIntProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -463,10 +463,10 @@ public sealed class SortParamExtensionsTests
     public void Sort_CreatesFluentSortBuilder()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var builder = query.Sort();
+        SortBuilder<TestEntity> builder = query.Sort();
 
         // Assert
         builder.ShouldNotBeNull();
@@ -477,10 +477,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WithSingleBy_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Sort()
+        List<TestEntity> result = query.Sort()
             .By("StringProperty")
             .Execute()
             .ToList();
@@ -496,10 +496,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WithByDescending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Sort()
+        List<TestEntity> result = query.Sort()
             .ByDescending("IntProperty")
             .Execute()
             .ToList();
@@ -515,10 +515,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WithMultipleCriteria_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Sort()
+        List<TestEntity> result = query.Sort()
             .By("BoolProperty")
             .ThenByDescending("IntProperty")
             .Execute()
@@ -535,10 +535,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WithThenBy_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Sort()
+        List<TestEntity> result = query.Sort()
             .By("BoolProperty", "asc")
             .ThenBy("StringProperty", "desc")
             .Execute()
@@ -556,10 +556,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WithThenByDescending_SortsCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Sort()
+        List<TestEntity> result = query.Sort()
             .By("BoolProperty")
             .ThenByDescending("StringProperty")
             .Execute()
@@ -576,11 +576,11 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_ImplicitConversion_Works()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
         Func<IQueryable<TestEntity>> sortFunc = query.Sort().By("StringProperty");
-        var result = sortFunc().ToList();
+        List<TestEntity> result = sortFunc().ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -591,10 +591,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WithInvalidProperty_HandlesGracefully()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Sort()
+        IQueryable<TestEntity> result = query.Sort()
             .By("InvalidProperty")
             .By("StringProperty")
             .Execute();
@@ -605,13 +605,13 @@ public sealed class SortParamExtensionsTests
         // Test that invalid properties are handled gracefully
         try
         {
-            var resultList = result.ToList();
+            List<TestEntity> resultList = result.ToList();
             resultList.Count.ShouldBe(3);
 
             // Check if valid sorting was applied
-            var isAscendingSorted = resultList[0].StringProperty == "Apple" &&
-                                   resultList[1].StringProperty == "Banana" &&
-                                   resultList[2].StringProperty == "Blueberry";
+            bool isAscendingSorted = resultList[0].StringProperty == "Apple" &&
+                                     resultList[1].StringProperty == "Banana" &&
+                                     resultList[2].StringProperty == "Blueberry";
 
             if (isAscendingSorted)
             {
@@ -645,7 +645,7 @@ public sealed class SortParamExtensionsTests
     public void SortParams_DefaultConstructor_InitializesWithDefaultValues()
     {
         // Arrange & Act
-        var sortParams = new SortParams();
+        SortParams sortParams = new SortParams();
 
         // Assert
         sortParams.SortBy.ShouldBeNull();
@@ -658,7 +658,7 @@ public sealed class SortParamExtensionsTests
     public void SortParams_Constructor_WithSortBy_InitializesCorrectly()
     {
         // Arrange & Act
-        var sortParams = new SortParams("Name");
+        SortParams sortParams = new SortParams("Name");
 
         // Assert
         sortParams.SortBy.ShouldBe("Name");
@@ -671,7 +671,7 @@ public sealed class SortParamExtensionsTests
     public void SortParams_Constructor_WithSortByAndOrder_InitializesCorrectly()
     {
         // Arrange & Act
-        var sortParams = new SortParams("Name", "desc");
+        SortParams sortParams = new SortParams("Name", "desc");
 
         // Assert
         sortParams.SortBy.ShouldBe("Name");
@@ -688,7 +688,7 @@ public sealed class SortParamExtensionsTests
     public void SortParams_IsValid_ReturnsCorrectValue(string? sortBy, bool expected)
     {
         // Arrange & Act
-        var sortParams = new SortParams(sortBy);
+        SortParams sortParams = new SortParams(sortBy);
 
         // Assert
         sortParams.IsValid.ShouldBe(expected);
@@ -704,7 +704,7 @@ public sealed class SortParamExtensionsTests
     public void SortParams_IsDescending_ReturnsCorrectValue(string sortOrder, bool expected)
     {
         // Arrange & Act
-        var sortParams = new SortParams("Name", sortOrder);
+        SortParams sortParams = new SortParams("Name", sortOrder);
 
         // Assert
         sortParams.IsDescending.ShouldBe(expected);
@@ -714,10 +714,10 @@ public sealed class SortParamExtensionsTests
     public void SortParams_WithRecord_SupportsWithExpression()
     {
         // Arrange
-        var sortParams = new SortParams("Name", "asc");
+        SortParams sortParams = new SortParams("Name", "asc");
 
         // Act
-        var newSortParams = sortParams with { SortOrder = "desc" };
+        SortParams newSortParams = sortParams with { SortOrder = "desc" };
 
         // Assert
         sortParams.SortOrder.ShouldBe("asc"); // Original unchanged
@@ -733,11 +733,11 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_EmptyQuery_ReturnsEmptyQuery()
     {
         // Arrange
-        var emptyQuery = Enumerable.Empty<TestEntity>().AsQueryable();
-        var sortParams = new SortParams("StringProperty");
+        IQueryable<TestEntity> emptyQuery = Enumerable.Empty<TestEntity>().AsQueryable();
+        SortParams sortParams = new SortParams("StringProperty");
 
         // Act
-        var result = emptyQuery.ApplySort(sortParams).ToList();
+        List<TestEntity> result = emptyQuery.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(0);
@@ -751,16 +751,16 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_VariousPropertyNames_HandlesCorrectly(string propertyName)
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams(propertyName);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams(propertyName);
 
         // Act
-        var result = query.ApplySort(sortParams);
+        IQueryable<TestEntity> result = query.ApplySort(sortParams);
 
         // Assert
         if (propertyName.Equals("STRINGPROPERTY", StringComparison.OrdinalIgnoreCase))
         {
-            var resultList = result.ToList();
+            List<TestEntity> resultList = result.ToList();
             resultList[0].StringProperty.ShouldBe("Apple");
         }
         else
@@ -774,13 +774,13 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_CombinedWithOtherLinqOperations_WorksCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData()
+        IOrderedQueryable<TestEntity> query = GetQueryableTestData()
             .Where(e => e.Status != TestStatus.Pending)
             .OrderBy(e => e.Id);
-        var sortParams = new SortParams("StringProperty", "desc");
+        SortParams sortParams = new SortParams("StringProperty", "desc");
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(2);
@@ -792,7 +792,7 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithLargeDataset_PerformsEfficiently()
     {
         // Arrange
-        var largeDataset = new List<TestEntity>();
+        List<TestEntity> largeDataset = new List<TestEntity>();
         for (int i = 0; i < 1000; i++)
         {
             largeDataset.Add(new TestEntity
@@ -804,11 +804,11 @@ public sealed class SortParamExtensionsTests
                 Status = TestStatus.Active
             });
         }
-        var query = largeDataset.AsQueryable();
-        var sortParams = new SortParams("IntProperty", "desc");
+        IQueryable<TestEntity> query = largeDataset.AsQueryable();
+        SortParams sortParams = new SortParams("IntProperty", "desc");
 
         // Act
-        var result = query.ApplySort(sortParams).Take(10).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).Take(10).ToList();
 
         // Assert
         result.Count.ShouldBe(10);
@@ -824,13 +824,13 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_SamePropertyMultipleTimes_UsesCachedReflection()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new SortParams("StringProperty", "asc");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams sortParams = new SortParams("StringProperty", "asc");
 
         // Act
         // Multiple calls should use cached reflection
-        var result1 = query.ApplySort(sortParams).ToList();
-        var result2 = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result1 = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result2 = query.ApplySort(sortParams).ToList();
 
         // Assert
         result1.Count.ShouldBe(result2.Count);
@@ -842,19 +842,19 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_DifferentTypesWithSamePropertyName_CachesCorrectly()
     {
         // Arrange
-        var testEntities = GetQueryableTestData();
-        var addressData = new List<TestAddress>
+        IQueryable<TestEntity> testEntities = GetQueryableTestData();
+        IQueryable<TestAddress> addressData = new List<TestAddress>
         {
             new TestAddress { City = "New York", PostalCode = "10001" },
             new TestAddress { City = "London", PostalCode = null },
             new TestAddress { City = "Tokyo", PostalCode = "100-0001" }
         }.AsQueryable();
 
-        var sortParams = new SortParams("City", "asc");
+        SortParams sortParams = new SortParams("City", "asc");
 
         // Act
-        var entityResult = testEntities.Where(e => e.Address != null).ApplySort(new SortParams("Id", "asc")).ToList();
-        var addressResult = addressData.ApplySort(sortParams).ToList();
+        List<TestEntity> entityResult = testEntities.Where(e => e.Address != null).ApplySort(new SortParams("Id", "asc")).ToList();
+        List<TestAddress> addressResult = addressData.ApplySort(sortParams).ToList();
 
         // Assert
         entityResult.Count.ShouldBe(2); // Only entities with addresses
@@ -871,16 +871,16 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WorksWithTestEntityComplexScenario()
     {
         // Arrange
-        var query = GetQueryableTestData()
+        IQueryable<TestEntity> query = GetQueryableTestData()
             .Where(e => e.Status != TestStatus.Inactive); // Excludes Blueberry (Inactive)
-        var sortParams = new[]
+        SortParams[] sortParams = new[]
         {
             new SortParams("Status", "asc"),
             new SortParams("StringProperty", "desc")
         };
 
         // Act
-        var result = query.ApplySort(sortParams).ToList();
+        List<TestEntity> result = query.ApplySort(sortParams).ToList();
 
         // Assert
         result.Count.ShouldBe(2);
@@ -894,10 +894,10 @@ public sealed class SortParamExtensionsTests
     public void SortBuilder_WorksWithTestEntityPropertiesChaining()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query
+        List<TestEntity> result = query
             .Where(e => e.IntProperty >= 20) // Banana (20), Blueberry (30)
             .Sort()
             .By("Status")
@@ -920,15 +920,15 @@ public sealed class SortParamExtensionsTests
     public void ApplySort_WithInvalidProperty_DocumentsCurrentBehavior()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var sortParams = new[]
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SortParams[] sortParams = new[]
         {
             new SortParams("InvalidProperty", "asc"),
             new SortParams("IntProperty", "desc")
         };
 
         // Act
-        var result = query.ApplySort(sortParams);
+        IQueryable<TestEntity> result = query.ApplySort(sortParams);
 
         // Assert
         result.ShouldNotBeNull();
@@ -936,12 +936,12 @@ public sealed class SortParamExtensionsTests
         // Current implementation limitation: when invalid properties are mixed with valid ones
         // in multiple sort scenarios, it can cause IndexOutOfRangeException during enumeration
         // This is a known limitation of the current implementation
-        var exception = Should.Throw<IndexOutOfRangeException>(() => result.ToList());
+        IndexOutOfRangeException exception = Should.Throw<IndexOutOfRangeException>(() => result.ToList());
         exception.ShouldNotBeNull();
 
         // Verify that sorting works correctly when only valid properties are used
-        var validOnlySortParams = new[] { new SortParams("IntProperty", "desc") };
-        var validResult = query.ApplySort(validOnlySortParams).ToList();
+        SortParams[] validOnlySortParams = new[] { new SortParams("IntProperty", "desc") };
+        List<TestEntity> validResult = query.ApplySort(validOnlySortParams).ToList();
 
         validResult.Count.ShouldBe(3);
         validResult[0].IntProperty.ShouldBe(30);

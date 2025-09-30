@@ -39,13 +39,13 @@ public static partial class LoginWithPassword
         {
 
             // Check: User existence by email
-            var param = request.Param;
-            var user = await userManager.FindByEmailAsync(param.Email);
+            Param param = request.Param;
+            User? user = await userManager.FindByEmailAsync(param.Email);
             if (user is null)
                 return User.Errors.UserNotFound;
 
             // Check: User is not locked out
-            var result = await signInManager.CheckPasswordSignInAsync(
+            SignInResult result = await signInManager.CheckPasswordSignInAsync(
                 user,
                 param.Password,
                 lockoutOnFailure: true);
@@ -70,8 +70,8 @@ public static partial class LoginWithPassword
             }
 
             // Get: IP address and user-agent
-            var ipAddress = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
-            var userAgent = httpContextAccessor.HttpContext?.Request?.Headers.UserAgent.ToString();
+            string ipAddress = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
+            string? userAgent = httpContextAccessor.HttpContext?.Request?.Headers.UserAgent.ToString();
             if (string.IsNullOrWhiteSpace(userAgent))
                 userAgent = "unknown";
 
@@ -94,7 +94,7 @@ public static partial class LoginWithPassword
                 return refreshResult.Errors;
             }
 
-            var tokens = new AuthenticationResult
+            AuthenticationResult tokens = new AuthenticationResult
             {
                 AccessToken = accessResult.Value.Token,
                 AccessTokenExpiresAt = accessResult.Value.ExpiresAt,

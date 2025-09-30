@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Reflection;
 
 using ErrorOr;
 
@@ -80,8 +81,8 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     {
         LogException(exception);
 
-        var errors = MapExceptionToErrors(exception);
-        var problemDetails = CreateProblemDetails(errors, httpContext.Request.Path);
+        IReadOnlyList<Error> errors = MapExceptionToErrors(exception);
+        ProblemDetails problemDetails = CreateProblemDetails(errors, httpContext.Request.Path);
 
         await WriteResponseAsync(httpContext, problemDetails, cancellationToken);
         return true;
@@ -96,7 +97,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     private void LogException(Exception exception)
     {
         // Log with different levels based on exception type
-        var logLevel = GetLogLevelForException(exception);
+        LogLevel logLevel = GetLogLevelForException(exception);
 
         _logger.Log(logLevel, exception,
             "Unhandled exception occurred: {ExceptionType} - {ExceptionMessage}",
@@ -131,13 +132,13 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         // Handle FluentValidation exceptions with reflection to avoid hard dependency
         if (IsFluentValidationException(exception))
         {
-            var validationErrors = ExtractFluentValidationErrors(exception);
+            List<Error> validationErrors = ExtractFluentValidationErrors(exception);
             if (validationErrors.Count > 0)
                 return validationErrors;
         }
 
         // Map common .NET exceptions to appropriate ErrorOr error types
-        var error = CreateErrorFromException(exception);
+        Error error = CreateErrorFromException(exception);
         return [error];
     }
 
@@ -152,7 +153,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         if (errors.Count == 0)
             return CreateGenericProblemDetails(requestPath);
 
-        var firstError = errors[0];
+        Error firstError = errors[0];
 
         if (firstError.Type == ErrorType.Validation)
             return CreateValidationProblemDetails(errors, requestPath);
@@ -196,17 +197,17 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     /// <returns>List of validation errors</returns>
     private static List<Error> ExtractFluentValidationErrors(Exception exception)
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         try
         {
-            var errorsProperty = exception.GetType().GetProperty("Errors");
+            PropertyInfo? errorsProperty = exception.GetType().GetProperty("Errors");
             if (errorsProperty?.GetValue(exception) is not IEnumerable<object> validationFailures)
                 return errors;
 
-            foreach (var failure in validationFailures)
+            foreach (object failure in validationFailures)
             {
-                var error = CreateValidationErrorFromFailure(failure);
+                Error? error = CreateValidationErrorFromFailure(failure);
                 if (error.HasValue)
                     errors.Add(error.Value);
             }
@@ -231,10 +232,10 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     {
         try
         {
-            var type = failure.GetType();
-            var propertyName = GetPropertyValue<string>(failure, type, "PropertyName") ?? "Unknown";
-            var errorMessage = GetPropertyValue<string>(failure, type, "ErrorMessage") ?? "Validation failed";
-            var errorCode = GetPropertyValue<string>(failure, type, "ErrorCode") ?? "ValidationError";
+            Type type = failure.GetType();
+            string propertyName = GetPropertyValue<string>(failure, type, "PropertyName") ?? "Unknown";
+            string errorMessage = GetPropertyValue<string>(failure, type, "ErrorMessage") ?? "Validation failed";
+            string errorCode = GetPropertyValue<string>(failure, type, "ErrorCode") ?? "ValidationError";
 
             return Error.Validation(
                 code: $"{propertyName}.{errorCode}",
@@ -256,7 +257,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     /// <returns>Property value or null</returns>
     private static T? GetPropertyValue<T>(object obj, Type type, string propertyName) where T : class
     {
-        var property = type.GetProperty(propertyName);
+        PropertyInfo? property = type.GetProperty(propertyName);
         return property?.GetValue(obj) as T;
     }
 
@@ -324,7 +325,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         string requestPath)
     {
         // Group validation errors by property name using ToLookup for better performance
-        var errorsByProperty = errors
+        Dictionary<string, string[]> errorsByProperty = errors
             .ToLookup(e => ExtractPropertyName(e.Code), e => e.Description)
             .ToDictionary(g => g.Key, g => g.ToArray());
 
@@ -345,7 +346,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     /// <returns>ProblemDetails</returns>
     private static ProblemDetails CreateStandardProblemDetails(Error error, string requestPath)
     {
-        var statusCode = GetStatusCode(error.Type);
+        int statusCode = GetStatusCode(error.Type);
 
         return new ProblemDetails
         {
@@ -384,7 +385,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         if (string.IsNullOrEmpty(code))
             return "Unknown";
 
-        var dotIndex = code.IndexOf('.');
+        int dotIndex = code.IndexOf('.');
         return dotIndex > 0 ? code[..dotIndex] : code;
     }
 

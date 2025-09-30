@@ -33,7 +33,7 @@ public static partial class VerifyExternalToken
                 return Error.Validation("Token.Required", "Either access token or ID token is required");
             }
 
-            var validationResult = await tokenValidator.ValidateTokenAsync(
+            ErrorOr<ExternalUserInfo> validationResult = await tokenValidator.ValidateTokenAsync(
                 request.Provider,
                 request.AccessToken,
                 request.IdToken,

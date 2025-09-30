@@ -45,7 +45,7 @@ public static class PersistenceConfiguration
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         // Get connection string
-        var connectionString = configuration.GetConnectionString(DbConnectionOptions.Default);
+        string? connectionString = configuration.GetConnectionString(DbConnectionOptions.Default);
         Guard.Against.Null(connectionString, message: "Connection string 'DefaultConnection' not found.");
 
         // Register: DbContext into DI with environment-specific configuration
@@ -118,7 +118,7 @@ public static class PersistenceConfiguration
         else
         {
             // Production/Staging: Use Redis distributed cache
-            var redisConnection = configuration.GetValue<string>("Cache:RedisConnection");
+            string? redisConnection = configuration.GetValue<string>("Cache:RedisConnection");
             Guard.Against.NullOrWhiteSpace(redisConnection, message: "Cache:RedisConnection not found or empty.");
 
             services.AddStackExchangeRedisCache(options =>

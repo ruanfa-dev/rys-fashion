@@ -29,10 +29,10 @@ public static class NotificationConfiguration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var smtpOptions = configuration.GetSection(SmtpOptions.Section).Get<SmtpOptions>();
+        SmtpOptions? smtpOptions = configuration.GetSection(SmtpOptions.Section).Get<SmtpOptions>();
         Guard.Against.Null(smtpOptions, message: "SmtpOptions configuration section is missing or invalid.");
 
-        var smsOptions = configuration.GetSection(SmsOptions.Section).Get<SmsOptions>();
+        SmsOptions? smsOptions = configuration.GetSection(SmsOptions.Section).Get<SmsOptions>();
         Guard.Against.Null(smsOptions, message: "SmsOptions configuration section is missing or invalid.");
 
         AddEmailNotificationServices(services, smtpOptions);
@@ -54,7 +54,7 @@ public static class NotificationConfiguration
                 case "smtp":
                     Guard.Against.Null(smtpOptions.SmtpConfig, message: "SmtpConfig is required for SMTP provider.");
 
-                    var smtpClient = new SmtpClient(smtpOptions.SmtpConfig.Host, smtpOptions.SmtpConfig.Port)
+                    SmtpClient smtpClient = new SmtpClient(smtpOptions.SmtpConfig.Host, smtpOptions.SmtpConfig.Port)
                     {
                         EnableSsl = smtpOptions.SmtpConfig.EnableSsl,
                         UseDefaultCredentials = smtpOptions.SmtpConfig.UseDefaultCredentials,
@@ -94,7 +94,7 @@ public static class NotificationConfiguration
             services.AddSingleton<ISmsSenderService, SmsSenderService>();
             services.AddSingleton<ISinchClient>(sp =>
             {
-                var sinchOption = smsOptions.SinchConfig;
+                SinchConfig sinchOption = smsOptions.SinchConfig;
 
                 return new SinchClient(sinchOption.ProjectId, sinchOption.KeyId, keySecret: sinchOption.KeySecret, options =>
                 {

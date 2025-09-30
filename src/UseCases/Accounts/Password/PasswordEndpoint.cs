@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -24,7 +26,7 @@ public sealed class PasswordEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -32,9 +34,9 @@ public sealed class PasswordEndpoint : ICarterModule
 
         group.MapPost(ChangePassword.Route, async ([FromBody] ChangePassword.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ChangePassword.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Password changed successfully");
+            ChangePassword.Command command = new ChangePassword.Command(param);
+            ErrorOr<Updated> result = await mediator.Send(command);
+            ApiResponse<Updated> apiResponse = result.ToApiResponse("Password changed successfully");
             
             // Add password change metadata and links
             if (apiResponse.IsSuccess)
@@ -62,9 +64,9 @@ public sealed class PasswordEndpoint : ICarterModule
 
         group.MapPost(ForgotPassword.Route, async ([FromBody] ForgotPassword.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ForgotPassword.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Password reset email sent successfully");
+            ForgotPassword.Command command = new ForgotPassword.Command(param);
+            ErrorOr<ForgotPassword.Result> result = await mediator.Send(command);
+            ApiResponse<ForgotPassword.Result> apiResponse = result.ToApiResponse("Password reset email sent successfully");
             
             // Add forgot password metadata and links
             if (apiResponse.IsSuccess)
@@ -91,9 +93,9 @@ public sealed class PasswordEndpoint : ICarterModule
 
         group.MapPost(ResetPassword.Route, async ([FromBody] ResetPassword.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ResetPassword.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Password reset successfully");
+            ResetPassword.Command command = new ResetPassword.Command(param);
+            ErrorOr<ResetPassword.Result> result = await mediator.Send(command);
+            ApiResponse<ResetPassword.Result> apiResponse = result.ToApiResponse("Password reset successfully");
             
             // Add password reset metadata and links
             if (apiResponse.IsSuccess)

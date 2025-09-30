@@ -28,8 +28,8 @@ public partial class RepositionTaxon
         {
             try
             {
-                var param = request.Param;
-                var entity = await context.Set<Taxon>()
+                Param param = request.Param;
+                Taxon? entity = await context.Set<Taxon>()
                     .Include(t => t.Parent)
                     .Include(t => t.Children)
                     .Include(t => t.Taxonomy)
@@ -47,7 +47,7 @@ public partial class RepositionTaxon
                 {
                     entity.ParentId = param.ParentId;
                     // set navigation if available
-                    var newParent = await context.Set<Taxon>().FirstOrDefaultAsync(t => t.Id == param.ParentId.Value, cancellationToken);
+                    Taxon? newParent = await context.Set<Taxon>().FirstOrDefaultAsync(t => t.Id == param.ParentId.Value, cancellationToken);
                     if (newParent != null) entity.Parent = newParent;
                 }
 

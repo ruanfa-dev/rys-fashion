@@ -296,7 +296,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
                 if (_cachedSelfAndDescendantsIds != null)
                     return _cachedSelfAndDescendantsIds.AsReadOnly();
 
-                var ids = new List<Guid> { Id };
+                List<Guid> ids = new List<Guid> { Id };
                 CollectDescendantIds(this, ids);
                 _cachedSelfAndDescendantsIds = ids;
                 return _cachedSelfAndDescendantsIds.AsReadOnly();
@@ -306,7 +306,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     private static void CollectDescendantIds(Taxon node, List<Guid> ids)
     {
-        foreach (var child in node.Children)
+        foreach (Taxon child in node.Children)
         {
             ids.Add(child.Id);
             CollectDescendantIds(child, ids);
@@ -319,7 +319,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         {
             _cachedSelfAndDescendantsIds = null;
         }
-        foreach (var child in Children)
+        foreach (Taxon child in Children)
             child.InvalidateDescendantsCache();
     }
 
@@ -347,21 +347,21 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         IDictionary<string, string?>? privateMetadata = null)
     {
         // Validate required fields
-        var nameValidation = ValidateName(name);
+        ErrorOr<Success> nameValidation = ValidateName(name);
         if (nameValidation.IsError) return nameValidation.Errors;
 
-        var taxonomyValidation = ValidateTaxonomyId(taxonomyId);
+        ErrorOr<Success> taxonomyValidation = ValidateTaxonomyId(taxonomyId);
         if (taxonomyValidation.IsError) return taxonomyValidation.Errors;
 
         rulesMatchPolicy ??= "all";
-        var rulesMatchPolicyValidation = ValidateRulesMatchPolicy(rulesMatchPolicy);
+        ErrorOr<Success> rulesMatchPolicyValidation = ValidateRulesMatchPolicy(rulesMatchPolicy);
         if (rulesMatchPolicyValidation.IsError) return rulesMatchPolicyValidation.Errors;
 
         sortOrder ??= "manual";
-        var sortOrderValidation = ValidateSortOrder(sortOrder);
+        ErrorOr<Success> sortOrderValidation = ValidateSortOrder(sortOrder);
         if (sortOrderValidation.IsError) return sortOrderValidation.Errors;
 
-        var metaValidation = ValidateMetaFields(metaTitle, metaDescription, metaKeywords);
+        ErrorOr<Success> metaValidation = ValidateMetaFields(metaTitle, metaDescription, metaKeywords);
         if (metaValidation.IsError) return metaValidation.Errors;
 
         if (!string.IsNullOrEmpty(description) && description.Length > Constraints.DescriptionMaxLength)
@@ -373,8 +373,8 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             return Errors.InvalidImageContentType;
 
 
-        var trimmedName = name.Trim();
-        var taxon = new Taxon
+        string trimmedName = name.Trim();
+        Taxon taxon = new Taxon
         {
             Name = trimmedName,
             Description = description?.Trim(),
@@ -409,7 +409,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         if (string.IsNullOrWhiteSpace(name))
             return Errors.NameRequired;
 
-        var trimmed = name.Trim();
+        string trimmed = name.Trim();
         if (trimmed.Length < Constraints.NameMinLength || trimmed.Length > Constraints.NameMaxLength)
             return Errors.InvalidNameLength;
 
@@ -457,11 +457,11 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
     private static bool IsValidImageUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return true;
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult) ||
             uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps)
             return false;
 
-        var extension = System.IO.Path.GetExtension(uriResult.AbsolutePath).ToLowerInvariant();
+        string extension = System.IO.Path.GetExtension(uriResult.AbsolutePath).ToLowerInvariant();
         if (!string.IsNullOrEmpty(extension) && !Constraints.ValidImageExtensions.Contains(extension))
             return false;
 
@@ -491,8 +491,8 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         bool hasChanges = false;
         bool rulesPolicyChanged = false;
 
-        var prevImageUrl = ImageUrl;
-        var prevSquareImageUrl = SquareImageUrl;
+        string? prevImageUrl = ImageUrl;
+        string? prevSquareImageUrl = SquareImageUrl;
 
         if (parentId != ParentId)
         {
@@ -506,7 +506,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
             if (resolvedParent != null)
             {
-                var setParentResult = SetParent(resolvedParent);
+                ErrorOr<Taxon> setParentResult = SetParent(resolvedParent);
                 if (setParentResult.IsError) return setParentResult.Errors;
                 hasChanges = true;
             }
@@ -532,7 +532,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (!string.IsNullOrWhiteSpace(name) && name.Trim() != Name)
         {
-            var nameValidation = ValidateName(name);
+            ErrorOr<Success> nameValidation = ValidateName(name);
             if (nameValidation.IsError) return nameValidation.Errors;
             Name = name.Trim();
             Permalink = string.Empty; // Clear for regeneration
@@ -555,7 +555,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (!string.IsNullOrWhiteSpace(rulesMatchPolicy) && rulesMatchPolicy != RulesMatchPolicy)
         {
-            var rulesMatchPolicyValidation = ValidateRulesMatchPolicy(rulesMatchPolicy);
+            ErrorOr<Success> rulesMatchPolicyValidation = ValidateRulesMatchPolicy(rulesMatchPolicy);
             if (rulesMatchPolicyValidation.IsError) return rulesMatchPolicyValidation.Errors;
             RulesMatchPolicy = rulesMatchPolicy;
             rulesPolicyChanged = true;
@@ -564,7 +564,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (!string.IsNullOrWhiteSpace(sortOrder) && sortOrder != SortOrder)
         {
-            var sortOrderValidation = ValidateSortOrder(sortOrder);
+            ErrorOr<Success> sortOrderValidation = ValidateSortOrder(sortOrder);
             if (sortOrderValidation.IsError) return sortOrderValidation.Errors;
             SortOrder = sortOrder;
             hasChanges = true;
@@ -576,7 +576,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             hasChanges = true;
         }
 
-        var metaValidation = ValidateAndUpdateMetaFields(metaTitle, metaDescription, metaKeywords);
+        ErrorOr<bool> metaValidation = ValidateAndUpdateMetaFields(metaTitle, metaDescription, metaKeywords);
         if (metaValidation.IsError) return metaValidation.Errors;
         if (metaValidation.Value) hasChanges = true;
 
@@ -616,7 +616,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             AddDomainEvent(new Events.Updated(Id, this));
             InvalidateDescendantsCache();
 
-            var imagesChanged = prevImageUrl != ImageUrl || prevSquareImageUrl != SquareImageUrl;
+            bool imagesChanged = prevImageUrl != ImageUrl || prevSquareImageUrl != SquareImageUrl;
             if (imagesChanged)
             {
                 AddDomainEvent(new Events.TouchFeaturedSections(Id));
@@ -745,7 +745,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public ErrorOr<Taxon> RemoveRule(Guid ruleId)
     {
-        var rule = TaxonRules.FirstOrDefault(r => r.Id == ruleId);
+        TaxonRule? rule = TaxonRules.FirstOrDefault(r => r.Id == ruleId);
         if (rule == null)
             return Errors.RuleNotFound;
 
@@ -766,7 +766,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         if (Classifications.Any(c => c.ProductId == productId))
             return Errors.ProductAlreadyClassified;
 
-        var classification = Classification.Create(productId, Id, position);
+        ErrorOr<Classification> classification = Classification.Create(productId, Id, position);
         if (classification.IsError) return classification.Errors;
 
         Classifications.Add(classification.Value);
@@ -785,7 +785,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public ErrorOr<Taxon> UnclassifyProduct(Guid productId)
     {
-        var classification = Classifications.FirstOrDefault(c => c.ProductId == productId);
+        Classification? classification = Classifications.FirstOrDefault(c => c.ProductId == productId);
         if (classification == null)
             return Errors.ProductNotClassified;
 
@@ -797,14 +797,14 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public IEnumerable<Product> GetActiveProductsWithDescendants()
     {
-        var products = new List<Product>();
-        foreach (var c in Classifications)
+        List<Product> products = new List<Product>();
+        foreach (Classification c in Classifications)
         {
             if (c.Product != null && c.Product.IsActive)
                 products.Add(c.Product);
         }
 
-        foreach (var child in Children)
+        foreach (Taxon child in Children)
         {
             products.AddRange(child.GetActiveProductsWithDescendants());
         }
@@ -878,14 +878,14 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public IEnumerable<Taxon> GetAllDescendants()
     {
-        var descendants = new List<Taxon>();
+        List<Taxon> descendants = new List<Taxon>();
         CollectAllDescendants(this, descendants);
         return descendants;
     }
 
     private static void CollectAllDescendants(Taxon node, List<Taxon> descendants)
     {
-        foreach (var child in node.Children)
+        foreach (Taxon child in node.Children)
         {
             descendants.Add(child);
             CollectAllDescendants(child, descendants);
@@ -894,8 +894,8 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public IEnumerable<Taxon> GetAncestors()
     {
-        var ancestors = new List<Taxon>();
-        var current = Parent;
+        List<Taxon> ancestors = new List<Taxon>();
+        Taxon? current = Parent;
         while (current != null)
         {
             ancestors.Add(current);
@@ -907,7 +907,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
     public bool IsAncestorOf(Taxon other, int maxDepth = Constraints.DepthMax)
     {
         int depth = 0;
-        var current = other.Parent;
+        Taxon? current = other.Parent;
         while (current != null && depth++ < maxDepth)
         {
             if (current.Id == Id) return true;
@@ -924,7 +924,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
     public int GetLevel()
     {
         int level = 0;
-        var current = Parent;
+        Taxon? current = Parent;
         while (current != null)
         {
             level++;
@@ -976,8 +976,8 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (effectiveParent != null && includeParentIfAvailable)
         {
-            var source = string.IsNullOrWhiteSpace(Permalink) ? Name : Permalink.Split('/').Last();
-            var slugPart = source.Parameterize();
+            string source = string.IsNullOrWhiteSpace(Permalink) ? Name : Permalink.Split('/').Last();
+            string slugPart = source.Parameterize();
             if (!string.IsNullOrWhiteSpace(effectiveParent.Permalink))
                 return string.Join('/', new[] { effectiveParent.Permalink.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
             return slugPart;
@@ -993,12 +993,12 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         SetPrettyName();
         SetPermalink();
 
-        foreach (var t in Translations)
+        foreach (TaxonTranslation t in Translations)
         {
             try { t.UpdatePrettyNameAndPermalink(this); } catch { }
         }
 
-        foreach (var child in Children)
+        foreach (Taxon child in Children)
         {
             try { child.RegeneratePrettyNameAndPermalinkAsChild(this); } catch { }
         }
@@ -1007,18 +1007,18 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
     public void RegeneratePrettyNameAndPermalinkAsChild(Taxon parent)
     {
         PrettyName = parent.PrettyName is not null ? $"{parent.PrettyName} -> {Name}" : Name;
-        var slugPart = string.IsNullOrWhiteSpace(Permalink) ? Name.Parameterize() : Permalink.Split('/').Last().Parameterize();
+        string slugPart = string.IsNullOrWhiteSpace(Permalink) ? Name.Parameterize() : Permalink.Split('/').Last().Parameterize();
         if (!string.IsNullOrWhiteSpace(parent.Permalink))
             Permalink = string.Join('/', new[] { parent.Permalink.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
         else
             Permalink = slugPart;
 
-        foreach (var t in Translations)
+        foreach (TaxonTranslation t in Translations)
         {
             try { t.UpdatePrettyNameAndPermalink(this); } catch { }
         }
 
-        foreach (var child in Children)
+        foreach (Taxon child in Children)
         {
             try { child.RegeneratePrettyNameAndPermalinkAsChild(this); } catch { }
         }
@@ -1026,7 +1026,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public void RegenerateTranslationsPrettyNameAndPermalink()
     {
-        foreach (var t in Translations)
+        foreach (TaxonTranslation t in Translations)
         {
             try { t.UpdatePrettyNameAndPermalink(this); } catch { }
         }
@@ -1069,7 +1069,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public void TouchAncestorsAndTaxonomy()
     {
-        var current = Parent;
+        Taxon? current = Parent;
         while (current != null)
         {
             current.MarkAsUpdated();

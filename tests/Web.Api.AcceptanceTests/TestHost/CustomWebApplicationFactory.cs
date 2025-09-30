@@ -16,11 +16,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<TestHostMarker>
         // and persistence configuration still uses an in-memory provider per project setup.
         builder.UseEnvironment("Development");
 
-        var host = base.CreateHost(builder);
+        IHost host = base.CreateHost(builder);
 
         // Ensure the in-memory database is created after the host has been built
-        using var scope = host.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        using IServiceScope scope = host.Services.CreateScope();
+        ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         db.Database.EnsureCreated();
 
         return host;

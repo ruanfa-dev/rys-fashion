@@ -1,6 +1,7 @@
 ﻿using ErrorOr;
 
 using FluentValidation;
+using FluentValidation.Results;
 
 using MediatR;
 
@@ -18,14 +19,14 @@ public sealed class ValidationBehavior<TRequest, TResponse>(IValidator<TRequest>
             return await next(cancellationToken);
         }
 
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        ValidationResult? validationResult = await validator.ValidateAsync(request, cancellationToken);
 
         if (validationResult.IsValid)
         {
             return await next(cancellationToken);
         }
 
-        var errors = validationResult.Errors
+        List<Error> errors = validationResult.Errors
             .ConvertAll(error => Error.Validation(error.ErrorCode, error.ErrorMessage));
 
         return (dynamic)errors;

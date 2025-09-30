@@ -34,19 +34,19 @@ public static partial class ResetPassword
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
             // Check: user exists by email
-            var user = await userManager.FindByEmailAsync(param.Email);
+            User? user = await userManager.FindByEmailAsync(param.Email);
             if (user == null)
                 return User.Errors.InvalidToken;
 
             // Decode: reset code
-            var decodeResult = param.ResetCode.DecodeToken();
+            ErrorOr<string> decodeResult = param.ResetCode.DecodeToken();
             if (decodeResult.IsError)
                 return decodeResult.Errors;
 
             // Reset: password
-            var result = await userManager.ResetPasswordAsync(user, decodeResult.Value, param.NewPassword);
+            IdentityResult result = await userManager.ResetPasswordAsync(user, decodeResult.Value, param.NewPassword);
             if (!result.Succeeded)
                 return result.Errors.ToApplicationResult(fallbackCode: "ResetPasswordFailed");
 

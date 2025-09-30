@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -24,7 +26,7 @@ public sealed class PhoneEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -32,9 +34,9 @@ public sealed class PhoneEndpoint : ICarterModule
 
         group.MapPost(ChangePhone.Route, async ([FromBody] ChangePhone.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ChangePhone.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Phone change request sent successfully");
+            ChangePhone.Command command = new ChangePhone.Command(param);
+            ErrorOr<ChangePhone.Result> result = await mediator.Send(command);
+            ApiResponse<ChangePhone.Result> apiResponse = result.ToApiResponse("Phone change request sent successfully");
             
             // Add phone change metadata and links
             if (apiResponse.IsSuccess)
@@ -64,9 +66,9 @@ public sealed class PhoneEndpoint : ICarterModule
 
         group.MapPost(ConfirmPhoneChange.Route, async ([FromBody] ConfirmPhoneChange.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ConfirmPhoneChange.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Phone number confirmed successfully");
+            ConfirmPhoneChange.Command command = new ConfirmPhoneChange.Command(param);
+            ErrorOr<Updated> result = await mediator.Send(command);
+            ApiResponse<Updated> apiResponse = result.ToApiResponse("Phone number confirmed successfully");
             
             // Add phone confirmation metadata and links
             if (apiResponse.IsSuccess)
@@ -94,9 +96,9 @@ public sealed class PhoneEndpoint : ICarterModule
 
         group.MapPost(ResendPhoneVerification.Route, async ([FromBody] ResendPhoneVerification.Param param, [FromServices] ISender mediator) =>
         {
-            var command = new ResendPhoneVerification.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Phone verification code resent successfully");
+            ResendPhoneVerification.Command command = new ResendPhoneVerification.Command(param);
+            ErrorOr<ResendPhoneVerification.Result> result = await mediator.Send(command);
+            ApiResponse<ResendPhoneVerification.Result> apiResponse = result.ToApiResponse("Phone verification code resent successfully");
             
             // Add resend verification metadata and links
             if (apiResponse.IsSuccess)

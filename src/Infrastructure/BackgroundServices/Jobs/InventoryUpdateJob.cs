@@ -22,7 +22,7 @@ public sealed class InventoryUpdateJob(IUnitOfWork unitOfWork, ILogger<Inventory
             // Update inventory levels, sync with external systems, etc.
             // Example: Update product availability, reserved quantities
 
-            var updatedCount = await UpdateInventoryLevels(cancellationToken);
+            int updatedCount = await UpdateInventoryLevels(cancellationToken);
 
             logger.LogInformation("Successfully updated inventory for {Count} products", updatedCount);
         }

@@ -44,7 +44,7 @@ public sealed class PrototypeTaxon : AuditableEntity
         if (prototypeId == Guid.Empty) return Errors.PrototypeRequired;
         if (taxonId == Guid.Empty) return Errors.TaxonRequired;
 
-        var pt = new PrototypeTaxon
+        PrototypeTaxon pt = new PrototypeTaxon
         {
             PrototypeId = prototypeId,
             TaxonId = taxonId
@@ -60,7 +60,7 @@ public sealed class PrototypeTaxon : AuditableEntity
 
     public ErrorOr<PrototypeTaxon> Update(Guid? prototypeId = null, Guid? taxonId = null)
     {
-        var changed = false;
+        bool changed = false;
 
         if (prototypeId.HasValue && prototypeId.Value != PrototypeId)
         {

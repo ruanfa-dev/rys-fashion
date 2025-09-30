@@ -35,11 +35,11 @@ public static partial class UpdateRole
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
 
             try
             {
-                var role = await roleManager.FindByIdAsync(request.Id.ToString());
+                Role? role = await roleManager.FindByIdAsync(request.Id.ToString());
                 if (role == null)
                     return Role.Errors.RoleNotFound(Name);
 
@@ -56,10 +56,10 @@ public static partial class UpdateRole
                     isSystemRole: param.IsSystemRole);
 
                 // Save: role
-                var result = await roleManager.UpdateAsync(role);
+                IdentityResult result = await roleManager.UpdateAsync(role);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to update role {RoleId}: {Errors}", request.Id, errors);
                     return Error.Failure("Role.UpdateFailed", $"Failed to update role: {errors}");
                 }

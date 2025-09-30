@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.Filter;
+using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -35,7 +38,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -48,9 +51,9 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new CreateProperty.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("Property created successfully");
+            CreateProperty.Command command = new CreateProperty.Command(param);
+            ErrorOr<CreateProperty.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<CreateProperty.Result> apiResponse = result.ToApiResponseCreated("Property created successfully");
 
             // Add HATEOAS links for created property
             if (apiResponse is { IsSuccess: true, Data: not null })
@@ -87,21 +90,21 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetPropertyPagedList.Param
+            GetPropertyPagedList.Param param = new GetPropertyPagedList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetPropertyPagedList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Properties retrieved successfully");
+            GetPropertyPagedList.Query query = new GetPropertyPagedList.Query(param);
+            ErrorOr<PagedList<GetPropertyPagedList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<GetPropertyPagedList.Result>> apiResponse = result.ToApiResponsePaged("Properties retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
-                var currentPage = (pagination.PageIndex ?? 0) + 1;
-                var pageSize = pagination.PageSize ?? 10;
+                int currentPage = (pagination.PageIndex ?? 0) + 1;
+                int pageSize = pagination.PageSize ?? 10;
 
                 apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
 
@@ -144,16 +147,16 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetPropertyOptionList.Param
+            GetPropertyOptionList.Param param = new GetPropertyOptionList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetPropertyOptionList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Option type option list retrieved successfully");
+            GetPropertyOptionList.Query query = new GetPropertyOptionList.Query(param);
+            ErrorOr<PagedList<GetPropertyOptionList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<PagedList<GetPropertyOptionList.Result>> apiResponse = result.ToApiResponse("Option type option list retrieved successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
@@ -183,9 +186,9 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             CancellationToken cancellationToken) =>
         {
 
-            var query = new GetPropertyById.Query(id);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Property details retrieved successfully");
+            GetPropertyById.Query query = new GetPropertyById.Query(id);
+            ErrorOr<GetPropertyById.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetPropertyById.Result> apiResponse = result.ToApiResponse("Property details retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -219,9 +222,9 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateProperty.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Property updated successfully");
+            UpdateProperty.Command command = new UpdateProperty.Command(id, param);
+            ErrorOr<UpdateProperty.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<UpdateProperty.Result> apiResponse = result.ToApiResponse("Property updated successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -255,9 +258,9 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new DeleteProperty.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseDeleted("Property deleted successfully");
+            DeleteProperty.Command command = new DeleteProperty.Command(id);
+            ErrorOr<Deleted> result = await mediator.Send(command, cancellationToken);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Property deleted successfully");
 
             apiResponse
                 .WithLink("all-properties", Route)

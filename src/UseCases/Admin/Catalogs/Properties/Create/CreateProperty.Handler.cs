@@ -38,18 +38,18 @@ public static partial class CreateProperty
         {
             try
             {
-                var param = request.Param;
+                Param param = request.Param;
 
                 // Check: uniqueness of name
-                var name = param.Name.Parameterize();
-                var exists = await context.Set<Property>()
+                string name = param.Name.Parameterize();
+                bool exists = await context.Set<Property>()
                     .AnyAsync(p => p.Name == name, cancellationToken);
 
                 if (exists)
                     return Property.Errors.NameAlreadyExists(name);
 
                 // Create: new entity
-                var createResult = Property.Create(
+                ErrorOr<Property> createResult = Property.Create(
                     name: name,
                     presentation: param.Presentation,
                     kind: param.Kind,
@@ -67,7 +67,7 @@ public static partial class CreateProperty
                 context.Set<Property>().Add(createResult.Value);
                 await context.SaveChangesAsync(cancellationToken);
 
-                var result = createResult.Value.Adapt<Result>();
+                Result result = createResult.Value.Adapt<Result>();
                 return result;
             }
             catch (Exception ex)

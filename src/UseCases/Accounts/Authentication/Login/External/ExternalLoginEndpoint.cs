@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -27,7 +29,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, AuthenticationEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -37,9 +39,9 @@ public sealed class ExternalLoginEndpoint : ICarterModule
         // Get available external providers with frontend configuration
         group.MapGet("/providers", async ([FromServices] ISender mediator) =>
         {
-            var query = new GetExternalProviders.Query();
-            var result = await mediator.Send(query);
-            var apiResponse = result.ToApiResponse("External providers retrieved successfully");
+            GetExternalProviders.Query query = new GetExternalProviders.Query();
+            ErrorOr<List<GetExternalProviders.Result>> result = await mediator.Send(query);
+            ApiResponse<List<GetExternalProviders.Result>> apiResponse = result.ToApiResponse("External providers retrieved successfully");
 
             // Add external auth related links and metadata
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -71,7 +73,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Validate provider parameter
             if (string.IsNullOrWhiteSpace(provider))
             {
-                var errorResponse = new ApiResponse<object>
+                ApiResponse<object> errorResponse = new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = "Provider parameter is required",
@@ -82,12 +84,12 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             }
 
             // Normalize provider name for security
-            var normalizedProvider = provider.ToLowerInvariant().Trim();
+            string normalizedProvider = provider.ToLowerInvariant().Trim();
 
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
-                var errorResponse = new ApiResponse<object>
+                ApiResponse<object> errorResponse = new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = $"Provider '{provider}' is not supported",
@@ -97,9 +99,9 @@ public sealed class ExternalLoginEndpoint : ICarterModule
                 return Results.Ok(errorResponse);
             }
 
-            var query = new GetOAuthConfig.Query(normalizedProvider);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse($"OAuth configuration for {provider} retrieved successfully");
+            GetOAuthConfig.Query query = new GetOAuthConfig.Query(normalizedProvider);
+            ErrorOr<GetOAuthConfig.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetOAuthConfig.Result> apiResponse = result.ToApiResponse($"OAuth configuration for {provider} retrieved successfully");
 
             // Add OAuth-specific metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -134,7 +136,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Validate provider parameter
             if (string.IsNullOrWhiteSpace(provider))
             {
-                var errorResponse = new ApiResponse<object>
+                ApiResponse<object> errorResponse = new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = "Provider parameter is required",
@@ -145,12 +147,12 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             }
 
             // Normalize provider name for security
-            var normalizedProvider = provider.ToLowerInvariant().Trim();
+            string normalizedProvider = provider.ToLowerInvariant().Trim();
 
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
-                var errorResponse = new ApiResponse<object>
+                ApiResponse<object> errorResponse = new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = $"Provider '{provider}' is not supported",
@@ -162,8 +164,8 @@ public sealed class ExternalLoginEndpoint : ICarterModule
 
             // Create command with validated provider
             param = param with { Provider = normalizedProvider };
-            var result = await mediator.Send(new ExchangeExternalToken.Command(param), cancellationToken);
-            var apiResponse = result.ToApiResponse($"External token exchanged successfully for {provider}");
+            ErrorOr<ExchangeExternalToken.Result> result = await mediator.Send(new ExchangeExternalToken.Command(param), cancellationToken);
+            ApiResponse<ExchangeExternalToken.Result> apiResponse = result.ToApiResponse($"External token exchanged successfully for {provider}");
 
             // Add authentication-related metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -200,7 +202,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             // Validate provider parameter
             if (string.IsNullOrWhiteSpace(provider))
             {
-                var errorResponse = new ApiResponse<object>
+                ApiResponse<object> errorResponse = new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = "Provider parameter is required",
@@ -211,12 +213,12 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             }
 
             // Normalize provider name for security
-            var normalizedProvider = provider.ToLowerInvariant().Trim();
+            string normalizedProvider = provider.ToLowerInvariant().Trim();
 
             // Security: Only allow known providers
             if (!IsValidProvider(normalizedProvider))
             {
-                var errorResponse = new ApiResponse<object>
+                ApiResponse<object> errorResponse = new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = $"Provider '{provider}' is not supported",
@@ -227,9 +229,9 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             }
 
             // Create command with validated provider
-            var commandWithProvider = command with { Provider = normalizedProvider };
-            var result = await mediator.Send(commandWithProvider, cancellationToken);
-            var apiResponse = result.ToApiResponse($"External token verified successfully for {provider}");
+            VerifyExternalToken.Command commandWithProvider = command with { Provider = normalizedProvider };
+            ErrorOr<VerifyExternalToken.Result> result = await mediator.Send(commandWithProvider, cancellationToken);
+            ApiResponse<VerifyExternalToken.Result> apiResponse = result.ToApiResponse($"External token verified successfully for {provider}");
 
             // Add verification metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -258,7 +260,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
         // Health check endpoint for external authentication status
         group.MapGet("/health", () =>
         {
-            var healthResponse = new ApiResponse<object>
+            ApiResponse<object> healthResponse = new ApiResponse<object>
             {
                 IsSuccess = true,
                 Data = new
@@ -295,7 +297,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
     private static bool IsValidProvider(string provider)
     {
         // Only allow these specific providers (removed Microsoft)
-        var supportedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        HashSet<string> supportedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "google",
             "facebook"

@@ -74,7 +74,7 @@ public static class ErrorOrActionResultExtensions
     {
         if (result.IsError)
         {
-            var problemResult = result.Errors.ToProblemDetailsActionResult();
+            IActionResult problemResult = result.Errors.ToProblemDetailsActionResult();
             // Cast IActionResult to ActionResult to use the constructor that accepts ActionResult
             return (ActionResult)problemResult;
         }
@@ -105,7 +105,7 @@ public static class ErrorOrActionResultExtensions
     {
         if (result.IsError)
         {
-            var problemResult = result.Errors.ToProblemDetailsActionResult();
+            IActionResult problemResult = result.Errors.ToProblemDetailsActionResult();
             return (ActionResult)problemResult;
         }
         
@@ -135,7 +135,7 @@ public static class ErrorOrActionResultExtensions
     {
         if (result.IsError)
         {
-            var problemResult = result.Errors.ToProblemDetailsActionResult();
+            IActionResult problemResult = result.Errors.ToProblemDetailsActionResult();
             return (ActionResult)problemResult;
         }
         
@@ -206,7 +206,7 @@ public static class ErrorOrActionResultExtensions
     {
         if (result.IsError)
         {
-            var problemResult = result.Errors.ToProblemDetailsActionResult();
+            IActionResult problemResult = result.Errors.ToProblemDetailsActionResult();
             return (ActionResult)problemResult;
         }
         
@@ -254,7 +254,7 @@ public static class ErrorOrActionResultExtensions
         if (errors.Count == 0)
             return CreateGenericProblemActionResult();
 
-        var firstError = errors[0];
+        Error firstError = errors[0];
 
         if (firstError.Type == ErrorType.Validation)
             return CreateValidationProblemActionResult(errors);
@@ -268,7 +268,7 @@ public static class ErrorOrActionResultExtensions
 
     private static IActionResult CreateValidationProblemActionResult(IReadOnlyList<Error> errors)
     {
-        var errorsByProperty = errors
+        Dictionary<string, string[]> errorsByProperty = errors
             .ToLookup(e => e.Code, e => e.Description)
             .ToDictionary(g => g.Key, g => g.ToArray());
 
@@ -282,8 +282,8 @@ public static class ErrorOrActionResultExtensions
 
     private static IActionResult CreateProblemActionResult(Error error)
     {
-        var statusCode = GetStatusCode(error.Type);
-        var problemDetails = new ProblemDetails
+        int statusCode = GetStatusCode(error.Type);
+        ProblemDetails problemDetails = new ProblemDetails
         {
             Title = error.Code,
             Detail = error.Description,
@@ -296,7 +296,7 @@ public static class ErrorOrActionResultExtensions
 
     private static IActionResult CreateGenericProblemActionResult()
     {
-        var problemDetails = new ProblemDetails
+        ProblemDetails problemDetails = new ProblemDetails
         {
             Title = "Unknown Error",
             Detail = "An unknown error occurred.",
@@ -328,7 +328,7 @@ public sealed class MvcControllerExampleService
         if (id <= 0)
             return Error.Validation("Customer.Id", "Customer ID must be greater than 0");
 
-        var customer = await FindCustomerInDatabaseAsync(id);
+        Customer? customer = await FindCustomerInDatabaseAsync(id);
         if (customer == null)
             return Error.NotFound("Customer.NotFound", $"Customer with ID {id} was not found");
 
@@ -337,26 +337,26 @@ public sealed class MvcControllerExampleService
 
     public async Task<ErrorOr<Customer>> CreateCustomerAsync(CreateCustomerRequest request)
     {
-        var validationErrors = ValidateCreateCustomerRequest(request);
+        List<Error> validationErrors = ValidateCreateCustomerRequest(request);
         if (validationErrors.Any())
             return validationErrors;
 
-        var existingCustomer = await FindCustomerByEmailAsync(request.Email);
+        Customer? existingCustomer = await FindCustomerByEmailAsync(request.Email);
         if (existingCustomer != null)
             return Error.Conflict("Customer.EmailExists", "A customer with this email already exists");
 
-        var customer = new Customer(request.Name, request.Email);
+        Customer customer = new Customer(request.Name, request.Email);
         await SaveCustomerAsync(customer);
         return customer;
     }
 
     public async Task<ErrorOr<Updated>> UpdateCustomerAsync(int id, UpdateCustomerRequest request)
     {
-        var getCustomerResult = await GetCustomerByIdAsync(id);
+        ErrorOr<Customer> getCustomerResult = await GetCustomerByIdAsync(id);
         if (getCustomerResult.IsError)
             return getCustomerResult.Errors;
 
-        var customer = getCustomerResult.Value;
+        Customer customer = getCustomerResult.Value;
         customer.UpdateName(request.Name);
         await SaveCustomerAsync(customer);
         return Result.Updated;
@@ -364,7 +364,7 @@ public sealed class MvcControllerExampleService
 
     public async Task<ErrorOr<Deleted>> DeleteCustomerAsync(int id)
     {
-        var getCustomerResult = await GetCustomerByIdAsync(id);
+        ErrorOr<Customer> getCustomerResult = await GetCustomerByIdAsync(id);
         if (getCustomerResult.IsError)
             return getCustomerResult.Errors;
 
@@ -380,13 +380,13 @@ public sealed class MvcControllerExampleService
         if (pageSize <= 0 || pageSize > 100)
             return Error.Validation("PageSize", "Page size must be between 1 and 100");
 
-        var customers = await GetCustomersFromDatabaseAsync(page, pageSize);
+        List<Customer> customers = await GetCustomersFromDatabaseAsync(page, pageSize);
         return customers;
     }
 
     private List<Error> ValidateCreateCustomerRequest(CreateCustomerRequest request)
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         if (string.IsNullOrWhiteSpace(request.Name))
             errors.Add(Error.Validation("Name", "Customer name is required"));
@@ -431,7 +431,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Customer>> GetCustomer(int id)
     {
-        var result = await customerService.GetCustomerByIdAsync(id);
+        ErrorOr<Customer> result = await customerService.GetCustomerByIdAsync(id);
         return result.ToActionResult();
     }
 
@@ -449,7 +449,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<Customer>> CreateCustomer(CreateCustomerRequest request)
     {
-        var result = await customerService.CreateCustomerAsync(request);
+        ErrorOr<Customer> result = await customerService.CreateCustomerAsync(request);
         return result.ToCreatedAtActionResult(nameof(GetCustomer), new { id = result.Value?.Id });
     }
 
@@ -468,7 +468,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerRequest request)
     {
-        var result = await customerService.UpdateCustomerAsync(id, request);
+        ErrorOr<Updated> result = await customerService.UpdateCustomerAsync(id, request);
         return result.ToNoContentResult();
     }
 
@@ -484,7 +484,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
-        var result = await customerService.DeleteCustomerAsync(id);
+        ErrorOr<Deleted> result = await customerService.DeleteCustomerAsync(id);
         return result.ToNoContentResult();
     }
 
@@ -501,7 +501,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<Customer>>> GetCustomers([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await customerService.GetCustomersPagedAsync(page, pageSize);
+        ErrorOr<List<Customer>> result = await customerService.GetCustomersPagedAsync(page, pageSize);
         return result.ToActionResult();
     }
 
@@ -511,7 +511,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
     [HttpGet("{id:int}/alternative")]
     public async Task<IActionResult> GetCustomerAlternative(int id)
     {
-        var result = await customerService.GetCustomerByIdAsync(id);
+        ErrorOr<Customer> result = await customerService.GetCustomerByIdAsync(id);
 
         return result.Match(
             customer => Ok(customer),
@@ -536,7 +536,7 @@ internal sealed class CustomersController(MvcControllerExampleService customerSe
             return ValidationProblem(ModelState);
         }
 
-        var result = await customerService.CreateCustomerAsync(request);
+        ErrorOr<Customer> result = await customerService.CreateCustomerAsync(request);
         
         if (result.IsError)
             return result.Errors.ToProblemDetailsActionResult();

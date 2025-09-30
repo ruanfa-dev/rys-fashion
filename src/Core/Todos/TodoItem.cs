@@ -47,7 +47,7 @@ public sealed partial class TodoItem : AuditableEntity<int>
         DateTimeOffset? reminder,
         int listId)
     {
-        var item = new TodoItem(title, note, priority, reminder, listId);
+        TodoItem item = new TodoItem(title, note, priority, reminder, listId);
         return item;
     }
 

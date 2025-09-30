@@ -19,7 +19,7 @@ public sealed class AbandonedCartEmailJob(IUnitOfWork unitOfWork, ILogger<Abando
 
         try
         {
-            var emailsSent = await SendAbandonedCartEmails(cancellationToken);
+            int emailsSent = await SendAbandonedCartEmails(cancellationToken);
 
             logger.LogInformation("Successfully sent {Count} abandoned cart emails", emailsSent);
         }

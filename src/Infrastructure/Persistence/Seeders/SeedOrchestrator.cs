@@ -7,9 +7,9 @@ public class SeedOrchestrator(IEnumerable<IDataSeeder> seeders) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        foreach (var seeder in seeders)
+        foreach (IDataSeeder seeder in seeders)
         {
-            var name = seeder.GetType().Name;
+            string name = seeder.GetType().Name;
             Log.Information("[SeedOrchestrator] Running {Seeder}", name);
             await seeder.SeedAsync(cancellationToken);
             Log.Information("[SeedOrchestrator] {Seeder} completed", name);

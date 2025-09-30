@@ -24,8 +24,8 @@ public static partial class CustomerRegister
         public async Task<ErrorOr<Guid>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Check: user already exists by email
-            var param = request.Param;
-            var existingUser = await userManager.FindByEmailAsync(param.Email);
+            Param param = request.Param;
+            User? existingUser = await userManager.FindByEmailAsync(param.Email);
             if (existingUser != null)
             {
                 Log.Warning("User with email {Email} already exists", param.Email);
@@ -46,7 +46,7 @@ public static partial class CustomerRegister
             // Check: phone number already exists if provided
             if (!string.IsNullOrWhiteSpace(param.PhoneNumber))
             {
-                var existingUserByPhone = await userManager.Users
+                User? existingUserByPhone = await userManager.Users
                     .FirstOrDefaultAsync(u => u.PhoneNumber == param.PhoneNumber, cancellationToken);
                 if (existingUserByPhone != null)
                 {
@@ -64,7 +64,7 @@ public static partial class CustomerRegister
             }
 
             // Create: new user
-            var user = User.Create(
+            User user = User.Create(
                 email: param.Email,
                 userName: param.UserName,
                 emailConfirmed: false,
@@ -74,12 +74,12 @@ public static partial class CustomerRegister
                 phoneNumberConfirmed: false);
 
             // Set: password
-            var passwordResult = await userManager.CreateAsync(user, param.Password);
+            IdentityResult passwordResult = await userManager.CreateAsync(user, param.Password);
             if (!passwordResult.Succeeded)
                 return passwordResult.Errors.ToApplicationResult(fallbackCode: "CreateUserFailed");
 
             // Assign: default customer role
-            var roleResult = await userManager.AddToRoleAsync(user, DefaultRole.Customer);
+            IdentityResult roleResult = await userManager.AddToRoleAsync(user, DefaultRole.Customer);
             if (!roleResult.Succeeded)
             {
                 // Rollback: user creation if role assignment fails

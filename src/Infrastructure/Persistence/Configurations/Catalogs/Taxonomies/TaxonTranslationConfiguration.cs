@@ -4,7 +4,9 @@ using Infrastructure.Persistence.Constants;
 using Infrastructure.Persistence.Converters;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Configurations.Catalogs.Taxonomies;
 
@@ -29,8 +31,8 @@ public sealed class TaxonTranslationConfiguration : IEntityTypeConfiguration<Tax
         builder.HasIndex(t => new { t.TaxonId, t.Culture });
 
         // Map Fields dictionary to JSON with converter + comparer for change-tracking
-        var converter = DictionaryJsonConverter.GetConverter();
-        var comparer = DictionaryJsonConverter.GetComparer();
+        ValueConverter<IDictionary<string, string?>?, string?> converter = DictionaryJsonConverter.GetConverter();
+        ValueComparer<IDictionary<string, string?>?> comparer = DictionaryJsonConverter.GetComparer();
 
         builder.Property(t => t.Fields)
             .HasConversion(converter);

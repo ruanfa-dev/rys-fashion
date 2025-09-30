@@ -52,8 +52,8 @@ public sealed partial class RefreshToken
 
     public static string Hash(string rawToken)
     {
-        using var sha = SHA256.Create();
-        var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(rawToken));
+        using SHA256 sha = SHA256.Create();
+        byte[] bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(rawToken));
         return Convert.ToBase64String(bytes);
     }
 }

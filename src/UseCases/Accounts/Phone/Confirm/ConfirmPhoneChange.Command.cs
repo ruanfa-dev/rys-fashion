@@ -34,28 +34,28 @@ public static partial class ConfirmPhoneChange
         public async Task<ErrorOr<Updated>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
             // Check: user exists
-            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            User? user = await userManager.FindByIdAsync(userId.Value.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
-            var param = request.Param;
+            Param param = request.Param;
 
             // Check: new phone is not already in use by another user
-            var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.NewPhone && u.Id != user.Id);
-            var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
+            IQueryable<User> existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.NewPhone && u.Id != user.Id);
+            User? existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
             if (existingUser != null)
                 return User.Errors.PhoneNumberAlreadyExists(param.NewPhone);
 
             // Verify: confirmation code and change phone number
-            var changeResult = await userManager.ChangePhoneNumberAsync(user, param.NewPhone, param.Code);
+            IdentityResult changeResult = await userManager.ChangePhoneNumberAsync(user, param.NewPhone, param.Code);
             if (!changeResult.Succeeded)
             {
                 Log.Information("Failed to change phone number for user {UserId} to {NewPhone}: {Errors}",

@@ -35,7 +35,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Create_ReturnsNewBuilder()
     {
         // Act
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Assert
         builder.ShouldNotBeNull();
@@ -46,7 +46,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Create_WithDefaultLogicalOperator_SetsDefaultCorrectly()
     {
         // Act
-        var builder = QueryFilterBuilder.Create(FilterLogicalOperator.Any);
+        QueryFilterBuilder builder = QueryFilterBuilder.Create(FilterLogicalOperator.Any);
 
         // Assert
         builder.ShouldNotBeNull();
@@ -56,10 +56,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Add_SingleFilter_BuildsCorrectly()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .Add("name", FilterOperator.Equal, "John Doe")
             .Build();
 
@@ -75,10 +75,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void And_AddsAndFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .And("name", FilterOperator.Equal, "John")
             .And("age", FilterOperator.GreaterThan, "25")
             .Build();
@@ -92,10 +92,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Or_AddsOrFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .Or("name", FilterOperator.Equal, "John")
             .Or("age", FilterOperator.GreaterThan, "30")
             .Build();
@@ -109,10 +109,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Equal_AddsEqualityFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .Equal("name", "John Doe")
             .Build();
 
@@ -126,10 +126,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Contains_AddsContainsFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .Contains("name", "john")
             .Build();
 
@@ -143,10 +143,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void GreaterThan_AddsGreaterThanFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .GreaterThan("age", "25")
             .Build();
 
@@ -160,10 +160,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void LessThan_AddsLessThanFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .LessThan("age", "35")
             .Build();
 
@@ -177,10 +177,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void In_WithStringValues_AddsInFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .In("department", "IT,HR,Finance")
             .Build();
 
@@ -194,11 +194,11 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void In_WithEnumerableValues_AddsInFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
-        var departments = new[] { "IT", "HR", "Finance" };
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
+        string[] departments = new[] { "IT", "HR", "Finance" };
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .In("department", departments)
             .Build();
 
@@ -212,10 +212,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Range_AddsRangeFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .Range("age", "25", "35")
             .Build();
 
@@ -229,10 +229,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void IsNull_AddsNullCheckFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .IsNull("address")
             .Build();
 
@@ -246,10 +246,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void IsNotNull_AddsNotNullCheckFilter()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .IsNotNull("address")
             .Build();
 
@@ -263,10 +263,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void InGroup_SetsGroupForSubsequentFilters()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .InGroup(1)
             .Equal("name", "John")
             .Equal("age", "25")
@@ -285,10 +285,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void WithDefaultLogic_SetsDefaultLogicalOperator()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .WithDefaultLogic(FilterLogicalOperator.Any)
             .Equal("name", "John")
             .Equal("department", "IT")
@@ -303,10 +303,10 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void ComplexBuilder_WithMixedOperators_BuildsCorrectly()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var filters = builder
+        List<QueryFilterParameter> filters = builder
             .WithDefaultLogic(FilterLogicalOperator.All)
             .InGroup(0)
             .Or("name", FilterOperator.Contains, "john")
@@ -330,12 +330,12 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void ApplyTo_AppliesFiltersToQueryable()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var builder = QueryFilterBuilder.Create();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var result = builder
+        IQueryable<User> result = builder
             .Equal("department", "IT")
             .And("isactive", FilterOperator.Equal, "true")
             .ApplyTo(query);
@@ -349,12 +349,12 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void ApplyTo_WithOrLogic_AppliesFiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var builder = QueryFilterBuilder.Create();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act
-        var result = builder
+        IQueryable<User> result = builder
             .Or("name", FilterOperator.Equal, "John Doe")
             .Or("department", FilterOperator.Equal, "HR")
             .ApplyTo(query);
@@ -368,14 +368,14 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void ApplyTo_WithComplexGrouping_AppliesFiltersCorrectly()
     {
         // Arrange
-        var users = GetTestUsers();
-        var query = users.AsQueryable();
-        var builder = QueryFilterBuilder.Create();
+        List<User> users = GetTestUsers();
+        IQueryable<User> query = users.AsQueryable();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         _output.WriteLine("Testing complex grouping: (name contains john OR age >= 30) AND department = IT");
 
         // Act
-        var result = builder
+        IQueryable<User> result = builder
             .InGroup(0)
             .Or("name", FilterOperator.Contains, "john")
             .Or("age", FilterOperator.GreaterThanOrEqual, "30")
@@ -397,7 +397,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Build_WithInvalidFilter_ThrowsException()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act & Assert
         Should.Throw<ArgumentException>(() =>
@@ -411,7 +411,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void Build_WithNullCheckAndValue_ThrowsException()
     {
         // Arrange
-        var builder = QueryFilterBuilder.Create();
+        QueryFilterBuilder builder = QueryFilterBuilder.Create();
 
         // Act & Assert
         Should.Throw<ArgumentException>(() =>
@@ -425,7 +425,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     public void MethodChaining_AllowsFluentInterface()
     {
         // Arrange & Act
-        var filters = QueryFilterBuilder
+        List<QueryFilterParameter> filters = QueryFilterBuilder
             .Create(FilterLogicalOperator.Any)
             .InGroup(1)
             .Equal("name", "John")

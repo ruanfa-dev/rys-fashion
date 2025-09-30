@@ -139,7 +139,7 @@ public sealed class TaxonRule : AuditableEntity
             return Errors.InvalidMatchPolicy;
 
         // Validate rule type
-        var trimmedType = type.Trim();
+        string trimmedType = type.Trim();
         if (!RULE_TYPES.Contains(trimmedType))
             return Errors.InvalidRuleType;
 
@@ -147,7 +147,7 @@ public sealed class TaxonRule : AuditableEntity
         if (trimmedType == "product_property" && string.IsNullOrWhiteSpace(propertyName))
             return Error.Validation("TaxonRule.PropertyNameRequired", "Property name is required for product_property rules.");
 
-        var rule = new TaxonRule
+        TaxonRule rule = new TaxonRule
         {
             TaxonId = taxonId,
             Type = trimmedType,
@@ -170,7 +170,7 @@ public sealed class TaxonRule : AuditableEntity
         string? matchPolicy = null,
         string? propertyName = null)
     {
-        var changed = false;
+        bool changed = false;
 
         // Update type
         if (!string.IsNullOrWhiteSpace(type) && type.Trim() != Type)
@@ -252,9 +252,9 @@ public sealed class TaxonRule : AuditableEntity
     {
         try
         {
-            var builder = QueryFilterBuilder.Create();
-            var fieldName = GetFieldName();
-            var filterOperator = GetFilterOperator();
+            QueryFilterBuilder builder = QueryFilterBuilder.Create();
+            string fieldName = GetFieldName();
+            FilterOperator filterOperator = GetFilterOperator();
 
             // Build the appropriate filter based on operator type
             switch (filterOperator)
@@ -397,7 +397,7 @@ public sealed class TaxonRule : AuditableEntity
     /// </summary>
     public string GetDescription()
     {
-        var fieldDisplay = Type switch
+        string fieldDisplay = Type switch
         {
             "product_name" => "Product Name",
             "product_sku" => "Product SKU",
@@ -412,7 +412,7 @@ public sealed class TaxonRule : AuditableEntity
             _ => Type
         };
 
-        var operatorDisplay = MatchPolicy switch
+        string operatorDisplay = MatchPolicy switch
         {
             "is_equal_to" => "equals",
             "is_not_equal_to" => "does not equal",

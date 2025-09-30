@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Sort;
 
@@ -65,9 +67,9 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_NullPagingParams_ReturnsDefaultPageSize()
     {
-        var query = GetQueryableUsers();
+        IQueryable<User> query = GetQueryableUsers();
 
-        var result = query.ApplyPagingOrDefault(null).ToList();
+        List<User> result = query.ApplyPagingOrDefault(null).ToList();
 
         result.Count.ShouldBe(3); // All items, less than default page size (10)
         result[0].Id.ShouldBe(1);
@@ -78,10 +80,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_DefaultParams_ReturnsDefaultPageSize()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams();
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams();
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(3); // All items, less than default page size (10)
         result[0].Id.ShouldBe(1);
@@ -92,10 +94,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_WithPageSize_ReturnsFirstPageWithSpecifiedSize()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 2);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 2);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(2);
         result[0].Id.ShouldBe(1); // John Doe
@@ -105,10 +107,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_WithPageSizeAndPageIndex_ReturnsCorrectPage()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 1, PageIndex: 1);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 1, PageIndex: 1);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(1);
         result[0].Id.ShouldBe(2); // Jane Smith (second item, page index 1 with page size 1)
@@ -117,10 +119,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_WithPageIndex_ReturnsSecondPageWithDefaultSize()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageIndex: 1);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageIndex: 1);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(0); // No items on page index 1 (page 2) with default page size (10)
     }
@@ -128,10 +130,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_NegativePageIndex_NormalizesToFirstPage()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 2, PageIndex: -1);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 2, PageIndex: -1);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(2);
         result[0].Id.ShouldBe(1); // John Doe
@@ -141,9 +143,9 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_CustomFallbackDefaultPageSize()
     {
-        var query = GetQueryableUsers();
+        IQueryable<User> query = GetQueryableUsers();
 
-        var result = query.ApplyPagingOrDefault(null, fallbackDefaultPageSize: 2).ToList();
+        List<User> result = query.ApplyPagingOrDefault(null, fallbackDefaultPageSize: 2).ToList();
 
         result.Count.ShouldBe(2);
         result[0].Id.ShouldBe(1); // John Doe
@@ -153,9 +155,9 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_NegativeFallbackPageSize_UsesDefault()
     {
-        var query = GetQueryableUsers();
+        IQueryable<User> query = GetQueryableUsers();
 
-        var result = query.ApplyPagingOrDefault(null, fallbackDefaultPageSize: -5).ToList();
+        List<User> result = query.ApplyPagingOrDefault(null, fallbackDefaultPageSize: -5).ToList();
 
         result.Count.ShouldBe(3); // All items, uses default page size (10)
         result[0].Id.ShouldBe(1);
@@ -166,10 +168,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_ExcessivePageSize_CapsAtMax()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 150);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 150);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(3); // All items, capped at max page size (100)
         result[0].Id.ShouldBe(1);
@@ -180,10 +182,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_BeyondTotalItems_ReturnsEmpty()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 5, PageIndex: 2);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 5, PageIndex: 2);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(0); // No items on page index 2 with 5 items per page
     }
@@ -191,11 +193,11 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_WithSort_AppliesCorrectly()
     {
-        var query = GetQueryableUsers();
-        var pagingParams = new PagingParams(PageSize: 2);
-        var sortParams = new SortParams("Name", "asc");
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams pagingParams = new PagingParams(PageSize: 2);
+        SortParams sortParams = new SortParams("Name", "asc");
 
-        var result = query
+        List<User> result = query
             .ApplySort(sortParams)
             .ApplyPagingOrDefault(pagingParams)
             .ToList();
@@ -208,10 +210,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrDefault_ZeroPageSize_UsesDefault()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 0);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 0);
 
-        var result = query.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = query.ApplyPagingOrDefault(@params).ToList();
 
         result.Count.ShouldBe(3); // Uses default page size (10)
     }
@@ -220,7 +222,7 @@ public sealed class PagingExtensionsTests
     public void ApplyPagingOrDefault_NullQuery_ThrowsArgumentNullException()
     {
         IQueryable<User>? query = null;
-        var @params = new PagingParams(PageSize: 1);
+        PagingParams @params = new PagingParams(PageSize: 1);
 
         Should.Throw<ArgumentNullException>(() => query!.ApplyPagingOrDefault(@params));
     }
@@ -232,9 +234,9 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_NullPagingParams_ReturnsAllRecords()
     {
-        var query = GetQueryableUsers();
+        IQueryable<User> query = GetQueryableUsers();
 
-        var result = query.ApplyPagingOrAll(null).ToList();
+        List<User> result = query.ApplyPagingOrAll(null).ToList();
 
         result.Count.ShouldBe(3); // All items, no pagination
         result[0].Id.ShouldBe(1);
@@ -245,10 +247,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_DefaultParams_ReturnsAllRecords()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams();
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams();
 
-        var result = query.ApplyPagingOrAll(@params).ToList();
+        List<User> result = query.ApplyPagingOrAll(@params).ToList();
 
         result.Count.ShouldBe(3); // All items, no valid paging values
         result[0].Id.ShouldBe(1);
@@ -259,10 +261,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_WithPageSize_ReturnsFirstPageWithSpecifiedSize()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 2);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 2);
 
-        var result = query.ApplyPagingOrAll(@params).ToList();
+        List<User> result = query.ApplyPagingOrAll(@params).ToList();
 
         result.Count.ShouldBe(2);
         result[0].Id.ShouldBe(1);
@@ -272,10 +274,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_WithPageSizeAndPageIndex_ReturnsCorrectPage()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 1, PageIndex: 2);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 1, PageIndex: 2);
 
-        var result = query.ApplyPagingOrAll(@params).ToList();
+        List<User> result = query.ApplyPagingOrAll(@params).ToList();
 
         result.Count.ShouldBe(1); // Third item
         result[0].Id.ShouldBe(3); // Bob Johnson
@@ -284,10 +286,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_WithPageIndex_ReturnsSecondPageWithDefaultSize()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageIndex: 1);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageIndex: 1);
 
-        var result = query.ApplyPagingOrAll(@params).ToList();
+        List<User> result = query.ApplyPagingOrAll(@params).ToList();
 
         result.Count.ShouldBe(0); // No items on page index 1 (page 2) with default page size (10)
     }
@@ -295,10 +297,10 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_NegativePageIndex_NormalizesToFirstPage()
     {
-        var query = GetQueryableUsers();
-        var @params = new PagingParams(PageSize: 2, PageIndex: -1);
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams @params = new PagingParams(PageSize: 2, PageIndex: -1);
 
-        var result = query.ApplyPagingOrAll(@params).ToList();
+        List<User> result = query.ApplyPagingOrAll(@params).ToList();
 
         result.Count.ShouldBe(2); // Normalized to page index 0, returns first 2 items
         result[0].Id.ShouldBe(1);
@@ -308,11 +310,11 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_WithSort_AppliesCorrectly()
     {
-        var query = GetQueryableUsers();
-        var pagingParams = new PagingParams(PageSize: 2);
-        var sortParams = new SortParams("Name", "asc");
+        IQueryable<User> query = GetQueryableUsers();
+        PagingParams pagingParams = new PagingParams(PageSize: 2);
+        SortParams sortParams = new SortParams("Name", "asc");
 
-        var result = query
+        List<User> result = query
             .ApplySort(sortParams)
             .ApplyPagingOrAll(pagingParams)
             .ToList();
@@ -326,7 +328,7 @@ public sealed class PagingExtensionsTests
     public void ApplyPagingOrAll_MaxAllItemsLimit_CapsResults()
     {
         // Create a large collection to test the limit
-        var largeUserList = Enumerable.Range(1, 1500)
+        IQueryable<User> largeUserList = Enumerable.Range(1, 1500)
             .Select(i => new User
             {
                 Id = i,
@@ -337,7 +339,7 @@ public sealed class PagingExtensionsTests
             })
             .AsQueryable();
 
-        var result = largeUserList.ApplyPagingOrAll(null, maxAllItemsLimit: 100).ToList();
+        List<User> result = largeUserList.ApplyPagingOrAll(null, maxAllItemsLimit: 100).ToList();
 
         result.Count.ShouldBe(100); // Capped at maxAllItemsLimit
         result[0].Id.ShouldBe(1);
@@ -347,9 +349,9 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_ExtremeMaxLimit_UsesConfiguredMax()
     {
-        var query = GetQueryableUsers();
+        IQueryable<User> query = GetQueryableUsers();
 
-        var result = query.ApplyPagingOrAll(null, maxAllItemsLimit: 10000).ToList();
+        List<User> result = query.ApplyPagingOrAll(null, maxAllItemsLimit: 10000).ToList();
 
         result.Count.ShouldBe(3); // Still limited by actual data count, but capped at MaxAllItemsLimit (1000)
     }
@@ -357,9 +359,9 @@ public sealed class PagingExtensionsTests
     [Fact]
     public void ApplyPagingOrAll_NegativeMaxLimit_UsesMinimum()
     {
-        var query = GetQueryableUsers();
+        IQueryable<User> query = GetQueryableUsers();
 
-        var result = query.ApplyPagingOrAll(null, maxAllItemsLimit: -5).ToList();
+        List<User> result = query.ApplyPagingOrAll(null, maxAllItemsLimit: -5).ToList();
 
         result.Count.ShouldBe(1); // Uses minimum of 1
     }
@@ -368,7 +370,7 @@ public sealed class PagingExtensionsTests
     public void ApplyPagingOrAll_NullQuery_ThrowsArgumentNullException()
     {
         IQueryable<User>? query = null;
-        var @params = new PagingParams(PageSize: 1);
+        PagingParams @params = new PagingParams(PageSize: 1);
 
         Should.Throw<ArgumentNullException>(() => query!.ApplyPagingOrAll(@params));
     }
@@ -381,7 +383,7 @@ public sealed class PagingExtensionsTests
     public void ApplyPagingOrDefault_LargeDataSet_PerformanceTest()
     {
         // Create a large dataset
-        var largeUserList = Enumerable.Range(1, 10000)
+        IQueryable<User> largeUserList = Enumerable.Range(1, 10000)
             .Select(i => new User
             {
                 Id = i,
@@ -392,10 +394,10 @@ public sealed class PagingExtensionsTests
             })
             .AsQueryable();
 
-        var @params = new PagingParams(PageSize: 20, PageIndex: 50); // Page 51 with 20 items per page
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        PagingParams @params = new PagingParams(PageSize: 20, PageIndex: 50); // Page 51 with 20 items per page
+        Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-        var result = largeUserList.ApplyPagingOrDefault(@params).ToList();
+        List<User> result = largeUserList.ApplyPagingOrDefault(@params).ToList();
 
         stopwatch.Stop();
 

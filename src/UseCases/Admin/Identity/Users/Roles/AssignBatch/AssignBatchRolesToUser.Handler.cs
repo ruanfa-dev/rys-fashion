@@ -46,21 +46,21 @@ public static partial class AssignBatchRolesToUser
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
             try
             {
                 // Check: User exists
-                var user = await userManager.FindByIdAsync(request.UserId.ToString());
+                User? user = await userManager.FindByIdAsync(request.UserId.ToString());
                 if (user == null)
                     return User.Errors.UserNotFound;
 
                 // Validate all roles exist upfront and get their names
-                var roleNames = new List<string>();
-                var nonExistentRoles = new List<Error>();
+                List<string> roleNames = new List<string>();
+                List<Error> nonExistentRoles = new List<Error>();
 
-                foreach (var roleId in param.RoleIds)
+                foreach (string roleId in param.RoleIds)
                 {
-                    var role = await roleManager.FindByIdAsync(roleId);
+                    Role? role = await roleManager.FindByIdAsync(roleId);
                     if (role == null)
                     {
                         nonExistentRoles.Add(Role.Errors.RoleNotFound(roleId));
@@ -84,22 +84,22 @@ public static partial class AssignBatchRolesToUser
                 try
                 {
                     // Get current user roles
-                    var currentUserRoles = await userManager.GetRolesAsync(user);
-                    var currentRoleSet = currentUserRoles.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    var targetRoleSet = roleNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    IList<string> currentUserRoles = await userManager.GetRolesAsync(user);
+                    HashSet<string> currentRoleSet = currentUserRoles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    HashSet<string> targetRoleSet = roleNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                     // Calculate roles to add and remove
-                    var rolesToAdd = targetRoleSet.Except(currentRoleSet, StringComparer.OrdinalIgnoreCase).ToList();
-                    var rolesToRemove = currentRoleSet.Except(targetRoleSet, StringComparer.OrdinalIgnoreCase).ToList();
+                    List<string> rolesToAdd = targetRoleSet.Except(currentRoleSet, StringComparer.OrdinalIgnoreCase).ToList();
+                    List<string> rolesToRemove = currentRoleSet.Except(targetRoleSet, StringComparer.OrdinalIgnoreCase).ToList();
 
                     // Remove roles not in target list first
                     if (rolesToRemove.Count > 0)
                     {
-                        var removeResult = await userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                        IdentityResult removeResult = await userManager.RemoveFromRolesAsync(user, rolesToRemove);
                         if (!removeResult.Succeeded)
                         {
-                            var errors = string.Join("; ", removeResult.Errors.Select(e => e.Description));
-                            var roleList = string.Join(", ", rolesToRemove);
+                            string errors = string.Join("; ", removeResult.Errors.Select(e => e.Description));
+                            string roleList = string.Join(", ", rolesToRemove);
                             logger.LogError("Failed to remove roles {RoleNames} from user {UserId}: {Errors}",
                                 roleList, user.Id, errors);
                             return UserRole.Errors.RemovalFailed(roleList);
@@ -112,11 +112,11 @@ public static partial class AssignBatchRolesToUser
                     // Add new roles
                     if (rolesToAdd.Count > 0)
                     {
-                        var addResult = await userManager.AddToRolesAsync(user, rolesToAdd);
+                        IdentityResult addResult = await userManager.AddToRolesAsync(user, rolesToAdd);
                         if (!addResult.Succeeded)
                         {
-                            var errors = string.Join("; ", addResult.Errors.Select(e => e.Description));
-                            var roleList = string.Join(", ", rolesToAdd);
+                            string errors = string.Join("; ", addResult.Errors.Select(e => e.Description));
+                            string roleList = string.Join(", ", rolesToAdd);
                             logger.LogError("Failed to assign roles {RoleNames} to user {UserId}: {Errors}",
                                 roleList, user.Id, errors);
                             return UserRole.Errors.AssignmentFailed(roleList);
@@ -126,8 +126,8 @@ public static partial class AssignBatchRolesToUser
                             rolesToAdd.Count, user.Id, string.Join(", ", rolesToAdd));
                     }
 
-                    var finalUserRoles = await userManager.GetRolesAsync(user);
-                    var message = BuildResultMessage(rolesToAdd.Count, rolesToRemove.Count);
+                    IList<string> finalUserRoles = await userManager.GetRolesAsync(user);
+                    string message = BuildResultMessage(rolesToAdd.Count, rolesToRemove.Count);
 
                     // Commit transaction if all operations succeeded
                     await unitOfWork.CommitTransactionAsync(cancellationToken);

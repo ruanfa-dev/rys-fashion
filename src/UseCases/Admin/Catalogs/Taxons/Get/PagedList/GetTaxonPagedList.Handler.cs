@@ -35,8 +35,8 @@ public partial class GetTaxonPagedList
         {
             try
             {
-                var param = request.Param;
-                var query = _context.Set<Taxon>().AsNoTracking();
+                Param param = request.Param;
+                IQueryable<Taxon> query = _context.Set<Taxon>().AsNoTracking();
 
                 // Filter: by TaxonomyId
                 if (param.TaxonomyId.HasValue)
@@ -52,7 +52,7 @@ public partial class GetTaxonPagedList
                         .Select(x => x.Taxon);
 
                 // Apply: search, sort, projection, and pagination
-                var paginatedList = await query
+                PagedList<Result> paginatedList = await query
                     .ApplySearch(param.Search)
                     .ApplySort(param.Sort)
                     .ProjectToType<Result>()

@@ -32,7 +32,7 @@ public static class BackgroundServiceConfiguration
         // Configure: Hangfire based on environment
         services.AddHangfire((serviceProvider, config) =>
         {
-            var hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
+            HangfireOptions hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
 
             config.UseSimpleAssemblyNameTypeSerializer()
                   .UseRecommendedSerializerSettings();
@@ -52,7 +52,7 @@ public static class BackgroundServiceConfiguration
             else
             {
                 // Production/Staging: Use PostgreSQL storage
-                var connectionString = configuration.GetConnectionString(DbConnectionOptions.Default);
+                string? connectionString = configuration.GetConnectionString(DbConnectionOptions.Default);
                 Guard.Against.Null(connectionString, message: "Connection string required for Hangfire in production");
 
                 config.UsePostgreSqlStorage(options =>
@@ -66,8 +66,8 @@ public static class BackgroundServiceConfiguration
         // Add: Hangfire server with options configuration
         services.AddHangfireServer((serviceProvider, options) =>
         {
-            var hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
-            var serverConfig = hangfireOptions.Server;
+            HangfireOptions hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
+            HangfireServerOptions serverConfig = hangfireOptions.Server;
 
             options.WorkerCount = serverConfig.WorkerCount;
             options.Queues = serverConfig.Queues;
@@ -89,8 +89,8 @@ public static class BackgroundServiceConfiguration
 
     public static IApplicationBuilder UseBackgroundServices(this IApplicationBuilder app, IHostEnvironment environment)
     {
-        var serviceProvider = app.ApplicationServices;
-        var hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
+        IServiceProvider serviceProvider = app.ApplicationServices;
+        HangfireOptions hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
 
         // Configure: Hangfire Dashboard if enabled
         if (hangfireOptions.EnableDashboard)
@@ -115,7 +115,7 @@ public static class BackgroundServiceConfiguration
         if (!environment.IsEnvironment("Test"))
         {
             // Use: DI-based job registration
-            var recurringJobManager = serviceProvider.GetRequiredService<IRecurringJobManager>();
+            IRecurringJobManager recurringJobManager = serviceProvider.GetRequiredService<IRecurringJobManager>();
             RegisterFashionEshopJobs(recurringJobManager);
         }
 

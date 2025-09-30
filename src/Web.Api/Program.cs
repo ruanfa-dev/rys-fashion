@@ -20,7 +20,7 @@ builder.Services.AddUseCases();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddPresentation(builder.Configuration);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 app.UseUseCases();
 app.UseInfrastructure(app.Environment);

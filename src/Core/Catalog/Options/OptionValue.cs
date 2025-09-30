@@ -26,7 +26,7 @@ public sealed class OptionValue : AuditableEntity
         if (string.IsNullOrWhiteSpace(name)) return Error.Validation("OptionValue.NameRequired", "Name is required.");
         if (string.IsNullOrWhiteSpace(presentation)) return Error.Validation("OptionValue.PresentationRequired", "Presentation is required.");
 
-        var ov = new OptionValue
+        OptionValue ov = new OptionValue
         {
             OptionTypeId = optionTypeId,
             Name = name.Trim(),
@@ -40,7 +40,7 @@ public sealed class OptionValue : AuditableEntity
 
     public ErrorOr<OptionValue> Update(string? name = null, string? presentation = null, int? position = null)
     {
-        var changed = false;
+        bool changed = false;
         if (!string.IsNullOrWhiteSpace(name) && name.Trim() != Name)
         {
             Name = name.Trim();

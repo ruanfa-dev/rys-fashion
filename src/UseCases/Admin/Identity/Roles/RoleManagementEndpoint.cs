@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.Filter;
+using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -37,7 +40,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -50,9 +53,9 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new CreateRole.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("Role created successfully");
+            CreateRole.Command command = new CreateRole.Command(param);
+            ErrorOr<CreateRole.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<CreateRole.Result> apiResponse = result.ToApiResponseCreated("Role created successfully");
             
             // Add admin role management HATEOAS links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -94,7 +97,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new ListRoles.Param
+            ListRoles.Param param = new ListRoles.Param
             {
                 Paging = pagination,
                 Sort = sort,
@@ -103,16 +106,16 @@ public sealed class RoleManagementEndpoint : ICarterModule
                 IsSystemRole = IsSystemRole,
                 IsDefault = IsDefault
             };
-            var query = new ListRoles.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Roles retrieved successfully");
+            ListRoles.Query query = new ListRoles.Query(param);
+            ErrorOr<PagedList<ListRoles.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<ListRoles.Result>> apiResponse = result.ToApiResponsePaged("Roles retrieved successfully");
             
             // Add pagination and admin management links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
                 // Add pagination links
-                var currentPage = (pagination.PageIndex ?? 0) + 1;
-                var pageSize = pagination.PageSize ?? 10;
+                int currentPage = (pagination.PageIndex ?? 0) + 1;
+                int pageSize = pagination.PageSize ?? 10;
                 
                 apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
                 
@@ -164,16 +167,16 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetRoleById.Param
+            GetRoleById.Param param = new GetRoleById.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetRoleById.Query(id, param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Role details retrieved successfully");
+            GetRoleById.Query query = new GetRoleById.Query(id, param);
+            ErrorOr<GetRoleById.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetRoleById.Result> apiResponse = result.ToApiResponse("Role details retrieved successfully");
             
             // Add role-specific admin management links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -210,9 +213,9 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateRole.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Role updated successfully");
+            UpdateRole.Command command = new UpdateRole.Command(id, param);
+            ErrorOr<UpdateRole.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<UpdateRole.Result> apiResponse = result.ToApiResponse("Role updated successfully");
             
             // Add role management links and update metadata
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -249,9 +252,9 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new DeleteRole.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseDeleted("Role deleted successfully");
+            DeleteRole.Command command = new DeleteRole.Command(id);
+            ErrorOr<Deleted> result = await mediator.Send(command, cancellationToken);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Role deleted successfully");
             
             // Add admin audit metadata and navigation links
             apiResponse
@@ -285,9 +288,9 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new AssignRoleToBatchUsers.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Users assigned to role successfully");
+            AssignRoleToBatchUsers.Command command = new AssignRoleToBatchUsers.Command(id, param);
+            ErrorOr<AssignRoleToBatchUsers.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<AssignRoleToBatchUsers.Result> apiResponse = result.ToApiResponse("Users assigned to role successfully");
             
             // Add user assignment metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -326,9 +329,9 @@ public sealed class RoleManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new AssignBatchPermissionsToRole.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Permissions assigned to role successfully");
+            AssignBatchPermissionsToRole.Command command = new AssignBatchPermissionsToRole.Command(id, param);
+            ErrorOr<AssignBatchPermissionsToRole.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<AssignBatchPermissionsToRole.Result> apiResponse = result.ToApiResponse("Permissions assigned to role successfully");
             
             // Add permission assignment metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)

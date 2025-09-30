@@ -39,10 +39,10 @@ public sealed class PermissionNameValidator : AbstractValidator<string>
         if (string.IsNullOrWhiteSpace(name))
             return false;
 
-        var normalized = name.Trim().ToLowerInvariant();
+        string normalized = name.Trim().ToLowerInvariant();
 
         // Feature.Permissions may be null or empty; defend against that.
-        var permissions = Feature.Permissions;
+        Permission[]? permissions = Feature.Permissions;
         if (permissions == null)
             return false;
 

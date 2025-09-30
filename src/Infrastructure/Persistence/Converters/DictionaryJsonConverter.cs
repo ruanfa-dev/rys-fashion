@@ -33,9 +33,9 @@ internal static class DictionaryJsonConverter
         if (a is null || b is null) return false;
         if (a.Count != b.Count) return false;
 
-        foreach (var kv in a)
+        foreach (KeyValuePair<string, string?> kv in a)
         {
-            if (!b.TryGetValue(kv.Key, out var bv)) return false;
+            if (!b.TryGetValue(kv.Key, out string? bv)) return false;
             if (!string.Equals(kv.Value, bv, StringComparison.Ordinal)) return false;
         }
         return true;
@@ -46,7 +46,7 @@ internal static class DictionaryJsonConverter
         unchecked
         {
             int hash = 17;
-            foreach (var kv in d.OrderBy(k => k.Key, StringComparer.Ordinal))
+            foreach (KeyValuePair<string, string?> kv in d.OrderBy(k => k.Key, StringComparer.Ordinal))
             {
                 hash = hash * 23 + StringComparer.Ordinal.GetHashCode(kv.Key);
                 hash = hash * 23 + (kv.Value?.GetHashCode() ?? 0);

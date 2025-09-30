@@ -21,14 +21,14 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithNoParameters_ReturnsBadRequest()
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
 
         // Act
-        var result = searchDelegate(null, null, null);
+        IResult result = searchDelegate(null, null, null);
 
         // Assert
         result.ShouldBeOfType<BadRequest<Error>>();
-        var badRequestResult = (BadRequest<Error>)result;
+        BadRequest<Error> badRequestResult = (BadRequest<Error>)result;
         badRequestResult.Value.Code.ShouldBe("Search.Empty");
         badRequestResult.Value.Description.ShouldBe("At least one search parameter is required");
     }
@@ -40,10 +40,10 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithEmptyParameters_ReturnsBadRequest(string? name, decimal? minPrice, decimal? maxPrice)
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
 
         // Act
-        var result = searchDelegate(name, minPrice, maxPrice);
+        IResult result = searchDelegate(name, minPrice, maxPrice);
 
         // Assert
         result.ShouldBeOfType<BadRequest<Error>>();
@@ -57,14 +57,14 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithValidParameters_ReturnsOk(string? name, double? minPrice, double? maxPrice)
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
 
         // Act
-        var result = searchDelegate(name, (decimal?)minPrice, (decimal?)maxPrice);
+        IResult result = searchDelegate(name, (decimal?)minPrice, (decimal?)maxPrice);
 
         // Assert
         result.ShouldBeOfType<Ok<List<TestProductModel>>>();
-        var okResult = (Ok<List<TestProductModel>>)result;
+        Ok<List<TestProductModel>> okResult = (Ok<List<TestProductModel>>)result;
         okResult.Value.ShouldNotBeNull();
         okResult.Value.ShouldBeOfType<List<TestProductModel>>();
     }
@@ -75,10 +75,10 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithVariousNameLengths_HandlesCorrectly(string name)
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
 
         // Act
-        var result = searchDelegate(name, null, null);
+        IResult result = searchDelegate(name, null, null);
 
         // Assert
         result.ShouldBeOfType<Ok<List<TestProductModel>>>();
@@ -91,10 +91,10 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithVariousPrices_HandlesCorrectly(decimal price)
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
 
         // Act
-        var result = searchDelegate(null, price, price + 100);
+        IResult result = searchDelegate(null, price, price + 100);
 
         // Assert
         result.ShouldBeOfType<Ok<List<TestProductModel>>>();
@@ -104,11 +104,11 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithSpecialCharactersInName_HandlesCorrectly()
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
-        var specialName = "<>&\"'åäö中文🚀";
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
+        string specialName = "<>&\"'åäö中文🚀";
 
         // Act
-        var result = searchDelegate(specialName, null, null);
+        IResult result = searchDelegate(specialName, null, null);
 
         // Assert
         result.ShouldBeOfType<Ok<List<TestProductModel>>>();
@@ -118,11 +118,11 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithMinAndMaxPriceEqual_HandlesCorrectly()
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
-        var price = 99.99m;
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
+        decimal price = 99.99m;
 
         // Act
-        var result = searchDelegate(null, price, price);
+        IResult result = searchDelegate(null, price, price);
 
         // Assert
         result.ShouldBeOfType<Ok<List<TestProductModel>>>();
@@ -132,10 +132,10 @@ public class TypedResultsApiExamplesTests
     public void SearchEndpoint_WithMaxPriceLowerThanMinPrice_HandlesCorrectly()
     {
         // Arrange
-        var searchDelegate = GetSearchEndpointDelegate();
+        Func<string?, decimal?, decimal?, IResult> searchDelegate = GetSearchEndpointDelegate();
 
         // Act
-        var result = searchDelegate(null, 100m, 50m);
+        IResult result = searchDelegate(null, 100m, 50m);
 
         // Assert
         result.ShouldBeOfType<Ok<List<TestProductModel>>>();
@@ -149,7 +149,7 @@ public class TypedResultsApiExamplesTests
     public void Product_ConstructorAndProperties_WorkCorrectly()
     {
         // Arrange & Act
-        var product = new TestProductModel(1, "Test Product", 99.99m);
+        TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
 
         // Assert
         product.Id.ShouldBe(1);
@@ -161,10 +161,10 @@ public class TypedResultsApiExamplesTests
     public void Product_UpdateName_CreatesNewInstance()
     {
         // Arrange
-        var original = new TestProductModel(1, "Original", 50m);
+        TestProductModel original = new TestProductModel(1, "Original", 50m);
 
         // Act
-        var updated = original.UpdateName("Updated");
+        TestProductModel updated = original.UpdateName("Updated");
 
         // Assert
         updated.Name.ShouldBe("Updated");
@@ -177,7 +177,7 @@ public class TypedResultsApiExamplesTests
     public void CreateProductRequest_Properties_WorkCorrectly()
     {
         // Arrange & Act
-        var request = new CreateProductRequest("New Product", 25.99m);
+        CreateProductRequest request = new CreateProductRequest("New Product", 25.99m);
 
         // Assert
         request.Name.ShouldBe("New Product");
@@ -188,7 +188,7 @@ public class TypedResultsApiExamplesTests
     public void UpdateProductRequest_Properties_WorkCorrectly()
     {
         // Arrange & Act
-        var request = new UpdateProductRequest("Updated Product", 35.99m);
+        UpdateProductRequest request = new UpdateProductRequest("Updated Product", 35.99m);
 
         // Assert
         request.Name.ShouldBe("Updated Product");
@@ -203,10 +203,10 @@ public class TypedResultsApiExamplesTests
     public void SearchLogic_EmptyStringName_IsConsideredEmpty()
     {
         // Arrange
-        var emptyName = "";
+        string emptyName = "";
 
         // Act
-        var isEmpty = string.IsNullOrWhiteSpace(emptyName);
+        bool isEmpty = string.IsNullOrWhiteSpace(emptyName);
 
         // Assert
         isEmpty.ShouldBeTrue();
@@ -216,10 +216,10 @@ public class TypedResultsApiExamplesTests
     public void SearchLogic_WhitespaceOnlyName_IsConsideredEmpty()
     {
         // Arrange
-        var whitespaceName = "   ";
+        string whitespaceName = "   ";
 
         // Act
-        var isEmpty = string.IsNullOrWhiteSpace(whitespaceName);
+        bool isEmpty = string.IsNullOrWhiteSpace(whitespaceName);
 
         // Assert
         isEmpty.ShouldBeTrue();
@@ -229,10 +229,10 @@ public class TypedResultsApiExamplesTests
     public void SearchLogic_ValidName_IsNotConsideredEmpty()
     {
         // Arrange
-        var validName = "Product";
+        string validName = "Product";
 
         // Act
-        var isEmpty = string.IsNullOrWhiteSpace(validName);
+        bool isEmpty = string.IsNullOrWhiteSpace(validName);
 
         // Assert
         isEmpty.ShouldBeFalse();
@@ -250,12 +250,12 @@ public class TypedResultsApiExamplesTests
             // Simulate search logic from the actual implementation
             if (string.IsNullOrWhiteSpace(name) && !minPrice.HasValue && !maxPrice.HasValue)
             {
-                var emptySearchError = Error.Validation("Search.Empty", "At least one search parameter is required");
+                Error emptySearchError = Error.Validation("Search.Empty", "At least one search parameter is required");
                 return Results.BadRequest(emptySearchError);
             }
 
             // Return empty search results (as in the actual implementation)
-            var searchResults = new List<TestProductModel>();
+            List<TestProductModel> searchResults = new List<TestProductModel>();
             return Results.Ok(searchResults);
         };
     }

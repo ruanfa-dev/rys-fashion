@@ -1,3 +1,5 @@
+using Core.Catalog.Taxonomies;
+
 using Infrastructure.Persistence.Contexts;
 using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,13 +17,13 @@ public class TaxonIntegrationTests(CustomWebApplicationFactory factory) : IClass
         // seed taxonomy via scoped DbContext
         factory.Seed(db =>
         {
-            var tax = Core.Catalog.Taxonomies.Taxonomy.Create(name: "default", storeId: Guid.NewGuid()).Value;
+            Taxonomy tax = Core.Catalog.Taxonomies.Taxonomy.Create(name: "default", storeId: Guid.NewGuid()).Value;
             db.Taxonomies.Add(tax);
         });
 
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var found = db.Taxonomies.FirstOrDefault();
+        using IServiceScope scope = factory.Services.CreateScope();
+        ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Taxonomy? found = db.Taxonomies.FirstOrDefault();
         found.ShouldNotBeNull();
         found.Name.ShouldBe("default");
     }

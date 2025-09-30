@@ -25,7 +25,7 @@ public sealed class DailySalesReportJob(IUnitOfWork unitOfWork, ILogger<DailySal
 
         try
         {
-            var reportData = await GenerateDailySalesReport(cancellationToken);
+            SalesReportData reportData = await GenerateDailySalesReport(cancellationToken);
 
             logger.LogInformation("Successfully generated daily sales report with {Orders} orders and total revenue {Revenue}", reportData.OrderCount, reportData.TotalRevenue);
         }

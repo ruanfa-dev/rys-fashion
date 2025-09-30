@@ -31,7 +31,7 @@ public static partial class GetTaxonTree
         {
             try
             {
-                var param = request.Param;
+                Param param = request.Param;
 
                 _logger.LogDebug("GetTaxonTree called with TaxonomyId={TaxonomyId}, StoreId={StoreId}, IncludeLeavesOnly={IncludeLeavesOnly}",
                     param.TaxonomyId, param.StoreId, param.IncludeLeavesOnly);
@@ -54,14 +54,14 @@ public static partial class GetTaxonTree
                 }
 
                 // Single query to fetch all taxons
-                var allTaxons = await query.ToListAsync(cancellationToken);
+                List<Taxon> allTaxons = await query.ToListAsync(cancellationToken);
                 _logger.LogDebug("Fetched {Count} taxons from database", allTaxons.Count);
 
                 // Filter to leaves in-memory if needed
                 List<Taxon> taxonsToProcess;
                 if (param.IncludeLeavesOnly)
                 {
-                    var parentIds = new HashSet<Guid>(
+                    HashSet<Guid> parentIds = new HashSet<Guid>(
                         allTaxons.Where(t => t.ParentId.HasValue)
                                  .Select(t => t.ParentId!.Value));
 
@@ -77,7 +77,7 @@ public static partial class GetTaxonTree
                 }
 
                 // Build parent-child lookup for O(1) access
-                var parentChildMap = taxonsToProcess
+                Dictionary<Guid, List<Taxon>> parentChildMap = taxonsToProcess
                     .Where(t => t.ParentId.HasValue)
                     .GroupBy(t => t.ParentId!.Value)
                     .ToDictionary(
@@ -85,13 +85,13 @@ public static partial class GetTaxonTree
                         g => g.OrderBy(t => t.ChildIndex).ToList());
 
                 // Get root taxons
-                var rootTaxons = taxonsToProcess
+                List<Taxon> rootTaxons = taxonsToProcess
                     .Where(t => t.ParentId == null)
                     .OrderBy(t => t.Lft)
                     .ToList();
 
                 // Build tree in-memory recursively
-                var result = rootTaxons
+                List<Result> result = rootTaxons
                     .Select(root => BuildTreeItem(root, parentChildMap))
                     .ToList();
 
@@ -107,10 +107,10 @@ public static partial class GetTaxonTree
 
         private static Result BuildTreeItem(Taxon taxon, Dictionary<Guid, List<Taxon>> parentChildMap)
         {
-            var treeItem = taxon.Adapt<Result>();
+            Result treeItem = taxon.Adapt<Result>();
 
             // Get children from pre-built dictionary (O(1) lookup)
-            if (parentChildMap.TryGetValue(taxon.Id, out var children))
+            if (parentChildMap.TryGetValue(taxon.Id, out List<Taxon>? children))
             {
                 treeItem.Children.AddRange(
                     children.Select(child => BuildTreeItem(child, parentChildMap)));

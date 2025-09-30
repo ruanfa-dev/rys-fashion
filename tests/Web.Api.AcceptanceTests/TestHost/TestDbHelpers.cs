@@ -7,8 +7,8 @@ public static class TestDbHelpers
 {
     public static void Seed(this CustomWebApplicationFactory factory, Action<ApplicationDbContext> seedAction)
     {
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        using IServiceScope scope = factory.Services.CreateScope();
+        ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         seedAction(db);
         db.SaveChanges();
     }

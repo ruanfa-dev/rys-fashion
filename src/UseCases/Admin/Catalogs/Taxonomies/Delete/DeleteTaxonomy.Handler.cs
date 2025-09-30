@@ -21,12 +21,12 @@ public partial class DeleteTaxonomy
         {
             try
             {
-                var entity = await context.Set<Taxonomy>()
+                Taxonomy? entity = await context.Set<Taxonomy>()
                     .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
                 if (entity is null) return Taxonomy.Errors.NotFound(request.Id);
 
                 // business validation before delete
-                var validation = entity.Delete();
+                ErrorOr<ErrorOr.Deleted> validation = entity.Delete();
                 if (validation.IsError) return validation.Errors;
 
                 context.Set<Taxonomy>().Remove(entity);

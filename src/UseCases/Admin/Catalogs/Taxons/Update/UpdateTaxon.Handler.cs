@@ -41,9 +41,9 @@ public static partial class UpdateTaxon
         {
             try
             {
-                var param = request.Param;
+                Param param = request.Param;
                 // Check: entity existing
-                var taxon = await _context.Set<Taxon>()
+                Taxon? taxon = await _context.Set<Taxon>()
                     .Include(t => t.Taxonomy)
                     .Include(t => t.Parent).ThenInclude(p => p!.Children)
                     .Include(t => t.Children)
@@ -54,14 +54,14 @@ public static partial class UpdateTaxon
                     return Taxon.Errors.NotFound(request.Id);
 
                 // Check: uniqueness for name
-                var name = param.Name.Parameterize();
+                string name = param.Name.Parameterize();
 
-                var exists = await _context.Set<Taxon>()
+                bool exists = await _context.Set<Taxon>()
                     .AnyAsync(t => t.Name == name && t.TaxonomyId == param.TaxonomyId && t.ParentId == param.ParentId && t.Id != request.Id, cancellationToken);
                 if (exists)
                     return Taxon.Errors.NameAlreadyExists(name.Trim(), param.TaxonomyId);
 
-                var updateResult = taxon.Update(
+                ErrorOr<Taxon> updateResult = taxon.Update(
                     name,
                     param.ParentId,
                     param.Description,

@@ -37,28 +37,28 @@ public static partial class ResendPhoneVerification
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Load: user context
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
             // Check: user exists
-            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            User? user = await userManager.FindByIdAsync(userId.Value.ToString());
             if (user is null)
                 return User.Errors.UserNotFound;
 
-            var param = request.Param;
+            Param param = request.Param;
 
             // Check: phone is not already in use by another user
-            var existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.PhoneNumber && u.Id != user.Id);
-            var existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
+            IQueryable<User> existingUserQuery = userManager.Users.Where(u => u.PhoneNumber == param.PhoneNumber && u.Id != user.Id);
+            User? existingUser = await existingUserQuery.FirstOrDefaultAsync(cancellationToken);
             if (existingUser != null)
                 return User.Errors.PhoneNumberAlreadyExists(param.PhoneNumber);
 
             // Send: phone verification SMS
-            var sendSmsResult = await userManager.GenerateAndSendConfirmationSmsAsync(
+            ErrorOr<Success> sendSmsResult = await userManager.GenerateAndSendConfirmationSmsAsync(
                 notificationService,
                 configuration,
                 user,

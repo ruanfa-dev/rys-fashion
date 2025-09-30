@@ -84,14 +84,14 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
     public static ErrorOr<Taxonomy> Create(string name, Guid storeId, int position = 0)
     {
         if (string.IsNullOrWhiteSpace(name)) return Errors.NameRequired;
-        var trimmed = name.Trim();
+        string trimmed = name.Trim();
         if (trimmed.Length < Constraints.NameMinLength || trimmed.Length > Constraints.NameMaxLength)
             return Errors.InvalidNameLength;
 
         // TODO: template uniqueness check requires repository access; move to service layer
         //if (storeId == Guid.Empty) return Errors.StoreRequired;
 
-        var taxonomy = new Taxonomy
+        Taxonomy taxonomy = new Taxonomy
         {
             Name = trimmed,
             StoreId = storeId,
@@ -99,7 +99,7 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
         };
 
         // create root taxon immediately so callers have it available (mimics after_create :set_root)
-        var rootResult = Taxon.Create(trimmed, taxonomy.Id, parentId: null);
+        ErrorOr<Taxon> rootResult = Taxon.Create(trimmed, taxonomy.Id, parentId: null);
         if (rootResult.IsError)
         {
             return Errors.InvalidNameLength;
@@ -120,7 +120,7 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
 
         if (!string.IsNullOrWhiteSpace(name) && name.Trim() != Name)
         {
-            var trimmed = name.Trim();
+            string trimmed = name.Trim();
             if (trimmed.Length < Constraints.NameMinLength || trimmed.Length > Constraints.NameMaxLength)
                 return Errors.InvalidNameLength;
 
@@ -141,10 +141,10 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
         }
 
         // If there's a root taxon in-memory, keep its name synchronized with taxonomy (mirrors Rails after_update behavior)
-        var root = Root;
+        Taxon? root = Root;
         if (root != null && root.Name != Name)
         {
-            var _ = root.Update(Name);
+            ErrorOr<Taxon> _ = root.Update(Name);
             // root.Update will emit its own Updated event; persistence is left to the caller
         }
 
@@ -178,13 +178,13 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
     /// </summary>
     public ErrorOr<Taxon> EnsureRoot()
     {
-        var root = Root;
+        Taxon? root = Root;
         if (root != null) return root;
 
-        var res = Taxon.Create(Name, Id);
+        ErrorOr<Taxon> res = Taxon.Create(Name, Id);
         if (res.IsError) return Errors.RootCreationFailed;
 
-        var newRoot = res.Value;
+        Taxon newRoot = res.Value;
         Taxons.Add(newRoot);
         return newRoot;
     }

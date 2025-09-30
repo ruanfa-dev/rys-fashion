@@ -40,23 +40,23 @@ public static partial class CreateTaxon
         {
             try
             {
-                var param = request.Param;
+                Param param = request.Param;
 
                 // Check uniqueness
-                var trimmedName = param.Name!.Trim();
-                var exists = await _context.Set<Taxon>()
+                string trimmedName = param.Name!.Trim();
+                bool exists = await _context.Set<Taxon>()
                     .AnyAsync(t => t.Name == trimmedName && t.TaxonomyId == param.TaxonomyId && t.ParentId == param.ParentId, cancellationToken);
                 if (exists)
                     return Taxon.Errors.NameAlreadyExists(trimmedName, param.TaxonomyId);
 
-                var taxonomy = await _context.Set<Taxonomy>()
+                Taxonomy? taxonomy = await _context.Set<Taxonomy>()
                     .Include(tx => tx.Taxons)
                     .FirstOrDefaultAsync(tx => tx.Id == param.TaxonomyId, cancellationToken);
                 if (taxonomy == null)
                     return Taxon.Errors.UnexpectedError("TaxonomyNotFound", new Exception($"Taxonomy {param.TaxonomyId} not found"));
 
                 // Create taxon
-                var createResult = Taxon.Create(
+                ErrorOr<Taxon> createResult = Taxon.Create(
                     trimmedName,
                     param.TaxonomyId,
                     param.ParentId,
@@ -74,22 +74,22 @@ public static partial class CreateTaxon
                     param.PrivateMetadata);
                 if (createResult.IsError) return createResult.Errors;
 
-                var taxon = createResult.Value;
+                Taxon taxon = createResult.Value;
 
                 // Validate root conflict
-                var rootValidation = taxon.ValidateForCreateAgainst(taxonomy);
+                ErrorOr<Success> rootValidation = taxon.ValidateForCreateAgainst(taxonomy);
                 if (rootValidation.IsError) return rootValidation.Errors;
 
                 // Set parent if provided
                 if (param.ParentId.HasValue)
                 {
-                    var parent = await _context.Set<Taxon>()
+                    Taxon? parent = await _context.Set<Taxon>()
                         .Include(t => t.Children)
                         .FirstOrDefaultAsync(t => t.Id == param.ParentId.Value, cancellationToken);
                     if (parent == null)
                         return Taxon.Errors.NotFound(param.ParentId.Value);
 
-                    var parentResult = taxon.SetParent(parent);
+                    ErrorOr<Taxon> parentResult = taxon.SetParent(parent);
                     if (parentResult.IsError) return parentResult.Errors;
                     parent.AddChild(taxon);
                 }

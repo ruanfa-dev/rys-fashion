@@ -44,7 +44,7 @@ public sealed class ExternalUserService(
         try
         {
             // Step 1: Try to find user by existing external login
-            var existingUser = await FindUserByExternalLoginAsync(provider, externalUserInfo.ProviderId, cancellationToken);
+            User? existingUser = await FindUserByExternalLoginAsync(provider, externalUserInfo.ProviderId, cancellationToken);
             if (existingUser != null)
             {
                 logger.LogDebug("Found existing user {UserId} with external login {Provider}:{ProviderId}",
@@ -59,13 +59,13 @@ public sealed class ExternalUserService(
                 !externalUserInfo.Email.EndsWith("@facebook.local") &&
                 !externalUserInfo.Email.EndsWith("@google.local"))
             {
-                var userByEmail = await FindUserByEmailAsync(externalUserInfo.Email, cancellationToken);
+                User? userByEmail = await FindUserByEmailAsync(externalUserInfo.Email, cancellationToken);
                 if (userByEmail != null)
                 {
                     logger.LogDebug("Found existing user {UserId} by email, linking external login {Provider}:{ProviderId}",
                         userByEmail.Id, provider, externalUserInfo.ProviderId);
 
-                    var linkResult = await LinkExternalLoginToUserAsync(userByEmail, provider, externalUserInfo, cancellationToken);
+                    ErrorOr<Success> linkResult = await LinkExternalLoginToUserAsync(userByEmail, provider, externalUserInfo, cancellationToken);
                     if (linkResult.IsError)
                     {
                         return linkResult.Errors;
@@ -80,7 +80,7 @@ public sealed class ExternalUserService(
             logger.LogDebug("Creating new user for external login {Provider}:{ProviderId}",
                 provider, externalUserInfo.ProviderId);
 
-            var createResult = await CreateUserWithExternalLoginAsync(externalUserInfo, provider, cancellationToken);
+            ErrorOr<User> createResult = await CreateUserWithExternalLoginAsync(externalUserInfo, provider, cancellationToken);
             if (createResult.IsError)
             {
                 return createResult.Errors;
@@ -103,11 +103,11 @@ public sealed class ExternalUserService(
     {
         try
         {
-            var user = await userManager.FindByIdAsync(userId.ToString());
+            User? user = await userManager.FindByIdAsync(userId.ToString());
             if (user == null)
                 return false;
 
-            var logins = await userManager.GetLoginsAsync(user);
+            IList<UserLoginInfo> logins = await userManager.GetLoginsAsync(user);
             return logins.Any(l => l.LoginProvider.Equals(provider, StringComparison.OrdinalIgnoreCase));
         }
         catch (Exception ex)
@@ -124,7 +124,7 @@ public sealed class ExternalUserService(
     {
         try
         {
-            var user = await userManager.FindByIdAsync(userId.ToString());
+            User? user = await userManager.FindByIdAsync(userId.ToString());
             if (user == null)
                 return new List<UserLoginInfo>();
 
@@ -148,15 +148,15 @@ public sealed class ExternalUserService(
     {
         try
         {
-            var user = await userManager.FindByIdAsync(userId.ToString());
+            User? user = await userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return Error.NotFound("User.NotFound", "User not found");
             }
 
             // Safety check: don't allow removal of last login method if user has no password
-            var hasPassword = await userManager.HasPasswordAsync(user);
-            var logins = await userManager.GetLoginsAsync(user);
+            bool hasPassword = await userManager.HasPasswordAsync(user);
+            IList<UserLoginInfo> logins = await userManager.GetLoginsAsync(user);
 
             if (!hasPassword && logins.Count <= 1)
             {
@@ -165,7 +165,7 @@ public sealed class ExternalUserService(
                     "Cannot remove the last external login. Set a password first or add another external login.");
             }
 
-            var result = await userManager.RemoveLoginAsync(user, provider, providerKey);
+            IdentityResult result = await userManager.RemoveLoginAsync(user, provider, providerKey);
             if (!result.Succeeded)
             {
                 logger.LogError("Failed to remove external login for user {UserId}: {Errors}",
@@ -222,12 +222,12 @@ public sealed class ExternalUserService(
         ExternalUserInfo externalUserInfo,
         CancellationToken cancellationToken)
     {
-        var externalLoginInfo = new UserLoginInfo(
+        UserLoginInfo externalLoginInfo = new UserLoginInfo(
             loginProvider: provider,
             providerKey: externalUserInfo.ProviderId,
             displayName: GetProviderDisplayName(provider));
 
-        var result = await userManager.AddLoginAsync(user, externalLoginInfo);
+        IdentityResult result = await userManager.AddLoginAsync(user, externalLoginInfo);
         if (!result.Succeeded)
         {
             logger.LogError("Failed to link external login to existing user {Email}: {Errors}",
@@ -247,7 +247,7 @@ public sealed class ExternalUserService(
         CancellationToken cancellationToken)
     {
         // Create new user with external information
-        var newUser = User.Create(
+        User newUser = User.Create(
             email: externalUserInfo.Email,
             userName: GenerateUsername(externalUserInfo),
             emailConfirmed: externalUserInfo.EmailVerified,
@@ -255,7 +255,7 @@ public sealed class ExternalUserService(
             lastName: externalUserInfo.LastName);
 
         // Create the user
-        var createResult = await userManager.CreateAsync(newUser);
+        IdentityResult createResult = await userManager.CreateAsync(newUser);
         if (!createResult.Succeeded)
         {
             logger.LogError("Failed to create user from external token {Email}: {Errors}",
@@ -264,12 +264,12 @@ public sealed class ExternalUserService(
         }
 
         // Add external login to the new user
-        var externalLoginInfo = new UserLoginInfo(
+        UserLoginInfo externalLoginInfo = new UserLoginInfo(
             provider,
             externalUserInfo.ProviderId,
             GetProviderDisplayName(provider));
 
-        var addLoginResult = await userManager.AddLoginAsync(newUser, externalLoginInfo);
+        IdentityResult addLoginResult = await userManager.AddLoginAsync(newUser, externalLoginInfo);
         if (!addLoginResult.Succeeded)
         {
             // Rollback: delete the created user if adding login fails
@@ -317,7 +317,7 @@ public sealed class ExternalUserService(
 
         if (updated)
         {
-            var updateResult = await userManager.UpdateAsync(user);
+            IdentityResult updateResult = await userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
                 logger.LogWarning("Failed to update user {UserId} from external info: {Errors}",
@@ -340,7 +340,7 @@ public sealed class ExternalUserService(
         }
 
         // Fallback: generate username from name or provider ID
-        var baseName = !string.IsNullOrWhiteSpace(externalUserInfo.FirstName)
+        string baseName = !string.IsNullOrWhiteSpace(externalUserInfo.FirstName)
             ? externalUserInfo.FirstName.ToLowerInvariant()
             : "user";
 
@@ -352,10 +352,10 @@ public sealed class ExternalUserService(
         if (string.IsNullOrWhiteSpace(email))
             return "User";
 
-        var localPart = email.Split('@')[0];
+        string localPart = email.Split('@')[0];
 
         // Remove numbers and special characters, capitalize first letter
-        var cleanName = new string(localPart.Where(char.IsLetter).ToArray());
+        string cleanName = new string(localPart.Where(char.IsLetter).ToArray());
 
         return string.IsNullOrEmpty(cleanName)
             ? "User"

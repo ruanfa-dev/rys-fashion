@@ -1,5 +1,7 @@
 using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
+using SharedKernel.Models.PagedLists;
 
 using UseCases.Admin.Identity.Permissions;
 using UseCases.Admin.Identity.Users.Create;
@@ -33,7 +36,7 @@ public sealed class UserManagementEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -46,9 +49,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new CreateUser.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("User created successfully");
+            CreateUser.Command command = new CreateUser.Command(param);
+            ErrorOr<CreateUser.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<CreateUser.Result> apiResponse = result.ToApiResponseCreated("User created successfully");
 
             // Add admin user management HATEOAS links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -90,9 +93,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var query = new ListUsers.Query(page, pageSize, searchTerm, role, isActive, emailConfirmed);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Users retrieved successfully");
+            ListUsers.Query query = new ListUsers.Query(page, pageSize, searchTerm, role, isActive, emailConfirmed);
+            ErrorOr<PagedList<ListUsers.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<ListUsers.Result>> apiResponse = result.ToApiResponsePaged("Users retrieved successfully");
 
             // Add pagination and admin management links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -144,9 +147,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var query = new GetUserById.Query(id);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("User details retrieved successfully");
+            GetUserById.Query query = new GetUserById.Query(id);
+            ErrorOr<GetUserById.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetUserById.Result> apiResponse = result.ToApiResponse("User details retrieved successfully");
 
             // Add user-specific admin management links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -182,9 +185,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateUser.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("User updated successfully");
+            UpdateUser.Command command = new UpdateUser.Command(id, param);
+            ErrorOr<UpdateUser.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<UpdateUser.Result> apiResponse = result.ToApiResponse("User updated successfully");
 
             // Add user management links and update metadata
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -221,9 +224,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new DeleteUser.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("User deleted successfully");
+            DeleteUser.Command command = new DeleteUser.Command(id);
+            ErrorOr<DeleteUser.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<DeleteUser.Result> apiResponse = result.ToApiResponse("User deleted successfully");
 
             // Add admin audit metadata and navigation links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -257,9 +260,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new AssignBatchRolesToUser.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Roles assigned successfully");
+            AssignBatchRolesToUser.Command command = new AssignBatchRolesToUser.Command(id, param);
+            ErrorOr<AssignBatchRolesToUser.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<AssignBatchRolesToUser.Result> apiResponse = result.ToApiResponse("Roles assigned successfully");
 
             // Add role assignment metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -298,9 +301,9 @@ public sealed class UserManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new AssignBatchPermissionsToUser.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Permissions assigned successfully");
+            AssignBatchPermissionsToUser.Command command = new AssignBatchPermissionsToUser.Command(id, param);
+            ErrorOr<AssignBatchPermissionsToUser.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<AssignBatchPermissionsToUser.Result> apiResponse = result.ToApiResponse("Permissions assigned successfully");
 
             // Add permission assignment metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)

@@ -40,8 +40,8 @@ public static class SwaggerConfiguration
 
     internal static IApplicationBuilder UseSwaggerWithUi(this WebApplication app)
     {
-        var googleOptions = app.Services.GetRequiredService<IOptions<GoogleOption>>().Value;
-        var facebookOptions = app.Services.GetRequiredService<IOptions<FacebookOption>>().Value;
+        GoogleOption googleOptions = app.Services.GetRequiredService<IOptions<GoogleOption>>().Value;
+        FacebookOption facebookOptions = app.Services.GetRequiredService<IOptions<FacebookOption>>().Value;
         
         app.UseSwagger(options => options.RouteTemplate = "/openapi/{documentName}.json");
         app.UseSwaggerUI(c =>
@@ -192,12 +192,12 @@ public static class SwaggerConfiguration
         {
             if (schema.Properties == null) return;
 
-            var propertiesToUpdate = schema.Properties.ToList();
+            List<KeyValuePair<string, OpenApiSchema>> propertiesToUpdate = schema.Properties.ToList();
             schema.Properties.Clear();
 
-            foreach (var (key, value) in propertiesToUpdate)
+            foreach ((string key, OpenApiSchema value) in propertiesToUpdate)
             {
-                var snakeCaseKey = JsonNamingPolicy.SnakeCaseLower.ConvertName(key);
+                string snakeCaseKey = JsonNamingPolicy.SnakeCaseLower.ConvertName(key);
                 schema.Properties[snakeCaseKey] = value;
             }
         }

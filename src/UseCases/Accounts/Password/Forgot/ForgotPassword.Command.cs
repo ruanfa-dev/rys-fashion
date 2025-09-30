@@ -37,14 +37,14 @@ public static partial class ForgotPassword
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Check: User existence by email
-            var param = request.Param;
-            var user = await userManager.FindByEmailAsync(param.Email);
+            Param param = request.Param;
+            User? user = await userManager.FindByEmailAsync(param.Email);
             // If user does not exist, return the default message
             if (user is null)
                 return Result.Default;
 
             // Generate: password reset token
-            var generatedTokenResult = await userManager.GenerateAndSendPasswordResetCodeAsync(
+            ErrorOr<Success> generatedTokenResult = await userManager.GenerateAndSendPasswordResetCodeAsync(
                 notificationService: notificationService,
                 configuration: configuration,
                 user: user,

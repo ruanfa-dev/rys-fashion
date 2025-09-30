@@ -1,5 +1,7 @@
 ﻿using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -24,7 +26,7 @@ public sealed class ProfileEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(AccountEndpoint.Tag, Tag)
             .WithSummary(Summary)
@@ -33,9 +35,9 @@ public sealed class ProfileEndpoint : ICarterModule
 
         group.MapGet(GetProfile.Route, async ([FromServices] ISender mediator) =>
         {
-            var query = new GetProfile.Query();
-            var result = await mediator.Send(query);
-            var apiResponse = result.ToApiResponse("Profile retrieved successfully");
+            GetProfile.Query query = new GetProfile.Query();
+            ErrorOr<AccountProfileResult> result = await mediator.Send(query);
+            ApiResponse<AccountProfileResult> apiResponse = result.ToApiResponse("Profile retrieved successfully");
             
             // Add profile-related metadata and links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
@@ -61,9 +63,9 @@ public sealed class ProfileEndpoint : ICarterModule
 
         group.MapPut(UpdateProfile.Route, async ([FromBody] AccountProfileParam param, [FromServices] ISender mediator) =>
         {
-            var command = new UpdateProfile.Command(param);
-            var result = await mediator.Send(command);
-            var apiResponse = result.ToApiResponse("Profile updated successfully");
+            UpdateProfile.Command command = new UpdateProfile.Command(param);
+            ErrorOr<Updated> result = await mediator.Send(command);
+            ApiResponse<Updated> apiResponse = result.ToApiResponse("Profile updated successfully");
             
             // Add profile update metadata and links
             if (apiResponse.IsSuccess)

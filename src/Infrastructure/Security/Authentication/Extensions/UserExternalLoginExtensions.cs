@@ -18,8 +18,8 @@ public static class UserExternalLoginExtensions
     {
         try
         {
-            var logins = await userManager.GetLoginsAsync(user);
-            var hasPassword = await userManager.HasPasswordAsync(user);
+            IList<UserLoginInfo> logins = await userManager.GetLoginsAsync(user);
+            bool hasPassword = await userManager.HasPasswordAsync(user);
 
             return new ExternalLoginSummary
             {
@@ -59,12 +59,12 @@ public static class UserExternalLoginExtensions
     {
         try
         {
-            var hasPassword = await userManager.HasPasswordAsync(user);
+            bool hasPassword = await userManager.HasPasswordAsync(user);
             if (hasPassword)
                 return true;
 
-            var logins = await userManager.GetLoginsAsync(user);
-            var hasOtherLogins = logins.Any(l => !l.LoginProvider.Equals(provider, StringComparison.OrdinalIgnoreCase));
+            IList<UserLoginInfo> logins = await userManager.GetLoginsAsync(user);
+            bool hasOtherLogins = logins.Any(l => !l.LoginProvider.Equals(provider, StringComparison.OrdinalIgnoreCase));
             
             return hasOtherLogins;
         }

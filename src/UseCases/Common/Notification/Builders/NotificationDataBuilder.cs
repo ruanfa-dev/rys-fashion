@@ -17,8 +17,8 @@ public static class NotificationDataBuilder
 
     public static ErrorOr<NotificationData> WithUseCase(NotificationUseCase useCase = NotificationUseCase.None)
     {
-        var template = Templates.GetValueOrDefault(useCase);
-        var notificationData = new NotificationData
+        TemplateDescription? template = Templates.GetValueOrDefault(useCase);
+        NotificationData notificationData = new NotificationData
         {
             UseCase = useCase,
             SendMethodType = GetDefaultSendMethod(useCase),
@@ -38,9 +38,9 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
-        var template = Templates.GetValueOrDefault(useCase);
+        TemplateDescription? template = Templates.GetValueOrDefault(useCase);
         notificationData.UseCase = useCase;
         notificationData.SendMethodType = GetDefaultSendMethod(useCase);
         notificationData.TemplateFormatType = template?.TemplateFormatType ?? NotificationFormat.Default;
@@ -55,7 +55,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         notificationData.SendMethodType = sendMethodType;
 
@@ -66,7 +66,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         notificationData.Values ??= new Dictionary<NotificationParameter, string?>();
         notificationData.Values[parameter] = value;
@@ -78,13 +78,13 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (values == null)
             return NotificationData.Errors.NullParameters;
 
         notificationData.Values ??= new Dictionary<NotificationParameter, string?>();
-        foreach (var item in values)
+        foreach (KeyValuePair<NotificationParameter, string?> item in values)
         {
             notificationData.Values[item.Key] = item.Value;
         }
@@ -95,13 +95,13 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (receivers == null || !receivers.Any(r => !string.IsNullOrWhiteSpace(r)))
             return notificationData;
 
         notificationData.Receivers ??= new List<string>();
-        var uniqueReceivers = receivers.Where(r => !string.IsNullOrWhiteSpace(r) && !notificationData.Receivers.Contains(r)).ToList();
+        List<string> uniqueReceivers = receivers.Where(r => !string.IsNullOrWhiteSpace(r) && !notificationData.Receivers.Contains(r)).ToList();
         notificationData.Receivers.AddRange(uniqueReceivers);
         return notificationData;
     }
@@ -110,7 +110,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(receiver))
             return notificationData;
@@ -125,7 +125,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(title))
             return NotificationData.Errors.InvalidTitle;
@@ -138,7 +138,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(content))
             return NotificationData.Errors.InvalidContent;
@@ -151,7 +151,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(htmlContent))
             return NotificationData.Errors.InvalidHtmlContent;
@@ -164,7 +164,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(createdBy))
             return NotificationData.Errors.InvalidCreatedBy;
@@ -177,13 +177,13 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (attachments == null || !attachments.Any(a => !string.IsNullOrWhiteSpace(a)))
             return notificationData;
 
         notificationData.Attachments ??= new List<string>();
-        var uniqueAttachments = attachments.Where(a => !string.IsNullOrWhiteSpace(a) && !notificationData.Attachments.Contains(a)).ToList();
+        List<string> uniqueAttachments = attachments.Where(a => !string.IsNullOrWhiteSpace(a) && !notificationData.Attachments.Contains(a)).ToList();
         notificationData.Attachments.AddRange(uniqueAttachments);
         return notificationData;
     }
@@ -192,7 +192,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         notificationData.Priority = priority;
         return notificationData;
@@ -202,7 +202,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(language))
             return NotificationData.Errors.InvalidLanguage;
@@ -215,7 +215,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         if (string.IsNullOrWhiteSpace(createdBy))
             return NotificationData.Errors.InvalidCreatedBy;
@@ -229,7 +229,7 @@ public static class NotificationDataBuilder
     {
         if (result.IsError)
             return result.Errors;
-        var notificationData = result.Value;
+        NotificationData notificationData = result.Value;
 
         return notificationData.Validate();
     }
@@ -245,10 +245,10 @@ public static class NotificationDataBuilder
         if (parameters == null)
             return NotificationData.Errors.NullParameters;
 
-        var template = Templates.GetValueOrDefault(useCase);
-        var content = template?.TemplateContent ?? string.Empty;
+        TemplateDescription? template = Templates.GetValueOrDefault(useCase);
+        string content = template?.TemplateContent ?? string.Empty;
 
-        var smsData = new SmsNotificationData
+        SmsNotificationData smsData = new SmsNotificationData
         {
             UseCase = useCase,
             Receivers = receivers.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),
@@ -259,9 +259,9 @@ public static class NotificationDataBuilder
 
         if (!string.IsNullOrWhiteSpace(content))
         {
-            foreach (var param in parameters)
+            foreach (KeyValuePair<NotificationParameter, string?> param in parameters)
             {
-                var placeholder = $"{{{param.Key}}}";
+                string placeholder = $"{{{param.Key}}}";
                 smsData.Content = smsData.Content.Replace(placeholder, param.Value ?? string.Empty);
             }
         }
@@ -279,12 +279,12 @@ public static class NotificationDataBuilder
         if (parameters == null)
             return NotificationData.Errors.NullParameters;
 
-        var template = Templates.GetValueOrDefault(useCase);
-        var title = template?.Name ?? useCase.ToString();
-        var content = template?.TemplateContent ?? string.Empty;
-        var htmlContent = template?.HtmlTemplateContent ?? string.Empty;
+        TemplateDescription? template = Templates.GetValueOrDefault(useCase);
+        string title = template?.Name ?? useCase.ToString();
+        string content = template?.TemplateContent ?? string.Empty;
+        string htmlContent = template?.HtmlTemplateContent ?? string.Empty;
 
-        var emailData = new EmailNotificationData
+        EmailNotificationData emailData = new EmailNotificationData
         {
             UseCase = useCase,
             Receivers = receivers.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),
@@ -297,9 +297,9 @@ public static class NotificationDataBuilder
 
         if (!string.IsNullOrWhiteSpace(content))
         {
-            foreach (var param in parameters)
+            foreach (KeyValuePair<NotificationParameter, string?> param in parameters)
             {
-                var placeholder = $"{{{param.Key}}}";
+                string placeholder = $"{{{param.Key}}}";
                 emailData.Content = emailData.Content.Replace(placeholder, param.Value ?? string.Empty);
                 emailData.HtmlContent = emailData.HtmlContent?.Replace(placeholder, param.Value ?? string.Empty);
                 emailData.Title = emailData.Title.Replace(placeholder, param.Value ?? string.Empty);
@@ -319,8 +319,8 @@ public static class NotificationDataBuilder
         if (parameters == null)
             return NotificationData.Errors.NullParameters;
 
-        var template = Templates.GetValueOrDefault(useCase);
-        var notificationData = new NotificationData
+        TemplateDescription? template = Templates.GetValueOrDefault(useCase);
+        NotificationData notificationData = new NotificationData
         {
             UseCase = useCase,
             SendMethodType = template?.SendMethodType ?? GetDefaultSendMethod(useCase),
@@ -336,7 +336,7 @@ public static class NotificationDataBuilder
 
         if (template?.ParamValues != null)
         {
-            foreach (var requiredParam in template.ParamValues)
+            foreach (NotificationParameter requiredParam in template.ParamValues)
             {
                 if (!notificationData.Values.ContainsKey(requiredParam))
                     notificationData.Values[requiredParam] = null;

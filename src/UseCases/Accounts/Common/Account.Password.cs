@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 
 using UseCases.Common.Notification.Builders;
 using UseCases.Common.Notification.Constants;
+using UseCases.Common.Notification.Models;
 using UseCases.Common.Notification.Services;
 using UseCases.Common.Systems.Options;
 
@@ -28,14 +29,14 @@ public static partial class Account
       string? clientUri = null,
       CancellationToken cancellationToken = default)
     {
-        var resetCode = await userManager.GeneratePasswordResetTokenAsync(user);
+        string resetCode = await userManager.GeneratePasswordResetTokenAsync(user);
 
         // Encode reset code for URL
-        var encodedResetCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetCode));
+        string encodedResetCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetCode));
         string userId = await userManager.GetUserIdAsync(user);
 
         // Prepare route values
-        var routeValues = new List<KeyValuePair<string, string?>>
+        List<KeyValuePair<string, string?>> routeValues = new List<KeyValuePair<string, string?>>
         {
             new("userId", userId),
             new("code", encodedResetCode)
@@ -48,14 +49,14 @@ public static partial class Account
         string baseUrl = clientUri ?? storefrontOption.BaseUrl;
 
         // Generate reset password URL
-        var resetPasswordUrl = $"{baseUrl}/reset-password?{QueryString.Create(routeValues)}";
+        string resetPasswordUrl = $"{baseUrl}/reset-password?{QueryString.Create(routeValues)}";
 
         // Determine: target email
         string? email = user.Email;
         Guard.Against.NullOrWhiteSpace(email, nameof(email), "Email cannot be null or empty.");
 
         // Prepare: notification
-        var notificationDataResult = NotificationDataBuilder
+        ErrorOr<NotificationData> notificationDataResult = NotificationDataBuilder
             .WithUseCase(NotificationUseCases.NotificationUseCase.SystemResetPassword)
             .AddParam(NotificationParameters.NotificationParameter.SystemName, storefrontOption.SystemName)
             .AddParam(NotificationParameters.NotificationParameter.SupportEmail, storefrontOption.SupportEmail)

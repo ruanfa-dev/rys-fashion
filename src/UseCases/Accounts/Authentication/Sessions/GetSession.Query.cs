@@ -21,14 +21,14 @@ public static partial class GetSession
     {
         public async Task<ErrorOr<AccountSessionResult>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var userId = userContext.UserId;
-            var isAuthenticated = userContext.IsAuthenticated;
+            Guid? userId = userContext.UserId;
+            bool isAuthenticated = userContext.IsAuthenticated;
 
             // Check: user is authenticated
             if (userId is null || !isAuthenticated)
                 return User.Errors.UserUnauthorized;
 
-            var user = await userManager.Users
+            AccountSessionResult? user = await userManager.Users
                 .Where(u => u.Id == userId)
                 .Select(u => new AccountSessionResult
                 {
@@ -44,7 +44,7 @@ public static partial class GetSession
             if (user is null)
                 return User.Errors.UserNotFound;
 
-            var authData = await userAuthorizationProvider.GetUserAuthorizationAsync(userId.Value);
+            UserAuthorizationData? authData = await userAuthorizationProvider.GetUserAuthorizationAsync(userId.Value);
             if (authData is null)
                 return User.Errors.UserUnauthorized;
 

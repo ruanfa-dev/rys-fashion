@@ -81,13 +81,13 @@ public static partial class ExchangeExternalToken
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
-            var ipAddress = GetClientIpAddress();
+            Param param = request.Param;
+            string ipAddress = GetClientIpAddress();
 
             try
             {
                 logger.LogDebug("Validating external token for provider: {Provider}", param.Provider);
-                var validationResult = await tokenValidator.ValidateTokenAsync(
+                ErrorOr<ExternalUserInfo> validationResult = await tokenValidator.ValidateTokenAsync(
                     provider: param.Provider,
                     accessToken: param.AccessToken,
                     idToken: param.IdToken,
@@ -103,11 +103,11 @@ public static partial class ExchangeExternalToken
                     return validationResult.Errors;
                 }
 
-                var externalUserInfo = validationResult.Value;
+                ExternalUserInfo externalUserInfo = validationResult.Value;
                 logger.LogDebug("Successfully validated token for user: {Email} from provider: {Provider}",
                     externalUserInfo.Email, param.Provider);
 
-                var userResult = await externalUserService.FindOrCreateUserWithExternalLoginAsync(
+                ErrorOr<(User User, bool IsNewUser, bool IsNewLogin)> userResult = await externalUserService.FindOrCreateUserWithExternalLoginAsync(
                     externalUserInfo,
                     param.Provider,
                     cancellationToken);
@@ -119,7 +119,7 @@ public static partial class ExchangeExternalToken
                     return userResult.Errors;
                 }
 
-                var (user, isNewUser, isNewLogin) = userResult.Value;
+                (User user, bool isNewUser, bool isNewLogin) = userResult.Value;
 
                 user.RecordSignIn(ipAddress);
                 await userManager.UpdateAsync(user);
@@ -139,7 +139,7 @@ public static partial class ExchangeExternalToken
                     return refreshResult.Errors;
                 }
 
-                var tokens = new AuthenticationResult
+                AuthenticationResult tokens = new AuthenticationResult
                 {
                     AccessToken = accessResult.Value.Token,
                     AccessTokenExpiresAt = accessResult.Value.ExpiresAt,
@@ -148,9 +148,9 @@ public static partial class ExchangeExternalToken
                     TokenType = "Bearer"
                 };
 
-                var userProfile = await BuildUserProfileAsync(user, externalUserInfo, cancellationToken);
+                UserProfile userProfile = await BuildUserProfileAsync(user, externalUserInfo, cancellationToken);
 
-                var result = tokens.Adapt<Result>();
+                Result result = tokens.Adapt<Result>();
                 result.IsNewUser = isNewUser;
                 result.IsNewLogin = isNewLogin;
                 result.UserProfile = userProfile;
@@ -179,8 +179,8 @@ public static partial class ExchangeExternalToken
         {
             try
             {
-                var externalLogins = await externalUserService.GetExternalLoginsAsync(user.Id, cancellationToken);
-                var externalProviders = externalLogins.Select(l => l.LoginProvider.ToLowerInvariant()).ToArray();
+                IList<UserLoginInfo> externalLogins = await externalUserService.GetExternalLoginsAsync(user.Id, cancellationToken);
+                string[] externalProviders = externalLogins.Select(l => l.LoginProvider.ToLowerInvariant()).ToArray();
 
                 return new UserProfile
                 {
@@ -225,22 +225,22 @@ public static partial class ExchangeExternalToken
 
         private string GetClientIpAddress()
         {
-            var context = httpContextAccessor.HttpContext;
+            HttpContext? context = httpContextAccessor.HttpContext;
             if (context == null) return "unknown";
 
-            var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            string? forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(forwardedFor))
             {
                 return forwardedFor.Split(',')[0].Trim();
             }
 
-            var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
+            string? realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(realIp))
             {
                 return realIp.Trim();
             }
 
-            var remoteIp = context.Connection.RemoteIpAddress?.ToString();
+            string? remoteIp = context.Connection.RemoteIpAddress?.ToString();
             return !string.IsNullOrWhiteSpace(remoteIp) ? remoteIp : "unknown";
         }
     }

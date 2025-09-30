@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 
 using UseCases.Common.Notification.Builders;
 using UseCases.Common.Notification.Constants;
+using UseCases.Common.Notification.Models;
 using UseCases.Common.Notification.Services;
 using UseCases.Common.Systems.Options;
 
@@ -39,7 +40,7 @@ public static partial class Account
         string userId = await userManager.GetUserIdAsync(user);
 
         // Prepare route values
-        var routeValues = new List<KeyValuePair<string, string?>>
+        List<KeyValuePair<string, string?>> routeValues = new List<KeyValuePair<string, string?>>
         {
             new("userId", userId),
             new("code", code)
@@ -57,14 +58,14 @@ public static partial class Account
         string baseUrl = clientUri ?? storefrontOption.BaseUrl;
 
         // Generate: confirmation URL
-        var confirmPhoneUrl = $"{baseUrl}/confirm-phone?{QueryString.Create(routeValues)}";
+        string confirmPhoneUrl = $"{baseUrl}/confirm-phone?{QueryString.Create(routeValues)}";
 
         // Determine: target phone number
         string? phoneNumber = newPhoneNumber ?? user.PhoneNumber;
         Guard.Against.NullOrWhiteSpace(phoneNumber, nameof(phoneNumber), "Phone number cannot be null or empty.");
 
         // Prepare notification
-        var notificationDataResult = NotificationDataBuilder
+        ErrorOr<NotificationData> notificationDataResult = NotificationDataBuilder
             .WithUseCase(NotificationUseCases.NotificationUseCase.SystemActivePhone)
             .AddParam(NotificationParameters.NotificationParameter.SystemName, storefrontOption.SystemName)
             .AddParam(NotificationParameters.NotificationParameter.SupportEmail, storefrontOption.SupportEmail)

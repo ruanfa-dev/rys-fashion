@@ -100,7 +100,7 @@ public sealed class Prototype : AuditableEntity, IMetadataSupport
         if (description is { Length: > Constraints.DescriptionMaxLength })
             return Errors.DescriptionTooLong;
 
-        var prototype = new Prototype
+        Prototype prototype = new Prototype
         {
             Name = name.Trim(),
             Description = description?.Trim(),
@@ -125,7 +125,7 @@ public sealed class Prototype : AuditableEntity, IMetadataSupport
         IDictionary<string, string?>? publicMetadata = null,
         IDictionary<string, string?>? privateMetadata = null)
     {
-        var changed = false;
+        bool changed = false;
 
         if (!string.IsNullOrWhiteSpace(name) && name.Trim() != Name)
         {

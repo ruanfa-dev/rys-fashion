@@ -23,7 +23,7 @@ public static partial class CompleteTodoItem
         {
 
             // Check: Todo item existence
-            var todoItem = await context.TodoItems
+            TodoItem? todoItem = await context.TodoItems
                 .Include(m => m.List)
                 .SingleOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
 
@@ -31,7 +31,7 @@ public static partial class CompleteTodoItem
                 return TodoItem.Errors.TodoItemNotFound;
 
             // Guard: check if the todo item already done
-            var result = todoItem.MarkAsDone();
+            ErrorOr<TodoItem> result = todoItem.MarkAsDone();
             if (result.IsError)
                 return TodoItem.Errors.TodoItemAlreadyCompleted;
 

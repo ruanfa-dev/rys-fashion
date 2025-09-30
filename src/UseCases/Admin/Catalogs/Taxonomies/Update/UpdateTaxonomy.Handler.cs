@@ -36,14 +36,14 @@ public partial class UpdateTaxonomy
         {
             try
             {
-                var dbContext = unitOfWork.Context;
-                var entity = await dbContext.Set<Taxonomy>()
+                IApplicationDbContext dbContext = unitOfWork.Context;
+                Taxonomy? entity = await dbContext.Set<Taxonomy>()
                     .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
                 if (entity is null)
                     return Taxonomy.Errors.NotFound(request.Id);
 
-                var param = request.Param;
-                var updateResult = entity.Update(param.Name, param.Position);
+                Param param = request.Param;
+                ErrorOr<Taxonomy> updateResult = entity.Update(param.Name, param.Position);
                 if (updateResult.IsError)
                     return updateResult.Errors;
 
@@ -51,7 +51,7 @@ public partial class UpdateTaxonomy
                 // Persist changes
                 await unitOfWork.SaveChangesAsync(cancellationToken);
 
-                var result = updateResult.Value.Adapt<Result>();
+                Result result = updateResult.Value.Adapt<Result>();
                 return result;
             }
             catch (Exception ex)
@@ -69,7 +69,7 @@ internal sealed class SyncRootTaxonNameEventHandler(IApplicationDbContext contex
     {
         Log.Information("Domain Event: {DomainEvent} for Taxonomy {TaxonomyId}", notification.GetType().Name, notification.TaxonomyId);
 
-        var taxonomy = await context.Set<Taxonomy>()
+        Taxonomy? taxonomy = await context.Set<Taxonomy>()
             .Include(t => t.Taxons)
             .ThenInclude(x => x.Children)
             .FirstOrDefaultAsync(t => t.Id == notification.TaxonomyId, cancellationToken);
@@ -80,11 +80,11 @@ internal sealed class SyncRootTaxonNameEventHandler(IApplicationDbContext contex
             return;
         }
 
-        var root = taxonomy.Root;
+        Taxon? root = taxonomy.Root;
             if (root == null)
             {
             // Ensure root exists if missing
-            var ensure = taxonomy.EnsureRoot();
+            ErrorOr<Taxon> ensure = taxonomy.EnsureRoot();
             if (ensure.IsError)
             {
                 Log.Error("Failed to create root for taxonomy {TaxonomyId} during update handler: {Errors}", taxonomy.Id, string.Join(';', ensure.Errors.Select(e => e.Code)));
@@ -92,7 +92,7 @@ internal sealed class SyncRootTaxonNameEventHandler(IApplicationDbContext contex
             }
 
             root = ensure.Value;
-            var exists = await context.Set<Taxon>().AnyAsync(t => t.Id == root.Id, cancellationToken);
+            bool exists = await context.Set<Taxon>().AnyAsync(t => t.Id == root.Id, cancellationToken);
             if (!exists)
             {
                     await context.Set<Taxon>().AddAsync(root, cancellationToken);
@@ -103,7 +103,7 @@ internal sealed class SyncRootTaxonNameEventHandler(IApplicationDbContext contex
         // If root name differs, update and persist
         if (root.Name != taxonomy.Name)
         {
-            var upd = root.Update(taxonomy.Name);
+            ErrorOr<Taxon> upd = root.Update(taxonomy.Name);
             if (upd.IsError)
             {
                 Log.Error("Failed to update root taxon name for taxonomy {TaxonomyId}: {Errors}", taxonomy.Id, string.Join(';', upd.Errors.Select(e => e.Code)));

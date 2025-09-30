@@ -29,7 +29,7 @@ public sealed class JwtOptions : IValidateOptions<JwtOptions>
 
     public ValidateOptionsResult Validate(string? name, JwtOptions options)
     {
-        var failures = new List<string>();
+        List<string> failures = new List<string>();
 
         // Required string validations
         if (string.IsNullOrWhiteSpace(options.Issuer))
@@ -44,7 +44,7 @@ public sealed class JwtOptions : IValidateOptions<JwtOptions>
         // Security validations for Secret
         if (!string.IsNullOrWhiteSpace(options.Secret))
         {
-            var secretBytes = Encoding.UTF8.GetBytes(options.Secret);
+            byte[] secretBytes = Encoding.UTF8.GetBytes(options.Secret);
             if (secretBytes.Length < 32) // 256 bits minimum
                 failures.Add("JwtOptions.Secret must be at least 32 characters (256 bits) for HMAC-SHA256 security.");
 

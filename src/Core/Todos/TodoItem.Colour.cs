@@ -12,7 +12,7 @@ public sealed class Colour(string code) : ValueObject
         {
             return Color.Errors.EmptyCode;
         }
-        var colour = new Colour(code);
+        Colour colour = new Colour(code);
 
         if (!SupportedColours.Contains(colour))
         {

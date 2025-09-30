@@ -25,7 +25,7 @@ public interface ITranslatable<TTranslation>
         // Delegate to typed collection helper. The selector uses reflection on TTranslation.
         return TranslatableExtensions.GetFieldWithCulture(Translations, culture, (TTranslation t) =>
         {
-            var pi = typeof(TTranslation).GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+            PropertyInfo? pi = typeof(TTranslation).GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
             return pi?.GetValue(t)?.ToString();
         }, fallback);
     }

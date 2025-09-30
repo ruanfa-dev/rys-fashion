@@ -58,7 +58,7 @@ public sealed class SearchBuilder<T>
         }
         else
         {
-            var searchParams = new SearchParameter(_searchTerm);
+            SearchParameter searchParams = new SearchParameter(_searchTerm);
             return _query.ApplySearch(searchParams, _options);
         }
     }

@@ -27,8 +27,8 @@ public partial class GetTaxonomyOptionList
         {
             try
             {
-                var param = request.Param;
-                var paginatedList = await context.Set<Taxonomy>()
+                Param param = request.Param;
+                PagedList<Result> paginatedList = await context.Set<Taxonomy>()
                     .AsQueryable()
                     .AsNoTracking()
                     .ApplySearch(param.Search)

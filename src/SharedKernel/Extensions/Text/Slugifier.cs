@@ -19,20 +19,20 @@ public static class Slugifier
             return string.Empty;
 
         // Normalize and remove diacritics
-        var normalized = input.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(capacity: normalized.Length);
+        string normalized = input.Normalize(NormalizationForm.FormD);
+        StringBuilder sb = new StringBuilder(capacity: normalized.Length);
 
-        foreach (var ch in normalized)
+        foreach (char ch in normalized)
         {
-            var uc = CharUnicodeInfo.GetUnicodeCategory(ch);
+            UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(ch);
             if (uc != UnicodeCategory.NonSpacingMark)
                 sb.Append(ch);
         }
 
-        var ascii = sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
+        string ascii = sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
 
         // Replace non-alphanum with hyphen
-        var cleaned = InvalidChars.Replace(ascii, "-");
+        string cleaned = InvalidChars.Replace(ascii, "-");
 
         // Collapse repeated hyphens and trim
         cleaned = DuplicateHyphens.Replace(cleaned, "-").Trim('-');

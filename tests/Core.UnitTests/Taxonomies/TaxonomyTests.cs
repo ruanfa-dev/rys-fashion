@@ -1,6 +1,8 @@
 using Core.Catalog.Products;
 using Core.Catalog.Taxonomies;
 
+using ErrorOr;
+
 using Shouldly;
 
 namespace Core.UnitTests.Taxonomies;
@@ -11,15 +13,15 @@ public sealed class TaxonomyTests
     public void Create_ShouldCreateRootTaxon()
     {
         // Arrange
-        var storeId = Guid.NewGuid();
-        var name = "Men";
+        Guid storeId = Guid.NewGuid();
+        string name = "Men";
 
         // Act
-        var res = Taxonomy.Create(name, storeId);
+        ErrorOr<Taxonomy> res = Taxonomy.Create(name, storeId);
 
         // Assert
         res.IsError.ShouldBeFalse();
-        var taxonomy = res.Value;
+        Taxonomy taxonomy = res.Value;
         taxonomy.Root.ShouldNotBeNull();
         taxonomy.Root!.Name.ShouldBe(name);
         taxonomy.Taxons.Count.ShouldBe(1);
@@ -29,15 +31,15 @@ public sealed class TaxonomyTests
     public void Update_ShouldSyncRootName_WhenRootExists()
     {
         // Arrange
-        var storeId = Guid.NewGuid();
-        var res = Taxonomy.Create("Women", storeId);
+        Guid storeId = Guid.NewGuid();
+        ErrorOr<Taxonomy> res = Taxonomy.Create("Women", storeId);
         res.IsError.ShouldBeFalse();
-        var taxonomy = res.Value;
-        var root = taxonomy.Root;
+        Taxonomy taxonomy = res.Value;
+        Taxon? root = taxonomy.Root;
         root.ShouldNotBeNull();
 
         // Act
-        var updateRes = taxonomy.Update("Women & Kids");
+        ErrorOr<Taxonomy> updateRes = taxonomy.Update("Women & Kids");
 
         // Assert
         updateRes.IsError.ShouldBeFalse();
@@ -49,20 +51,20 @@ public sealed class TaxonomyTests
     public void Delete_ShouldPrevent_WhenTaxonsHaveChildrenOrClassifications()
     {
         // Arrange
-        var storeId = Guid.NewGuid();
-        var res = Taxonomy.Create("Accessories", storeId);
+        Guid storeId = Guid.NewGuid();
+        ErrorOr<Taxonomy> res = Taxonomy.Create("Accessories", storeId);
         res.IsError.ShouldBeFalse();
-        var taxonomy = res.Value;
-        var root = taxonomy.Root!;
+        Taxonomy taxonomy = res.Value;
+        Taxon root = taxonomy.Root!;
 
         // Add a child taxon to simulate dependent taxons
-        var childRes = Taxon.Create("Belts", taxonomy.Id, parentId: root.Id);
+        ErrorOr<Taxon> childRes = Taxon.Create("Belts", taxonomy.Id, parentId: root.Id);
         childRes.IsError.ShouldBeFalse();
-        var child = childRes.Value;
+        Taxon child = childRes.Value;
         taxonomy.Taxons.Add(child);
 
         // Act
-        var deleteRes = taxonomy.Delete();
+        ErrorOr<Deleted> deleteRes = taxonomy.Delete();
 
         // Assert
         deleteRes.IsError.ShouldBeTrue();
@@ -72,7 +74,7 @@ public sealed class TaxonomyTests
         taxonomy.Taxons.Remove(child);
         root.Classifications.Add(new Classification { Id = Guid.NewGuid(), TaxonId = root.Id });
 
-        var deleteRes2 = taxonomy.Delete();
+        ErrorOr<Deleted> deleteRes2 = taxonomy.Delete();
         deleteRes2.IsError.ShouldBeTrue();
         deleteRes2.FirstError.Code.ShouldContain("HasClassifications");
     }

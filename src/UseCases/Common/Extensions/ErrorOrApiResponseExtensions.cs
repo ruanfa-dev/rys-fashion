@@ -5,6 +5,7 @@ using ErrorOr;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.PagedLists;
@@ -246,8 +247,8 @@ public static class ErrorOrApiResponseExtensions
         => result.Match(
             value =>
             {
-                var response = ApiResponse<T>.Success(value, message, requestId);
-                foreach (var (key, val) in metadata)
+                ApiResponse<T> response = ApiResponse<T>.Success(value, message, requestId);
+                foreach ((string key, object val) in metadata)
                 {
                     response.WithMetadata(key, val);
                 }
@@ -287,7 +288,7 @@ public static class ErrorOrApiResponseExtensions
         => result.Match(
             value =>
             {
-                var response = ApiResponse<T>.ProductSuccess(value, inStock, stockCount, requestId);
+                ApiResponse<T> response = ApiResponse<T>.ProductSuccess(value, inStock, stockCount, requestId);
                 if (!string.IsNullOrWhiteSpace(message))
                     response.Message = message;
                 return response;
@@ -324,7 +325,7 @@ public static class ErrorOrApiResponseExtensions
         => result.Match(
             value =>
             {
-                var response = ApiResponse<T>.CartSuccess(value, subtotal, total, itemCount, requestId);
+                ApiResponse<T> response = ApiResponse<T>.CartSuccess(value, subtotal, total, itemCount, requestId);
                 if (!string.IsNullOrWhiteSpace(message))
                     response.Message = message;
                 return response;
@@ -356,7 +357,7 @@ public static class ErrorOrApiResponseExtensions
     /// </example>
     public static IResult ToTypedApiResponse<T>(this ErrorOr<T> result, string? message = null, string? requestId = null)
     {
-        var apiResponse = result.ToApiResponse(message, requestId);
+        ApiResponse<T> apiResponse = result.ToApiResponse(message, requestId);
         return TypedResults.Ok(apiResponse);
     }
 
@@ -381,7 +382,7 @@ public static class ErrorOrApiResponseExtensions
     /// </example>
     public static IResult ToTypedApiResponseCreated<T>(this ErrorOr<T> result, string? message = null, string? requestId = null)
     {
-        var apiResponse = result.ToApiResponseCreated(message, requestId);
+        ApiResponse<T> apiResponse = result.ToApiResponseCreated(message, requestId);
         return TypedResults.Ok(apiResponse);
     }
 
@@ -394,11 +395,11 @@ public static class ErrorOrApiResponseExtensions
         if (errors.Count == 0)
             return ApiResponse<T>.Error(new Dictionary<string, string[]> { ["General"] = ["An unknown error occurred"] }, "An unknown error occurred", requestId);
 
-        var firstError = errors[0];
-        var statusCode = GetStatusCode(firstError.Type);
+        Error firstError = errors[0];
+        int statusCode = GetStatusCode(firstError.Type);
 
         // Group errors by full error code (not just category)
-        var errorGroups = errors
+        Dictionary<string, string[]> errorGroups = errors
             .GroupBy(e => GetErrorCode(e))
             .ToDictionary(
                 g => g.Key,
@@ -423,10 +424,10 @@ public static class ErrorOrApiResponseExtensions
         if (errors.Count == 0)
             return ApiResponse.Error(new Dictionary<string, string[]> { ["General"] = ["An unknown error occurred"] }, "An unknown error occurred", requestId);
 
-        var firstError = errors[0];
+        Error firstError = errors[0];
 
         // Group errors by full error code (not just category)
-        var errorGroups = errors
+        Dictionary<string, string[]> errorGroups = errors
             .GroupBy(e => GetErrorCode(e))
             .ToDictionary(
                 g => g.Key,
@@ -461,8 +462,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateNotFoundApiResponse<T>(Error error, string? requestId)
     {
-        var title = GetErrorCode(error);
-        var detail = error.Description;
+        string title = GetErrorCode(error);
+        string detail = error.Description;
 
         return new ApiResponse<T>
         {
@@ -479,8 +480,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse CreateNotFoundApiResponse(Error error, string? requestId)
     {
-        var title = GetErrorCode(error);
-        var detail = error.Description;
+        string title = GetErrorCode(error);
+        string detail = error.Description;
 
         return new ApiResponse
         {
@@ -497,8 +498,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateUnauthorizedApiResponse<T>(Error error, string? requestId)
     {
-        var title = GetErrorCode(error);
-        var detail = error.Description;
+        string title = GetErrorCode(error);
+        string detail = error.Description;
 
         return new ApiResponse<T>
         {
@@ -515,8 +516,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse CreateUnauthorizedApiResponse(Error error, string? requestId)
     {
-        var title = GetErrorCode(error);
-        var detail = error.Description;
+        string title = GetErrorCode(error);
+        string detail = error.Description;
 
         return new ApiResponse
         {
@@ -533,8 +534,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateConflictApiResponse<T>(Error firstError, Dictionary<string, string[]> errorGroups, string? requestId)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<T>
         {
@@ -552,8 +553,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateForbiddenApiResponse<T>(Error firstError, Dictionary<string, string[]> errorGroups, string? requestId)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<T>
         {
@@ -571,8 +572,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateFailureApiResponse<T>(Error firstError, Dictionary<string, string[]> errorGroups, string? requestId)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<T>
         {
@@ -590,8 +591,8 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateUnexpectedApiResponse<T>(Error firstError, Dictionary<string, string[]> errorGroups, string? requestId)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<T>
         {
@@ -609,9 +610,9 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse<T> CreateGenericErrorApiResponse<T>(Error firstError, Dictionary<string, string[]> errorGroups, string? requestId)
     {
-        var statusCode = GetStatusCode(firstError.Type);
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        int statusCode = GetStatusCode(firstError.Type);
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<T>
         {
@@ -629,9 +630,9 @@ public static class ErrorOrApiResponseExtensions
 
     private static ApiResponse CreateGenericErrorApiResponse(Error firstError, Dictionary<string, string[]> errorGroups, string? requestId)
     {
-        var statusCode = GetStatusCode(firstError.Type);
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        int statusCode = GetStatusCode(firstError.Type);
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse
         {
@@ -680,7 +681,7 @@ public sealed class ApiResponseWrappedExampleService
         if (id <= 0)
             return Error.Validation("Order.InvalidId", "Order ID must be greater than 0");
 
-        var order = await FindOrderInDatabaseAsync(id);
+        Order? order = await FindOrderInDatabaseAsync(id);
         if (order == null)
             return Error.NotFound("Order.NotFound", $"Order with ID {id} was not found");
 
@@ -689,26 +690,26 @@ public sealed class ApiResponseWrappedExampleService
 
     public async Task<ErrorOr<Order>> CreateOrderAsync(CreateOrderRequest request)
     {
-        var validationErrors = ValidateCreateOrderRequest(request);
+        List<Error> validationErrors = ValidateCreateOrderRequest(request);
         if (validationErrors.Any())
             return validationErrors;
 
-        var customer = await FindCustomerAsync(request.CustomerId);
+        Customer? customer = await FindCustomerAsync(request.CustomerId);
         if (customer == null)
             return Error.NotFound("Customer.NotFound", "Customer not found");
 
-        var order = new Order(request.CustomerId, request.Items);
+        Order order = new Order(request.CustomerId, request.Items);
         await SaveOrderAsync(order);
         return order;
     }
 
     public async Task<ErrorOr<Updated>> UpdateOrderStatusAsync(int id, string status)
     {
-        var getOrderResult = await GetOrderByIdAsync(id);
+        ErrorOr<Order> getOrderResult = await GetOrderByIdAsync(id);
         if (getOrderResult.IsError)
             return getOrderResult.Errors;
 
-        var order = getOrderResult.Value;
+        Order order = getOrderResult.Value;
         order.UpdateStatus(status);
         await SaveOrderAsync(order);
         return Result.Updated;
@@ -716,11 +717,11 @@ public sealed class ApiResponseWrappedExampleService
 
     public async Task<ErrorOr<Deleted>> CancelOrderAsync(int id)
     {
-        var getOrderResult = await GetOrderByIdAsync(id);
+        ErrorOr<Order> getOrderResult = await GetOrderByIdAsync(id);
         if (getOrderResult.IsError)
             return getOrderResult.Errors;
 
-        var order = getOrderResult.Value;
+        Order order = getOrderResult.Value;
         if (order.Status == "Shipped")
             return Error.Conflict("Order.CannotCancel", "Cannot cancel a shipped order");
 
@@ -736,13 +737,13 @@ public sealed class ApiResponseWrappedExampleService
         if (pageSize <= 0 || pageSize > 100)
             return Error.Validation("Pagination.InvalidPageSize", "Page size must be between 1 and 100");
 
-        var orders = await GetOrdersFromDatabaseAsync(page, pageSize);
+        PagedList<Order> orders = await GetOrdersFromDatabaseAsync(page, pageSize);
         return orders;
     }
 
     private List<Error> ValidateCreateOrderRequest(CreateOrderRequest request)
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         if (request.CustomerId <= 0)
             errors.Add(Error.Validation("Customer.InvalidId", "Customer ID is required"));
@@ -779,8 +780,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> GetOrder(int id)
     {
-        var result = await orderService.GetOrderByIdAsync(id);
-        var apiResponse = result.ToApiResponse("Order retrieved successfully");
+        ErrorOr<Order> result = await orderService.GetOrderByIdAsync(id);
+        ApiResponse<Order> apiResponse = result.ToApiResponse("Order retrieved successfully");
 
         // Note: Always returns 200 OK, but the actual status is in apiResponse.Status
         // For a 404 error, apiResponse.Status will be 404, but HTTP response is 200
@@ -797,8 +798,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> CreateOrder(CreateOrderRequest request)
     {
-        var result = await orderService.CreateOrderAsync(request);
-        var apiResponse = result.ToApiResponseCreated("Order created successfully");
+        ErrorOr<Order> result = await orderService.CreateOrderAsync(request);
+        ApiResponse<Order> apiResponse = result.ToApiResponseCreated("Order created successfully");
 
         // Note: Returns 200 OK, but apiResponse.Status will be 201 on success
         return Ok(apiResponse);
@@ -815,8 +816,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse>> UpdateOrderStatus(int id, [FromBody] string status)
     {
-        var result = await orderService.UpdateOrderStatusAsync(id, status);
-        var apiResponse = result.ToApiResponseUpdated("Order status updated successfully");
+        ErrorOr<Updated> result = await orderService.UpdateOrderStatusAsync(id, status);
+        ApiResponse apiResponse = result.ToApiResponseUpdated("Order status updated successfully");
 
         return Ok(apiResponse);
     }
@@ -831,8 +832,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse>> CancelOrder(int id)
     {
-        var result = await orderService.CancelOrderAsync(id);
-        var apiResponse = result.ToApiResponseDeleted("Order cancelled successfully");
+        ErrorOr<Deleted> result = await orderService.CancelOrderAsync(id);
+        ApiResponse apiResponse = result.ToApiResponseDeleted("Order cancelled successfully");
 
         return Ok(apiResponse);
     }
@@ -848,8 +849,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse<List<Order>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<List<Order>>>> GetOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await orderService.GetOrdersPagedAsync(page, pageSize);
-        var apiResponse = result.ToApiResponsePaged("Orders retrieved successfully");
+        ErrorOr<PagedList<Order>> result = await orderService.GetOrdersPagedAsync(page, pageSize);
+        ApiResponse<List<Order>> apiResponse = result.ToApiResponsePaged("Orders retrieved successfully");
 
         return Ok(apiResponse);
     }
@@ -864,8 +865,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> GetOrderWithLinks(int id)
     {
-        var result = await orderService.GetOrderByIdAsync(id);
-        var links = new Dictionary<string, string>
+        ErrorOr<Order> result = await orderService.GetOrderByIdAsync(id);
+        Dictionary<string, string> links = new Dictionary<string, string>
         {
             ["self"] = $"/api/orders/{id}",
             ["update-status"] = $"/api/orders/{id}/status",
@@ -873,7 +874,7 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
             ["customer"] = $"/api/customers/{result.Value?.CustomerId}"
         };
 
-        var apiResponse = result.ToApiResponseWithLinks(links, "Order retrieved with navigation links");
+        ApiResponse<Order> apiResponse = result.ToApiResponseWithLinks(links, "Order retrieved with navigation links");
         return Ok(apiResponse);
     }
 
@@ -887,8 +888,8 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
     [ProducesResponseType(typeof(ApiResponse<Order>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<Order>>> GetOrderWithMetadata(int id)
     {
-        var result = await orderService.GetOrderByIdAsync(id);
-        var metadata = new Dictionary<string, object>
+        ErrorOr<Order> result = await orderService.GetOrderByIdAsync(id);
+        Dictionary<string, object> metadata = new Dictionary<string, object>
         {
             ["cached"] = true,
             ["cacheExpiry"] = DateTime.UtcNow.AddMinutes(15),
@@ -896,7 +897,7 @@ internal sealed class OrdersApiResponseController(ApiResponseWrappedExampleServi
             ["processingTimeMs"] = 125
         };
 
-        var apiResponse = result.ToApiResponseWithMetadata(metadata, "Order retrieved with metadata");
+        ApiResponse<Order> apiResponse = result.ToApiResponseWithMetadata(metadata, "Order retrieved with metadata");
         return Ok(apiResponse);
     }
 }
@@ -908,14 +909,14 @@ public static class ApiResponseMinimalApiExamples
 {
     public static void MapOrderApiResponseEndpoints(this WebApplication app)
     {
-        var orders = app.MapGroup("/api/orders-wrapped")
+        RouteGroupBuilder orders = app.MapGroup("/api/orders-wrapped")
             .WithTags("Orders with ApiResponse")
             .WithOpenApi();
 
         // GET /api/orders-wrapped/{id} - Returns ApiResponse wrapper
         orders.MapGet("/{id:int}", async (int id, ApiResponseWrappedExampleService orderService) =>
         {
-            var result = await orderService.GetOrderByIdAsync(id);
+            ErrorOr<Order> result = await orderService.GetOrderByIdAsync(id);
             return result.ToTypedApiResponse("Order retrieved successfully");
         })
         .WithName("GetOrderWrapped")
@@ -925,7 +926,7 @@ public static class ApiResponseMinimalApiExamples
         // POST /api/orders-wrapped - Returns ApiResponse with Created status
         orders.MapPost("/", async (CreateOrderRequest request, ApiResponseWrappedExampleService orderService) =>
         {
-            var result = await orderService.CreateOrderAsync(request);
+            ErrorOr<Order> result = await orderService.CreateOrderAsync(request);
             return result.ToTypedApiResponseCreated("Order created successfully");
         })
         .WithName("CreateOrderWrapped")
@@ -935,8 +936,8 @@ public static class ApiResponseMinimalApiExamples
         // PATCH /api/orders-wrapped/{id}/status - Returns ApiResponse without data
         orders.MapPatch("/{id:int}/status", async (int id, string status, ApiResponseWrappedExampleService orderService) =>
         {
-            var result = await orderService.UpdateOrderStatusAsync(id, status);
-            var apiResponse = result.ToApiResponseUpdated("Order status updated successfully");
+            ErrorOr<Updated> result = await orderService.UpdateOrderStatusAsync(id, status);
+            ApiResponse apiResponse = result.ToApiResponseUpdated("Order status updated successfully");
             return TypedResults.Ok(apiResponse);
         })
         .WithName("UpdateOrderStatusWrapped")
@@ -946,8 +947,8 @@ public static class ApiResponseMinimalApiExamples
         // DELETE /api/orders-wrapped/{id} - Returns ApiResponse without data
         orders.MapDelete("/{id:int}", async (int id, ApiResponseWrappedExampleService orderService) =>
         {
-            var result = await orderService.CancelOrderAsync(id);
-            var apiResponse = result.ToApiResponseDeleted("Order cancelled successfully");
+            ErrorOr<Deleted> result = await orderService.CancelOrderAsync(id);
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Order cancelled successfully");
             return TypedResults.Ok(apiResponse);
         })
         .WithName("CancelOrderWrapped")
@@ -957,7 +958,7 @@ public static class ApiResponseMinimalApiExamples
         // GET /api/orders-wrapped - Returns paginated ApiResponse
         orders.MapGet("/", async (int page, int pageSize, ApiResponseWrappedExampleService orderService) =>
         {
-            var result = await orderService.GetOrdersPagedAsync(page, pageSize);
+            ErrorOr<PagedList<Order>> result = await orderService.GetOrdersPagedAsync(page, pageSize);
             return result.ToTypedApiResponse("Orders retrieved successfully");
         })
         .WithName("GetOrdersPagedWrapped")

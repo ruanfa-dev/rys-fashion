@@ -27,8 +27,8 @@ public partial class GetTaxonomyPagedList
         {
             try
             {
-                var param = request.Param;
-                var list = await context.Set<Taxonomy>()
+                Param param = request.Param;
+                PagedList<Result> list = await context.Set<Taxonomy>()
                     .AsNoTracking()
                     .ApplySearch(param.Search)
                     .ApplySort(param.Sort)

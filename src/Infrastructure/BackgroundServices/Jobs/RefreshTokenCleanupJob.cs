@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ErrorOr;
+
+using Microsoft.Extensions.Logging;
 
 using UseCases.Common.Persistence.Context;
 using UseCases.Common.Security.Authentication.Tokens.Services;
@@ -27,7 +29,7 @@ public sealed class RefreshTokenCleanupJob(
         {
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-            var result = await _refreshTokenService.CleanupExpiredTokensAsync(cancellationToken);
+            ErrorOr<int> result = await _refreshTokenService.CleanupExpiredTokensAsync(cancellationToken);
 
             if (result.IsError)
             {

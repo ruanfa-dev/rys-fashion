@@ -1,5 +1,7 @@
 using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.Filter;
+using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -36,7 +39,7 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -49,9 +52,9 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new CreateTaxonomy.Command(param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponseCreated("Taxonomy created successfully");
+            CreateTaxonomy.Command command = new CreateTaxonomy.Command(param);
+            ErrorOr<CreateTaxonomy.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<CreateTaxonomy.Result> apiResponse = result.ToApiResponseCreated("Taxonomy created successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -86,21 +89,21 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetTaxonomyPagedList.Param
+            GetTaxonomyPagedList.Param param = new GetTaxonomyPagedList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetTaxonomyPagedList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Taxonomies retrieved successfully");
+            GetTaxonomyPagedList.Query query = new GetTaxonomyPagedList.Query(param);
+            ErrorOr<PagedList<GetTaxonomyPagedList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<GetTaxonomyPagedList.Result>> apiResponse = result.ToApiResponsePaged("Taxonomies retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
-                var currentPage = (pagination.PageIndex ?? 0) + 1;
-                var pageSize = pagination.PageSize ?? 10;
+                int currentPage = (pagination.PageIndex ?? 0) + 1;
+                int pageSize = pagination.PageSize ?? 10;
 
                 apiResponse.WithLink("self", $"{Route}?page_index={currentPage}&page_size={pageSize}");
 
@@ -142,16 +145,16 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new GetTaxonomyOptionList.Param
+            GetTaxonomyOptionList.Param param = new GetTaxonomyOptionList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new GetTaxonomyOptionList.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxonomy option list retrieved successfully");
+            GetTaxonomyOptionList.Query query = new GetTaxonomyOptionList.Query(param);
+            ErrorOr<PagedList<GetTaxonomyOptionList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<PagedList<GetTaxonomyOptionList.Result>> apiResponse = result.ToApiResponse("Taxonomy option list retrieved successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
@@ -179,9 +182,9 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var query = new GetTaxonomyById.Query(id);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxonomy details retrieved successfully");
+            GetTaxonomyById.Query query = new GetTaxonomyById.Query(id);
+            ErrorOr<GetTaxonomyById.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetTaxonomyById.Result> apiResponse = result.ToApiResponse("Taxonomy details retrieved successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -214,9 +217,9 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateTaxonomy.Command(id, param);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxonomy updated successfully");
+            UpdateTaxonomy.Command command = new UpdateTaxonomy.Command(id, param);
+            ErrorOr<UpdateTaxonomy.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<UpdateTaxonomy.Result> apiResponse = result.ToApiResponse("Taxonomy updated successfully");
 
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
@@ -250,9 +253,9 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var command = new DeleteTaxonomy.Command(id);
-            var result = await mediator.Send(command, cancellationToken);
-            var apiResponse = result.ToApiResponse("Taxonomy deleted successfully");
+            DeleteTaxonomy.Command command = new DeleteTaxonomy.Command(id);
+            ErrorOr<DeleteTaxonomy.Deleted> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<DeleteTaxonomy.Deleted> apiResponse = result.ToApiResponse("Taxonomy deleted successfully");
 
             apiResponse
                 .WithLink("all-taxonomies", Route)

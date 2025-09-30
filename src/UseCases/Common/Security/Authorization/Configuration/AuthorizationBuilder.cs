@@ -108,9 +108,9 @@ public sealed class AuthorizationBuilder
             throw new InvalidOperationException("At least one authorization requirement must be configured.");
         }
 
-        var permissions = _permissions.Count > 0 ? string.Join(",", _permissions) : null;
-        var roles = _roles.Count > 0 ? string.Join(",", _roles) : null;
-        var policies = _policies.Count > 0 ? string.Join(",", _policies) : null;
+        string? permissions = _permissions.Count > 0 ? string.Join(",", _permissions) : null;
+        string? roles = _roles.Count > 0 ? string.Join(",", _roles) : null;
+        string? policies = _policies.Count > 0 ? string.Join(",", _policies) : null;
 
         return new RequestAuthorizeAttribute(permissions, roles, policies);
     }
@@ -138,7 +138,7 @@ public sealed class AuthorizationBuilder
     /// <returns>AuthorizationBuilder configured for admin access</returns>
     public static AuthorizationBuilder ForAdmin(string? resource = null)
     {
-        var builder = new AuthorizationBuilder()
+        AuthorizationBuilder builder = new AuthorizationBuilder()
             .RequireRole("Administrator");
 
         if (!string.IsNullOrWhiteSpace(resource))
@@ -189,7 +189,7 @@ public sealed class AuthorizationBuilder
     /// <returns>String describing the current configuration</returns>
     public override string ToString()
     {
-        var parts = new List<string>();
+        List<string> parts = new List<string>();
 
         if (_permissions.Count > 0)
             parts.Add($"Permissions: [{string.Join(", ", _permissions)}]");

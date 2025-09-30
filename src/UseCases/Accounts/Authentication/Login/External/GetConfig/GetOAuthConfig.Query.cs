@@ -41,7 +41,7 @@ public static partial class GetOAuthConfig
 
         public async Task<ErrorOr<Result>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var provider = request.Provider.ToLowerInvariant().Trim();
+            string provider = request.Provider.ToLowerInvariant().Trim();
 
             // Security: Validate provider is supported
             if (!SupportedProviders.Contains(provider))
@@ -50,7 +50,7 @@ public static partial class GetOAuthConfig
                 return Error.NotFound("Provider.NotSupported", $"Provider '{request.Provider}' is not supported. Supported providers: {string.Join(", ", SupportedProviders)}");
             }
 
-            var configSection = configuration.GetSection($"Authentication:{provider}");
+            IConfigurationSection configSection = configuration.GetSection($"Authentication:{provider}");
 
             if (!configSection.Exists())
             {
@@ -58,11 +58,11 @@ public static partial class GetOAuthConfig
                 return Error.NotFound("Provider.NotConfigured", $"Provider '{request.Provider}' is not configured");
             }
 
-            var baseUrl = GetBaseUrl();
+            string baseUrl = GetBaseUrl();
 
             try
             {
-                var result = provider switch
+                ErrorOr<Result> result = provider switch
                 {
                     "google" => await GetGoogleConfigAsync(configSection, baseUrl),
                     "facebook" => await GetFacebookConfigAsync(configSection, baseUrl),
@@ -92,14 +92,14 @@ public static partial class GetOAuthConfig
         {
             await Task.CompletedTask;
 
-            var clientId = config["ClientId"];
+            string? clientId = config["ClientId"];
             if (string.IsNullOrWhiteSpace(clientId))
             {
                 return Error.Validation("Google.ClientId.Missing", "Google ClientId is not configured");
             }
 
             // Validate client secret exists (don't return it to frontend)
-            var clientSecret = config["ClientSecret"];
+            string? clientSecret = config["ClientSecret"];
             if (string.IsNullOrWhiteSpace(clientSecret))
             {
                 return Error.Validation("Google.ClientSecret.Missing", "Google ClientSecret is not configured");
@@ -129,14 +129,14 @@ public static partial class GetOAuthConfig
         {
             await Task.CompletedTask;
 
-            var appId = config["AppId"];
+            string? appId = config["AppId"];
             if (string.IsNullOrWhiteSpace(appId))
             {
                 return Error.Validation("Facebook.AppId.Missing", "Facebook AppId is not configured");
             }
 
             // Validate app secret exists (don't return it to frontend)
-            var appSecret = config["AppSecret"];
+            string? appSecret = config["AppSecret"];
             if (string.IsNullOrWhiteSpace(appSecret))
             {
                 return Error.Validation("Facebook.AppSecret.Missing", "Facebook AppSecret is not configured");
@@ -163,16 +163,16 @@ public static partial class GetOAuthConfig
 
         private string GetBaseUrl()
         {
-            var configuredBaseUrl = configuration["App:BaseUrl"];
+            string? configuredBaseUrl = configuration["App:BaseUrl"];
             if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
             {
                 return configuredBaseUrl.TrimEnd('/');
             }
 
-            var context = httpContextAccessor.HttpContext;
+            HttpContext? context = httpContextAccessor.HttpContext;
             if (context != null)
             {
-                var request = context.Request;
+                HttpRequest request = context.Request;
                 return $"{request.Scheme}://{request.Host}";
             }
 

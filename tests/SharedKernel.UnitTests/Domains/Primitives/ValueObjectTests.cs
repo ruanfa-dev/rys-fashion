@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using SharedKernel.Domain.Primitives;
 
 using Shouldly;
@@ -100,8 +102,8 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_SameReference_ReturnsTrue()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
-        var sameValue = value;
+        TestValueObject value = new TestValueObject("test", 42);
+        TestValueObject sameValue = value;
 
         // Act & Assert
         value.Equals(sameValue).ShouldBeTrue();
@@ -113,8 +115,8 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_SameValues_ReturnsTrue()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new TestValueObject("test", 42);
+        TestValueObject value1 = new TestValueObject("test", 42);
+        TestValueObject value2 = new TestValueObject("test", 42);
 
         // Act & Assert
         value1.Equals(value2).ShouldBeTrue();
@@ -128,8 +130,8 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_DifferentValues_ReturnsFalse()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new TestValueObject("test", 43);
+        TestValueObject value1 = new TestValueObject("test", 42);
+        TestValueObject value2 = new TestValueObject("test", 43);
 
         // Act & Assert
         value1.Equals(value2).ShouldBeFalse();
@@ -141,8 +143,8 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_DifferentTypes_ReturnsFalse()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new DifferentTypeValueObject("test");
+        TestValueObject value1 = new TestValueObject("test", 42);
+        DifferentTypeValueObject value2 = new DifferentTypeValueObject("test");
 
         // Act & Assert
         value1.Equals(value2).ShouldBeFalse();
@@ -154,7 +156,7 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_WithNull_ReturnsFalse()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
+        TestValueObject? value = new TestValueObject("test", 42);
 
         // Act & Assert
         value.Equals(null).ShouldBeFalse();
@@ -187,11 +189,11 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         string? value2Str, int value2Int, bool expectedEqual)
     {
         // Arrange
-        var value1 = new TestValueObject(value1Str!, value1Int);
-        var value2 = new TestValueObject(value2Str!, value2Int);
+        TestValueObject value1 = new TestValueObject(value1Str!, value1Int);
+        TestValueObject value2 = new TestValueObject(value2Str!, value2Int);
 
         // Act
-        var result = value1.Equals(value2);
+        bool result = value1.Equals(value2);
 
         // Assert
         result.ShouldBe(expectedEqual);
@@ -202,10 +204,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_ComplexValueObjects_ComparesAllComponents()
     {
         // Arrange
-        var date = DateTime.Now;
-        var value1 = new ComplexValueObject("test", 42, 3.14m, date, true, "nullable");
-        var value2 = new ComplexValueObject("test", 42, 3.14m, date, true, "nullable");
-        var value3 = new ComplexValueObject("test", 42, 3.14m, date, true, null);
+        DateTime date = DateTime.Now;
+        ComplexValueObject value1 = new ComplexValueObject("test", 42, 3.14m, date, true, "nullable");
+        ComplexValueObject value2 = new ComplexValueObject("test", 42, 3.14m, date, true, "nullable");
+        ComplexValueObject value3 = new ComplexValueObject("test", 42, 3.14m, date, true, null);
 
         // Act & Assert
         value1.Equals(value2).ShouldBeTrue();
@@ -217,8 +219,8 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void Equals_EmptyValueObjects_ReturnsTrue()
     {
         // Arrange
-        var value1 = new EmptyValueObject();
-        var value2 = new EmptyValueObject();
+        EmptyValueObject value1 = new EmptyValueObject();
+        EmptyValueObject value2 = new EmptyValueObject();
 
         // Act & Assert
         value1.Equals(value2).ShouldBeTrue();
@@ -233,12 +235,12 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetHashCode_SameValues_ReturnsSameHashCode()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new TestValueObject("test", 42);
+        TestValueObject value1 = new TestValueObject("test", 42);
+        TestValueObject value2 = new TestValueObject("test", 42);
 
         // Act
-        var hash1 = value1.GetHashCode();
-        var hash2 = value2.GetHashCode();
+        int hash1 = value1.GetHashCode();
+        int hash2 = value2.GetHashCode();
 
         // Assert
         hash1.ShouldBe(hash2);
@@ -249,12 +251,12 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetHashCode_DifferentValues_ReturnsDifferentHashCode()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new TestValueObject("test", 43);
+        TestValueObject value1 = new TestValueObject("test", 42);
+        TestValueObject value2 = new TestValueObject("test", 43);
 
         // Act
-        var hash1 = value1.GetHashCode();
-        var hash2 = value2.GetHashCode();
+        int hash1 = value1.GetHashCode();
+        int hash2 = value2.GetHashCode();
 
         // Assert
         hash1.ShouldNotBe(hash2);
@@ -265,12 +267,12 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetHashCode_ConsistentAcrossMultipleCalls()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
+        TestValueObject value = new TestValueObject("test", 42);
 
         // Act
-        var hash1 = value.GetHashCode();
-        var hash2 = value.GetHashCode();
-        var hash3 = value.GetHashCode();
+        int hash1 = value.GetHashCode();
+        int hash2 = value.GetHashCode();
+        int hash3 = value.GetHashCode();
 
         // Assert
         hash1.ShouldBe(hash2);
@@ -281,14 +283,14 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetHashCode_CachedAfterFirstCall()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
+        TestValueObject value = new TestValueObject("test", 42);
 
         // Act - First call calculates and caches
-        var firstHash = value.GetHashCode();
+        int firstHash = value.GetHashCode();
 
         // Act - Subsequent calls should return cached value
-        var secondHash = value.GetHashCode();
-        var thirdHash = value.GetHashCode();
+        int secondHash = value.GetHashCode();
+        int thirdHash = value.GetHashCode();
 
         // Assert
         firstHash.ShouldBe(secondHash);
@@ -300,13 +302,13 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetHashCode_WithNullComponents_HandlesGracefully()
     {
         // Arrange - Use fixed DateTime to ensure consistent hashing
-        var fixedDate = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
-        var value1 = new ComplexValueObject("test", 42, 3.14m, fixedDate, true, null);
-        var value2 = new ComplexValueObject("test", 42, 3.14m, fixedDate, true, null);
+        DateTime fixedDate = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        ComplexValueObject value1 = new ComplexValueObject("test", 42, 3.14m, fixedDate, true, null);
+        ComplexValueObject value2 = new ComplexValueObject("test", 42, 3.14m, fixedDate, true, null);
 
         // Act
-        var hash1 = value1.GetHashCode();
-        var hash2 = value2.GetHashCode();
+        int hash1 = value1.GetHashCode();
+        int hash2 = value2.GetHashCode();
 
         // Assert
         hash1.ShouldBe(hash2);
@@ -317,12 +319,12 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetHashCode_EmptyValueObject_ReturnsConsistentValue()
     {
         // Arrange
-        var value1 = new EmptyValueObject();
-        var value2 = new EmptyValueObject();
+        EmptyValueObject value1 = new EmptyValueObject();
+        EmptyValueObject value2 = new EmptyValueObject();
 
         // Act
-        var hash1 = value1.GetHashCode();
-        var hash2 = value2.GetHashCode();
+        int hash1 = value1.GetHashCode();
+        int hash2 = value2.GetHashCode();
 
         // Assert
         hash1.ShouldBe(hash2);
@@ -337,11 +339,11 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void CompareTo_SameValues_ReturnsZero()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new TestValueObject("test", 42);
+        TestValueObject value1 = new TestValueObject("test", 42);
+        TestValueObject value2 = new TestValueObject("test", 42);
 
         // Act
-        var result = value1.CompareTo(value2);
+        int result = value1.CompareTo(value2);
 
         // Assert
         result.ShouldBe(0);
@@ -351,10 +353,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void CompareTo_WithNull_ReturnsPositive()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
+        TestValueObject value = new TestValueObject("test", 42);
 
         // Act
-        var result = value.CompareTo(null);
+        int result = value.CompareTo(null);
 
         // Assert
         result.ShouldBe(1);
@@ -364,11 +366,11 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void CompareTo_DifferentTypes_ComparesByTypeName()
     {
         // Arrange
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new DifferentTypeValueObject("test");
+        TestValueObject value1 = new TestValueObject("test", 42);
+        DifferentTypeValueObject value2 = new DifferentTypeValueObject("test");
 
         // Act
-        var result = value1.CompareTo(value2);
+        int result = value1.CompareTo(value2);
 
         // Assert
         // TestValueObject vs DifferentTypeValueObject - alphabetical by type name
@@ -384,11 +386,11 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void CompareTo_ComparableValues_ReturnsExpectedResult(string str1, int int1, string str2, int int2, int expectedSign)
     {
         // Arrange
-        var value1 = new TestValueObject(str1, int1);
-        var value2 = new TestValueObject(str2, int2);
+        TestValueObject value1 = new TestValueObject(str1, int1);
+        TestValueObject value2 = new TestValueObject(str2, int2);
 
         // Act
-        var result = value1.CompareTo(value2);
+        int result = value1.CompareTo(value2);
 
         // Assert
         Math.Sign(result).ShouldBe(expectedSign);
@@ -399,9 +401,9 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ComparisonOperators_WorkCorrectly()
     {
         // Arrange
-        var value1 = new TestValueObject("a", 1);
-        var value2 = new TestValueObject("b", 1);
-        var value3 = new TestValueObject("a", 1);
+        TestValueObject value1 = new TestValueObject("a", 1);
+        TestValueObject value2 = new TestValueObject("b", 1);
+        TestValueObject value3 = new TestValueObject("a", 1);
 
         // Act & Assert
         (value1 < value2).ShouldBeTrue();
@@ -419,11 +421,11 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void CompareTo_DifferentLengthComponents_ComparesCorrectly()
     {
         // Arrange
-        var singleValue = new SingleValueObject("test");
-        var doubleValue = new TestValueObject("test", 42);
+        SingleValueObject singleValue = new SingleValueObject("test");
+        TestValueObject doubleValue = new TestValueObject("test", 42);
 
         // Act
-        var result = singleValue.CompareTo(doubleValue);
+        int result = singleValue.CompareTo(doubleValue);
 
         // Assert
         result.ShouldNotBe(0); // Different number of components
@@ -434,13 +436,13 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void CompareTo_NonComparableComponents_FallsBackToStringComparison()
     {
         // Arrange
-        var date1 = DateTime.Now;
-        var date2 = date1.AddDays(1);
-        var value1 = new ComplexValueObject("test", 42, 3.14m, date1, true);
-        var value2 = new ComplexValueObject("test", 42, 3.14m, date2, true);
+        DateTime date1 = DateTime.Now;
+        DateTime date2 = date1.AddDays(1);
+        ComplexValueObject value1 = new ComplexValueObject("test", 42, 3.14m, date1, true);
+        ComplexValueObject value2 = new ComplexValueObject("test", 42, 3.14m, date2, true);
 
         // Act
-        var result = value1.CompareTo(value2);
+        int result = value1.CompareTo(value2);
 
         // Assert
         result.ShouldNotBe(0); // Different dates should produce different comparison
@@ -455,10 +457,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ToString_ReturnsFormattedString()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
+        TestValueObject value = new TestValueObject("test", 42);
 
         // Act
-        var result = value.ToString();
+        string result = value.ToString();
 
         // Assert
         result.ShouldNotBeNullOrEmpty();
@@ -472,10 +474,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ToString_WithNullComponents_HandlesGracefully()
     {
         // Arrange
-        var value = new ComplexValueObject("test", 42, 3.14m, DateTime.Now, true, null);
+        ComplexValueObject value = new ComplexValueObject("test", 42, 3.14m, DateTime.Now, true, null);
 
         // Act
-        var result = value.ToString();
+        string result = value.ToString();
 
         // Assert
         result.ShouldNotBeNullOrEmpty();
@@ -487,10 +489,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ToString_EmptyValueObject_ReturnsTypeName()
     {
         // Arrange
-        var value = new EmptyValueObject();
+        EmptyValueObject value = new EmptyValueObject();
 
         // Act
-        var result = value.ToString();
+        string result = value.ToString();
 
         // Assert
         result.ShouldNotBeNullOrEmpty();
@@ -506,10 +508,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ToEqualityComponents_WithClass_ReturnsAllProperties()
     {
         // Arrange
-        var recordLike = new RecordLikeValueObject("test", 42);
+        RecordLikeValueObject recordLike = new RecordLikeValueObject("test", 42);
 
         // Act
-        var components = recordLike.ToEqualityComponents().ToArray();
+        object?[] components = recordLike.ToEqualityComponents().ToArray();
 
         // Assert
         components.Length.ShouldBe(2);
@@ -522,9 +524,9 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void RecordLikeValueObject_EqualityWorks()
     {
         // Arrange
-        var record1 = new RecordLikeValueObject("test", 42);
-        var record2 = new RecordLikeValueObject("test", 42);
-        var record3 = new RecordLikeValueObject("different", 42);
+        RecordLikeValueObject record1 = new RecordLikeValueObject("test", 42);
+        RecordLikeValueObject record2 = new RecordLikeValueObject("test", 42);
+        RecordLikeValueObject record3 = new RecordLikeValueObject("different", 42);
 
         // Act & Assert
         record1.Equals(record2).ShouldBeTrue();
@@ -541,10 +543,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void GetUnproxiedType_RegularType_ReturnsSameType()
     {
         // Arrange
-        var value = new TestValueObject("test", 42);
+        TestValueObject value = new TestValueObject("test", 42);
 
         // Act
-        var type = ValueObject.GetUnproxiedType(value);
+        Type type = ValueObject.GetUnproxiedType(value);
 
         // Assert
         type.ShouldBe(typeof(TestValueObject));
@@ -565,10 +567,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ValueObject_InHashSet_BehavesCorrectly()
     {
         // Arrange
-        var set = new HashSet<TestValueObject>();
-        var value1 = new TestValueObject("test", 42);
-        var value2 = new TestValueObject("test", 42); // Same content
-        var value3 = new TestValueObject("different", 42);
+        HashSet<TestValueObject> set = new HashSet<TestValueObject>();
+        TestValueObject value1 = new TestValueObject("test", 42);
+        TestValueObject value2 = new TestValueObject("test", 42); // Same content
+        TestValueObject value3 = new TestValueObject("different", 42);
 
         // Act
         set.Add(value1);
@@ -587,10 +589,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ValueObject_InDictionary_UsesCorrectKeyEquality()
     {
         // Arrange
-        var dict = new Dictionary<TestValueObject, string>();
-        var key1 = new TestValueObject("test", 42);
-        var key2 = new TestValueObject("test", 42); // Same content
-        var key3 = new TestValueObject("different", 42);
+        Dictionary<TestValueObject, string> dict = new Dictionary<TestValueObject, string>();
+        TestValueObject key1 = new TestValueObject("test", 42);
+        TestValueObject key2 = new TestValueObject("test", 42); // Same content
+        TestValueObject key3 = new TestValueObject("different", 42);
 
         // Act
         dict[key1] = "value1";
@@ -608,7 +610,7 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ValueObject_ComplexWorkflow_MaintainsIntegrity()
     {
         // Arrange
-        var values = new List<TestValueObject>
+        List<TestValueObject> values = new List<TestValueObject>
         {
             new("a", 1),
             new("b", 2),
@@ -618,7 +620,7 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         };
 
         // Act - Remove duplicates and sort
-        var uniqueValues = values.Distinct().OrderBy(v => v).ToArray();
+        TestValueObject[] uniqueValues = values.Distinct().OrderBy(v => v).ToArray();
 
         // Assert
         uniqueValues.Length.ShouldBe(3);
@@ -634,19 +636,19 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     {
         // Arrange
         const int count = 1000;
-        var values = Enumerable.Range(0, count)
+        TestValueObject[] values = Enumerable.Range(0, count)
             .Select(i => new TestValueObject($"test{i % 100}", i % 100))
             .ToArray();
 
         // Act - Perform many equality operations
-        var equalityResults = new bool[count * count];
-        var index = 0;
+        bool[] equalityResults = new bool[count * count];
+        int index = 0;
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-        for (var i = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
-            for (var j = 0; j < count; j++)
+            for (int j = 0; j < count; j++)
             {
                 equalityResults[index++] = values[i].Equals(values[j]);
             }
@@ -655,7 +657,7 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         stopwatch.Stop();
 
         // Assert
-        var equalCount = equalityResults.Count(r => r);
+        int equalCount = equalityResults.Count(r => r);
         equalCount.ShouldBeGreaterThan(count); // Should have many equals due to modulo
 
         _output.WriteLine($"Performed {count * count} equality checks in {stopwatch.ElapsedMilliseconds}ms");

@@ -10,6 +10,8 @@ using SharedKernel.Messaging.Abstracts;
 using UseCases.Accounts.Common;
 using UseCases.Common.Notification.Services;
 
+using Success = ErrorOr.Success;
+
 namespace UseCases.Accounts.Authentication.Register;
 public static partial class CustomerRegister
 {
@@ -21,7 +23,7 @@ public static partial class CustomerRegister
         {
             try
             {
-                var user = await userManager.FindByIdAsync(notification.UserId.ToString());
+                User? user = await userManager.FindByIdAsync(notification.UserId.ToString());
                 if (user == null)
                 {
                     Log.Warning("User with ID {UserId} not found for sending confirmation email", notification.UserId);
@@ -33,7 +35,7 @@ public static partial class CustomerRegister
                 bool hasPhone = !string.IsNullOrWhiteSpace(user.PhoneNumber);
 
                 // Send: confirmation email
-                var emailResult = await userManager.GenerateAndSendConfirmationEmailAsync(
+                ErrorOr.ErrorOr<Success> emailResult = await userManager.GenerateAndSendConfirmationEmailAsync(
                     notificationService: notificationService,
                     configuration: configuration,
                     user: user,
@@ -52,7 +54,7 @@ public static partial class CustomerRegister
                 // Send: phone confirmation if phone number exists
                 if (hasPhone)
                 {
-                    var phoneResult = await userManager.GenerateAndSendConfirmationSmsAsync(
+                    ErrorOr.ErrorOr<Success> phoneResult = await userManager.GenerateAndSendConfirmationSmsAsync(
                         notificationService: notificationService,
                         configuration: configuration,
                         user: user,
@@ -76,7 +78,7 @@ public static partial class CustomerRegister
                 // Rollback: user creation if both confirmations fail
                 if (!emailSuccess && !phoneSuccess)
                 {
-                    var deleteResult = await userManager.DeleteAsync(user);
+                    IdentityResult deleteResult = await userManager.DeleteAsync(user);
                     if (deleteResult.Succeeded)
                     {
                         Log.Warning("User {UserId} deleted due to failed confirmation send", notification.UserId);

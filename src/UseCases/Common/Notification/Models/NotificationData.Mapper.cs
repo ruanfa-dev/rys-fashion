@@ -17,20 +17,20 @@ public static class NotificationDataMapper
             throw new ArgumentNullException(nameof(notificationData));
 
         // Fetch template for default content if needed
-        var template = NotificationUseCases.Templates[notificationData.UseCase];
-        var content = notificationData.Content ?? template?.TemplateContent ?? string.Empty;
+        NotificationUseCases.TemplateDescription? template = NotificationUseCases.Templates[notificationData.UseCase];
+        string content = notificationData.Content ?? template?.TemplateContent ?? string.Empty;
 
         // Replace placeholders with parameter values
         if (!string.IsNullOrWhiteSpace(content) && notificationData.Values != null)
         {
-            foreach (var param in notificationData.Values)
+            foreach (KeyValuePair<NotificationParameters.NotificationParameter, string?> param in notificationData.Values)
             {
-                var placeholder = $"{{{param.Key}}}";
+                string placeholder = $"{{{param.Key}}}";
                 content = content.Replace(placeholder, param.Value ?? string.Empty);
             }
         }
 
-        var smsData = new SmsNotificationData
+        SmsNotificationData smsData = new SmsNotificationData
         {
             UseCase = notificationData.UseCase,
             Receivers = notificationData.Receivers?.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList() ?? new List<string>(),
@@ -59,24 +59,24 @@ public static class NotificationDataMapper
             throw new ArgumentNullException(nameof(notificationData));
 
         // Fetch template for default content if needed
-        var template = NotificationUseCases.Templates[notificationData.UseCase];
-        var title = notificationData.Title ?? template?.Name ?? notificationData.UseCase.ToString();
-        var content = notificationData.Content ?? template?.TemplateContent ?? string.Empty;
-        var htmlContent = notificationData.HtmlContent ?? template?.HtmlTemplateContent ?? string.Empty;
+        NotificationUseCases.TemplateDescription? template = NotificationUseCases.Templates[notificationData.UseCase];
+        string title = notificationData.Title ?? template?.Name ?? notificationData.UseCase.ToString();
+        string content = notificationData.Content ?? template?.TemplateContent ?? string.Empty;
+        string? htmlContent = notificationData.HtmlContent ?? template?.HtmlTemplateContent ?? string.Empty;
 
         // Replace placeholders with parameter values
         if (notificationData.Values != null)
         {
-            foreach (var param in notificationData.Values)
+            foreach (KeyValuePair<NotificationParameters.NotificationParameter, string?> param in notificationData.Values)
             {
-                var placeholder = $"{{{param.Key}}}";
+                string placeholder = $"{{{param.Key}}}";
                 title = title.Replace(placeholder, param.Value ?? string.Empty);
                 content = content.Replace(placeholder, param.Value ?? string.Empty);
                 htmlContent = htmlContent?.Replace(placeholder, param.Value ?? string.Empty);
             }
         }
 
-        var emailData = new EmailNotificationData
+        EmailNotificationData emailData = new EmailNotificationData
         {
             UseCase = notificationData.UseCase,
             Receivers = notificationData.Receivers?.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList() ?? new List<string>(),

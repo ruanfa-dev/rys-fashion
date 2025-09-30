@@ -24,14 +24,14 @@ public partial class GetTaxonomyById
         {
             try
             {
-                var entity = await context.Set<Taxonomy>()
+                Taxonomy? entity = await context.Set<Taxonomy>()
                     .AsNoTracking()
                     .Include(t => t.Translations)
                     .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
 
                 if (entity == null) return Taxonomy.Errors.NotFound(request.Id);
 
-                var details = entity.Adapt<Result>();
+                Result details = entity.Adapt<Result>();
                 return details;
             }
             catch (Exception ex)

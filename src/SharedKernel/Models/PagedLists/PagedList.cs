@@ -43,7 +43,7 @@ public sealed class PagedList<T>
         if (totalPages.HasValue && totalPages < 0)
             throw new ArgumentOutOfRangeException(nameof(totalPages), "Total pages cannot be negative.");
 
-        var itemsList = items.ToList();
+        List<T> itemsList = items.ToList();
         Items = itemsList.AsReadOnly();
         TotalCount = totalCount;
         PageNumber = pageNumber;
@@ -138,7 +138,7 @@ public sealed class PagedList<T>
     public PagedList<TResult> Map<TResult>(Func<T, TResult> mapper)
     {
         ArgumentNullException.ThrowIfNull(mapper, nameof(mapper));
-        var mappedItems = Items.Select(mapper);
+        IEnumerable<TResult> mappedItems = Items.Select(mapper);
         return new PagedList<TResult>(mappedItems, TotalCount, PageNumber, PageSize, TotalPages);
     }
 
@@ -152,7 +152,7 @@ public sealed class PagedList<T>
     public PagedList<TResult> Map<TResult>(Func<T, int, TResult> mapper)
     {
         ArgumentNullException.ThrowIfNull(mapper, nameof(mapper));
-        var mappedItems = Items.Select(mapper);
+        IEnumerable<TResult> mappedItems = Items.Select(mapper);
         return new PagedList<TResult>(mappedItems, TotalCount, PageNumber, PageSize, TotalPages);
     }
 

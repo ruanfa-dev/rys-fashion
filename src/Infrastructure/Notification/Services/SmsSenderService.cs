@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using Serilog;
 
 using Sinch;
+using Sinch.SMS;
+using Sinch.SMS.Batches;
 using Sinch.SMS.Batches.Send;
 
 using UseCases.Common.Notification.Models;
@@ -24,11 +26,11 @@ public sealed partial class SmsSenderService(IOptions<SmsOptions> smsOption, ISi
         SmsNotificationData notificationData,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = notificationData.Validate();
+        ErrorOr<SmsNotificationData> validationResult = notificationData.Validate();
         if (validationResult.IsError)
             return validationResult.Errors;
 
-        foreach (var recipient in notificationData.Receivers)
+        foreach (string recipient in notificationData.Receivers)
         {
             if (!IsValidPhoneNumber(recipient))
                 return Errors.InvalidPhoneNumber(recipient);
@@ -39,9 +41,9 @@ public sealed partial class SmsSenderService(IOptions<SmsOptions> smsOption, ISi
             Log.Information("Sending SMS via Sinch to {Receivers} with UseCase {UseCase}",
                 notificationData.Receivers, notificationData.UseCase);
 
-            var smsApi = sinchClient.Sms;
+            ISinchSms smsApi = sinchClient.Sms;
 
-            var response = await smsApi.Batches.Send(new SendTextBatchRequest
+            IBatch response = await smsApi.Batches.Send(new SendTextBatchRequest
             {
                 From = string.IsNullOrWhiteSpace(notificationData.SenderNumber)
                     ? _smsOption.SinchConfig.SenderPhoneNumber ?? _smsOption.DefaultSenderNumber

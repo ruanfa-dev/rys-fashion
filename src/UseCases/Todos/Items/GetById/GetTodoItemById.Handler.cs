@@ -23,7 +23,7 @@ public partial class GetTodoItemById
         public async Task<ErrorOr<TodoItemResult>> Handle(Query request, CancellationToken cancellationToken)
         {
             // Check: todo item existing
-            var todoItem = await context.TodoItems
+            TodoItem? todoItem = await context.TodoItems
                 .Include(m => m.List)
                 .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
 
@@ -31,7 +31,7 @@ public partial class GetTodoItemById
                 return TodoItem.Errors.TodoItemNotFound;
 
             // Map: item to detail result
-            var todoItemResult = mapper.Map<TodoItemResult>(todoItem);
+            TodoItemResult todoItemResult = mapper.Map<TodoItemResult>(todoItem);
 
             return todoItemResult;
         }

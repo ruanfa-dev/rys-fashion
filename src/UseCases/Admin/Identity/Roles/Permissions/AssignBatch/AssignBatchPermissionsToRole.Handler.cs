@@ -67,17 +67,17 @@ public static partial class AssignBatchPermissionsToRole
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
 
             try
             {
                 // Check: Role exists
-                var role = await roleManager.FindByIdAsync(request.RoleId.ToString());
+                Role? role = await roleManager.FindByIdAsync(request.RoleId.ToString());
                 if (role == null)
                     return Role.Errors.RoleNotFound(request.RoleId.ToString());
 
                 // 🔒 Security: Check if this would affect too many users
-                var affectedUsersCount = await GetUsersInRoleCountAsync(role.Name!, cancellationToken);
+                int affectedUsersCount = await GetUsersInRoleCountAsync(role.Name!, cancellationToken);
                 if (affectedUsersCount > RolePermission.Constraints.MaxUsersAffectedByPermissionChange)
                 {
                     return RolePermission.Errors.WouldAffectTooManyUsers(
@@ -91,36 +91,36 @@ public static partial class AssignBatchPermissionsToRole
                 try
                 {
                     // Get current role permission claims
-                    var currentClaims = await roleManager.GetClaimsAsync(role);
-                    var currentPermissionClaims = currentClaims
+                    IList<Claim> currentClaims = await roleManager.GetClaimsAsync(role);
+                    HashSet<string> currentPermissionClaims = currentClaims
                         .Where(c => c.Type.Equals(CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
                         .Select(c => c.Value)
                         .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    var targetPermissionSet = param.Permissions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    HashSet<string> targetPermissionSet = param.Permissions.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                     // Calculate claims to add and remove
-                    var permissionsToAdd = targetPermissionSet
+                    List<string> permissionsToAdd = targetPermissionSet
                         .Except(currentPermissionClaims, StringComparer.OrdinalIgnoreCase)
                         .ToList();
-                    var permissionsToRemove = currentPermissionClaims
+                    List<string> permissionsToRemove = currentPermissionClaims
                         .Except(targetPermissionSet, StringComparer.OrdinalIgnoreCase)
                         .ToList();
 
                     // Remove permission claims not in target list first
                     if (permissionsToRemove.Count > 0)
                     {
-                        var claimsToRemove = currentClaims
+                        List<Claim> claimsToRemove = currentClaims
                             .Where(c => c.Type.Equals(CustomClaim.Permission, StringComparison.OrdinalIgnoreCase) &&
                                        permissionsToRemove.Contains(c.Value))
                             .ToList();
 
-                        foreach (var claimToRemove in claimsToRemove)
+                        foreach (Claim claimToRemove in claimsToRemove)
                         {
-                            var removeResult = await roleManager.RemoveClaimAsync(role, claimToRemove);
+                            IdentityResult removeResult = await roleManager.RemoveClaimAsync(role, claimToRemove);
                             if (!removeResult.Succeeded)
                             {
-                                var errors = string.Join("; ", removeResult.Errors.Select(e => e.Description));
+                                string errors = string.Join("; ", removeResult.Errors.Select(e => e.Description));
                                 logger.LogError("Failed to remove permission claim {Permission} from role {RoleId}: {Errors}",
                                     claimToRemove.Value, role.Id, errors);
                                 return RolePermission.Errors.RemovalFailed(claimToRemove.Value);
@@ -134,16 +134,16 @@ public static partial class AssignBatchPermissionsToRole
                     // Add new permission claims
                     if (permissionsToAdd.Count > 0)
                     {
-                        var claimsToAdd = permissionsToAdd
+                        List<Claim> claimsToAdd = permissionsToAdd
                             .Select(permission => new Claim(CustomClaim.Permission, permission))
                             .ToList();
 
-                        foreach (var claimToAdd in claimsToAdd)
+                        foreach (Claim claimToAdd in claimsToAdd)
                         {
-                            var addResult = await roleManager.AddClaimAsync(role, claimToAdd);
+                            IdentityResult addResult = await roleManager.AddClaimAsync(role, claimToAdd);
                             if (!addResult.Succeeded)
                             {
-                                var errors = string.Join("; ", addResult.Errors.Select(e => e.Description));
+                                string errors = string.Join("; ", addResult.Errors.Select(e => e.Description));
                                 logger.LogError("Failed to add permission claim {Permission} to role {RoleId}: {Errors}",
                                     claimToAdd.Value, role.Id, errors);
                                 return RolePermission.Errors.AssignmentFailed(claimToAdd.Value);
@@ -155,14 +155,14 @@ public static partial class AssignBatchPermissionsToRole
                     }
 
                     // Get final role permission claims
-                    var finalClaims = await roleManager.GetClaimsAsync(role);
-                    var finalPermissions = finalClaims
+                    IList<Claim> finalClaims = await roleManager.GetClaimsAsync(role);
+                    string[] finalPermissions = finalClaims
                         .Where(c => c.Type.Equals(CustomClaim.Permission, StringComparison.OrdinalIgnoreCase))
                         .Select(c => c.Value)
                         .OrderBy(p => p)
                         .ToArray();
 
-                    var message = BuildResultMessage(permissionsToAdd.Count, permissionsToRemove.Count, role.Name!);
+                    string message = BuildResultMessage(permissionsToAdd.Count, permissionsToRemove.Count, role.Name!);
 
                     // Commit transaction if all operations succeeded
                     await unitOfWork.CommitTransactionAsync(cancellationToken);
@@ -201,7 +201,7 @@ public static partial class AssignBatchPermissionsToRole
         {
             try
             {
-                var usersInRole = await userManager.GetUsersInRoleAsync(roleName);
+                IList<User> usersInRole = await userManager.GetUsersInRoleAsync(roleName);
                 return usersInRole.Count;
             }
             catch (Exception ex)

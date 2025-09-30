@@ -34,16 +34,16 @@ public static class PagedListExtensions
         ArgumentNullException.ThrowIfNull(query, nameof(query));
 
         // Use pagingParams.PageSize if provided, otherwise use fallback
-        var effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackDefaultPageSize);
-        var (effectivePageIndex, effectivePageNumber) = CalculatePaginationValues(pagingParams);
+        int effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackDefaultPageSize);
+        (int effectivePageIndex, int effectivePageNumber) = CalculatePaginationValues(pagingParams);
 
-        var totalCount = await query.CountAsync(cancellationToken);
-        var totalPages = CalculateTotalPages(totalCount, effectivePageSize);
+        int totalCount = await query.CountAsync(cancellationToken);
+        int totalPages = CalculateTotalPages(totalCount, effectivePageSize);
 
         // Adjust page number if beyond total pages or if no data exists
         (effectivePageNumber, effectivePageIndex) = AdjustPageBounds(effectivePageNumber, effectivePageIndex, totalPages);
 
-        var items = await query
+        List<T> items = await query
             .Skip(effectivePageIndex * effectivePageSize)
             .Take(effectivePageSize)
             .ToListAsync(cancellationToken);
@@ -69,34 +69,34 @@ public static class PagedListExtensions
     {
         ArgumentNullException.ThrowIfNull(query, nameof(query));
 
-        var totalCount = await query.CountAsync(cancellationToken);
+        int totalCount = await query.CountAsync(cancellationToken);
 
         if (pagingParams?.HasPagingValues() != true)
         {
             // Return all items but cap at max limit
-            var effectiveLimit = Math.Min(Math.Max(maxAllItemsLimit, 1), Math.Min(MaxAllItemsLimit, totalCount));
-            var allItems = await query.Take(effectiveLimit).ToListAsync(cancellationToken);
+            int effectiveLimit = Math.Min(Math.Max(maxAllItemsLimit, 1), Math.Min(MaxAllItemsLimit, totalCount));
+            List<T> allItems = await query.Take(effectiveLimit).ToListAsync(cancellationToken);
 
             // When returning all items (capped), use meaningful pagination metadata:
             // - If we returned all items (not capped): TotalPages = 1, PageSize = totalCount
             // - If we capped items: TotalPages = calculated based on maxAllItemsLimit as page size
-            var isFullyReturned = effectiveLimit >= totalCount;
-            var pageSize = isFullyReturned ? Math.Max(totalCount, 1) : effectiveLimit;
-            var totalPagesInternal = isFullyReturned ? 1 : CalculateTotalPages(totalCount, effectiveLimit);
+            bool isFullyReturned = effectiveLimit >= totalCount;
+            int pageSize = isFullyReturned ? Math.Max(totalCount, 1) : effectiveLimit;
+            int totalPagesInternal = isFullyReturned ? 1 : CalculateTotalPages(totalCount, effectiveLimit);
 
             return new PagedList<T>(allItems, totalCount, 1, pageSize, totalPagesInternal);
         }
 
         // Apply pagination - use pagingParams.PageSize if provided
-        var effectivePageSize = NormalizePageSize(pagingParams.PageSize ?? DefaultPageSize);
-        var (effectivePageIndex, effectivePageNumber) = CalculatePaginationValues(pagingParams);
+        int effectivePageSize = NormalizePageSize(pagingParams.PageSize ?? DefaultPageSize);
+        (int effectivePageIndex, int effectivePageNumber) = CalculatePaginationValues(pagingParams);
 
-        var totalPages = CalculateTotalPages(totalCount, effectivePageSize);
+        int totalPages = CalculateTotalPages(totalCount, effectivePageSize);
 
         // Adjust page number if beyond total pages or if no data exists
         (effectivePageNumber, effectivePageIndex) = AdjustPageBounds(effectivePageNumber, effectivePageIndex, totalPages);
 
-        var items = await query
+        List<T> items = await query
             .Skip(effectivePageIndex * effectivePageSize)
             .Take(effectivePageSize)
             .ToListAsync(cancellationToken);
@@ -123,16 +123,16 @@ public static class PagedListExtensions
         ArgumentNullException.ThrowIfNull(query, nameof(query));
 
         // Use pagingParams.PageSize if provided, otherwise use defaultPageSize
-        var effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? defaultPageSize);
-        var (effectivePageIndex, effectivePageNumber) = CalculatePaginationValues(pagingParams);
+        int effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? defaultPageSize);
+        (int effectivePageIndex, int effectivePageNumber) = CalculatePaginationValues(pagingParams);
 
-        var totalCount = await query.CountAsync(cancellationToken);
-        var totalPages = CalculateTotalPages(totalCount, effectivePageSize);
+        int totalCount = await query.CountAsync(cancellationToken);
+        int totalPages = CalculateTotalPages(totalCount, effectivePageSize);
 
         // Adjust page number if beyond total pages or if no data exists
         (effectivePageNumber, effectivePageIndex) = AdjustPageBounds(effectivePageNumber, effectivePageIndex, totalPages);
 
-        var items = await query
+        List<T> items = await query
             .Skip(effectivePageIndex * effectivePageSize)
             .Take(effectivePageSize)
             .ToListAsync(cancellationToken);
@@ -165,15 +165,15 @@ public static class PagedListExtensions
             throw new ArgumentOutOfRangeException(nameof(totalCount), "Total count cannot be negative.");
 
         // Use pagingParams.PageSize if provided, otherwise use fallbackPageSize
-        var effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackPageSize);
-        var (effectivePageIndex, effectivePageNumber) = CalculatePaginationValues(pagingParams);
+        int effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackPageSize);
+        (int effectivePageIndex, int effectivePageNumber) = CalculatePaginationValues(pagingParams);
 
-        var totalPages = CalculateTotalPages(totalCount, effectivePageSize);
+        int totalPages = CalculateTotalPages(totalCount, effectivePageSize);
 
         // Adjust page number if beyond total pages or if no data exists
         (effectivePageNumber, effectivePageIndex) = AdjustPageBounds(effectivePageNumber, effectivePageIndex, totalPages);
 
-        var items = await query
+        List<T> items = await query
             .Skip(effectivePageIndex * effectivePageSize)
             .Take(effectivePageSize)
             .ToListAsync(cancellationToken);
@@ -201,18 +201,18 @@ public static class PagedListExtensions
     {
         ArgumentNullException.ThrowIfNull(source, nameof(source));
 
-        var sourceList = source as IList<T> ?? source.ToList();
-        var totalCount = sourceList.Count;
+        IList<T> sourceList = source as IList<T> ?? source.ToList();
+        int totalCount = sourceList.Count;
 
         // Use pagingParams.PageSize if provided, otherwise use fallbackPageSize
-        var effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackPageSize);
-        var (effectivePageIndex, effectivePageNumber) = CalculatePaginationValues(pagingParams);
+        int effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackPageSize);
+        (int effectivePageIndex, int effectivePageNumber) = CalculatePaginationValues(pagingParams);
 
         // Validate page bounds and adjust if necessary
-        var totalPages = CalculateTotalPages(totalCount, effectivePageSize);
+        int totalPages = CalculateTotalPages(totalCount, effectivePageSize);
         (effectivePageNumber, effectivePageIndex) = AdjustPageBounds(effectivePageNumber, effectivePageIndex, totalPages);
 
-        var items = sourceList
+        IEnumerable<T> items = sourceList
             .Skip(effectivePageIndex * effectivePageSize)
             .Take(effectivePageSize);
 
@@ -235,19 +235,19 @@ public static class PagedListExtensions
     {
         ArgumentNullException.ThrowIfNull(source, nameof(source));
 
-        var sourceList = source as IList<T> ?? source.ToList();
-        var totalCount = sourceList.Count;
+        IList<T> sourceList = source as IList<T> ?? source.ToList();
+        int totalCount = sourceList.Count;
 
         if (pagingParams?.HasPagingValues() != true)
         {
             // Return all items but cap at max limit
-            var effectiveLimit = Math.Min(Math.Max(maxAllItemsLimit, 1), Math.Min(MaxAllItemsLimit, totalCount));
-            var cappedItems = sourceList.Take(effectiveLimit);
+            int effectiveLimit = Math.Min(Math.Max(maxAllItemsLimit, 1), Math.Min(MaxAllItemsLimit, totalCount));
+            IEnumerable<T> cappedItems = sourceList.Take(effectiveLimit);
 
             // When returning all items (capped), use meaningful pagination metadata
-            var isFullyReturned = effectiveLimit >= totalCount;
-            var pageSize = isFullyReturned ? Math.Max(totalCount, 1) : effectiveLimit;
-            var totalPages = isFullyReturned ? 1 : CalculateTotalPages(totalCount, effectiveLimit);
+            bool isFullyReturned = effectiveLimit >= totalCount;
+            int pageSize = isFullyReturned ? Math.Max(totalCount, 1) : effectiveLimit;
+            int totalPages = isFullyReturned ? 1 : CalculateTotalPages(totalCount, effectiveLimit);
 
             return new PagedList<T>(cappedItems, totalCount, 1, pageSize, totalPages);
         }
@@ -277,10 +277,10 @@ public static class PagedListExtensions
             throw new ArgumentOutOfRangeException(nameof(totalCount), "Total count cannot be negative.");
 
         // Use pagingParams.PageSize if provided, otherwise use fallbackPageSize
-        var effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackPageSize);
-        var (effectivePageIndex, effectivePageNumber) = CalculatePaginationValues(pagingParams);
+        int effectivePageSize = NormalizePageSize(pagingParams?.PageSize ?? fallbackPageSize);
+        (int effectivePageIndex, int effectivePageNumber) = CalculatePaginationValues(pagingParams);
 
-        var totalPages = CalculateTotalPages(totalCount, effectivePageSize);
+        int totalPages = CalculateTotalPages(totalCount, effectivePageSize);
 
         // Adjust page number if beyond total pages or if no data exists
         (effectivePageNumber, effectivePageIndex) = AdjustPageBounds(effectivePageNumber, effectivePageIndex, totalPages);
@@ -307,10 +307,10 @@ public static class PagedListExtensions
     /// <returns>A tuple containing the effective page index and page number.</returns>
     private static (int EffectivePageIndex, int EffectivePageNumber) CalculatePaginationValues(PagingParams? pagingParams)
     {
-        var effectivePageIndex = Math.Max(pagingParams?.EffectivePageIndex() ?? 0, 0);
+        int effectivePageIndex = Math.Max(pagingParams?.EffectivePageIndex() ?? 0, 0);
         // Cap page index to prevent overflow when computing page number
         effectivePageIndex = Math.Min(effectivePageIndex, int.MaxValue - 1);
-        var effectivePageNumber = effectivePageIndex + 1;
+        int effectivePageNumber = effectivePageIndex + 1;
         return (effectivePageIndex, effectivePageNumber);
     }
 

@@ -27,7 +27,7 @@ public sealed class AzureStorageService : IStorageService
 
         try
         {
-            var (accountName, accountKey) = ParseConnectionString(_options.AzureConnectionString!);
+            (string accountName, string accountKey) = ParseConnectionString(_options.AzureConnectionString!);
             _storage = StorageFactory.Blobs.AzureBlobStorageWithSharedKey(
                 accountName,
                 accountKey);
@@ -65,7 +65,7 @@ public sealed class AzureStorageService : IStorageService
                 ? $"{_options.AzureContainerName}/{path}/{dateFolder}/{safeFileName}"
                 : $"{_options.AzureContainerName}/{dateFolder}/{safeFileName}";
 
-            await using var stream = file.OpenReadStream();
+            await using Stream stream = file.OpenReadStream();
             await _storage.WriteAsync(blobPath, stream, cancellationToken: cancellationToken);
 
             return GetFileUrl(blobPath);
@@ -123,7 +123,7 @@ public sealed class AzureStorageService : IStorageService
             if (!await _storage.ExistsAsync(blobPath, cancellationToken))
                 return StorageErrors.FileNotFound(blobPath);
 
-            var memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new MemoryStream();
             await _storage.ReadToStreamAsync(blobPath, memoryStream, cancellationToken);
             memoryStream.Position = 0;
 
@@ -174,12 +174,12 @@ public sealed class AzureStorageService : IStorageService
                 ? $"{_options.AzureContainerName!}/{folder}"
                 : _options.AzureContainerName!;
 
-            var blobs = await _storage.ListAsync(
+            IReadOnlyCollection<Blob>? blobs = await _storage.ListAsync(
                 folderPath: folderPath,
                 recurse: recursive,
                 cancellationToken: cancellationToken);
 
-            var fileInfos = blobs
+            List<StorageFileInfo> fileInfos = blobs
                 .Where(b => !b.IsFolder)
                 .Select(blob => new StorageFileInfo
                 {
@@ -205,7 +205,7 @@ public sealed class AzureStorageService : IStorageService
 
     private string GetBlobPath(string fileUrl)
     {
-        var baseUrl = !string.IsNullOrEmpty(_options.AzureCdnUrl)
+        string? baseUrl = !string.IsNullOrEmpty(_options.AzureCdnUrl)
             ? _options.AzureCdnUrl
             : $"https://{GetStorageAccount()}.blob.core.windows.net";
 
@@ -223,12 +223,12 @@ public sealed class AzureStorageService : IStorageService
 
     private (string accountName, string accountKey) ParseConnectionString(string connectionString)
     {
-        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
         string? accountName = null;
         string? accountKey = null;
 
-        foreach (var part in parts)
+        foreach (string part in parts)
         {
             if (part.StartsWith("AccountName="))
                 accountName = part.Substring(12);
@@ -244,7 +244,7 @@ public sealed class AzureStorageService : IStorageService
 
     private string GetStorageAccount()
     {
-        var (accountName, _) = ParseConnectionString(_options.AzureConnectionString!);
+        (string accountName, _) = ParseConnectionString(_options.AzureConnectionString!);
         return accountName;
     }
 }

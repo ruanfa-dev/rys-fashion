@@ -22,6 +22,6 @@ public static class TaxonTestHelper
 
     public static void WireResolver()
     {
-        Taxon.InstanceResolver = id => _registry.TryGetValue(id, out var t) ? t : null;
+        Taxon.InstanceResolver = id => _registry.TryGetValue(id, out Taxon? t) ? t : null;
     }
 }

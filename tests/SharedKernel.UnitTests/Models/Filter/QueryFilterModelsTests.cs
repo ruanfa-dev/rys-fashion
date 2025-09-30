@@ -12,7 +12,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_ValidParameter_DoesNotThrow()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "name",
             Operator = FilterOperator.Equal,
@@ -29,7 +29,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_InvalidField_ThrowsArgumentException(string field)
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = field,
             Operator = FilterOperator.Equal,
@@ -37,7 +37,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Field");
     }
 
@@ -45,7 +45,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_NullField_ThrowsArgumentException()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = null!,
             Operator = FilterOperator.Equal,
@@ -53,7 +53,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Field");
     }
 
@@ -61,7 +61,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_IsNullOperator_DoesNotRequireValue()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.IsNull,
@@ -76,7 +76,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_IsNotNullOperator_DoesNotRequireValue()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.IsNotNull,
@@ -93,7 +93,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_NonNullOperatorWithEmptyValue_ThrowsArgumentException(string value)
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.Equal,
@@ -101,7 +101,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Value");
     }
 
@@ -109,7 +109,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_NonNullOperatorWithNullValue_ThrowsArgumentException()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.Equal,
@@ -117,7 +117,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Value");
     }
 
@@ -127,7 +127,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_InOperatorWithEmptyValues_ThrowsArgumentException(string value)
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.In,
@@ -136,7 +136,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Value");
     }
 
@@ -144,7 +144,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_InOperatorWithNullValues_ThrowsArgumentException()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.In,
@@ -153,7 +153,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Value");
     }
 
@@ -161,7 +161,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_InOperatorWithValidValues_DoesNotThrow()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.In,
@@ -176,7 +176,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_InOperatorWithValuesProperty_DoesNotThrow()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.In,
@@ -194,7 +194,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_RangeOperatorWithInvalidFormat_ThrowsArgumentException(string value)
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.Range,
@@ -202,7 +202,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Value");
     }
 
@@ -210,7 +210,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_RangeOperatorWithNullValue_ThrowsArgumentException()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.Range,
@@ -218,7 +218,7 @@ public sealed class QueryFilterParameterTests
         };
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => parameter.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => parameter.Validate());
         exception.ParamName.ShouldBe("Value");
     }
 
@@ -226,7 +226,7 @@ public sealed class QueryFilterParameterTests
     public void Validate_RangeOperatorWithValidFormat_DoesNotThrow()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "field",
             Operator = FilterOperator.Range,
@@ -241,7 +241,7 @@ public sealed class QueryFilterParameterTests
     public void DefaultValues_SetCorrectly()
     {
         // Arrange & Act
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "test",
             Value = "value"
@@ -257,7 +257,7 @@ public sealed class QueryFilterParameterTests
     public void Properties_CanBeSetAndRetrieved()
     {
         // Arrange
-        var parameter = new QueryFilterParameter
+        QueryFilterParameter parameter = new QueryFilterParameter
         {
             Field = "name",
             Operator = FilterOperator.Contains,
@@ -286,10 +286,10 @@ public sealed class QueryFilterGroupTests
     public void Validate_EmptyGroup_ThrowsArgumentException()
     {
         // Arrange
-        var group = new QueryFilterGroup();
+        QueryFilterGroup group = new QueryFilterGroup();
 
         // Act & Assert
-        var exception = Should.Throw<ArgumentException>(() => group.Validate());
+        ArgumentException exception = Should.Throw<ArgumentException>(() => group.Validate());
         exception.ParamName.ShouldBe("Filters");
     }
 
@@ -297,7 +297,7 @@ public sealed class QueryFilterGroupTests
     public void Validate_GroupWithFilters_DoesNotThrow()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters =
             [
@@ -313,7 +313,7 @@ public sealed class QueryFilterGroupTests
     public void Validate_GroupWithSubGroups_DoesNotThrow()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             SubGroups =
             [
@@ -332,7 +332,7 @@ public sealed class QueryFilterGroupTests
     public void Validate_InvalidFilterInGroup_ThrowsArgumentException()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters =
             [
@@ -348,7 +348,7 @@ public sealed class QueryFilterGroupTests
     public void Validate_InvalidSubGroup_ThrowsArgumentException()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             SubGroups =
             [
@@ -364,10 +364,10 @@ public sealed class QueryFilterGroupTests
     public void GetTotalFilterCount_EmptyGroup_ReturnsZero()
     {
         // Arrange
-        var group = new QueryFilterGroup();
+        QueryFilterGroup group = new QueryFilterGroup();
 
         // Act
-        var count = group.GetTotalFilterCount();
+        int count = group.GetTotalFilterCount();
 
         // Assert
         count.ShouldBe(0);
@@ -377,7 +377,7 @@ public sealed class QueryFilterGroupTests
     public void GetTotalFilterCount_GroupWithFilters_ReturnsCorrectCount()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters =
             [
@@ -387,7 +387,7 @@ public sealed class QueryFilterGroupTests
         };
 
         // Act
-        var count = group.GetTotalFilterCount();
+        int count = group.GetTotalFilterCount();
 
         // Assert
         count.ShouldBe(2);
@@ -397,7 +397,7 @@ public sealed class QueryFilterGroupTests
     public void GetTotalFilterCount_GroupWithSubGroups_ReturnsCorrectCount()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters =
             [
@@ -417,7 +417,7 @@ public sealed class QueryFilterGroupTests
         };
 
         // Act
-        var count = group.GetTotalFilterCount();
+        int count = group.GetTotalFilterCount();
 
         // Assert
         count.ShouldBe(3); // 1 + 2
@@ -427,7 +427,7 @@ public sealed class QueryFilterGroupTests
     public void GetTotalFilterCount_NestedSubGroups_ReturnsCorrectCount()
     {
         // Arrange
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters =
             [
@@ -457,7 +457,7 @@ public sealed class QueryFilterGroupTests
         };
 
         // Act
-        var count = group.GetTotalFilterCount();
+        int count = group.GetTotalFilterCount();
 
         // Assert
         count.ShouldBe(4); // 1 + 1 + 2
@@ -467,10 +467,10 @@ public sealed class QueryFilterGroupTests
     public void GetAllFilters_EmptyGroup_ReturnsEmptyList()
     {
         // Arrange
-        var group = new QueryFilterGroup();
+        QueryFilterGroup group = new QueryFilterGroup();
 
         // Act
-        var allFilters = group.GetAllFilters();
+        List<QueryFilterParameter> allFilters = group.GetAllFilters();
 
         // Assert
         allFilters.ShouldBeEmpty();
@@ -480,16 +480,16 @@ public sealed class QueryFilterGroupTests
     public void GetAllFilters_GroupWithFilters_ReturnsAllFilters()
     {
         // Arrange
-        var filter1 = new QueryFilterParameter { Field = "name1", Value = "test1" };
-        var filter2 = new QueryFilterParameter { Field = "name2", Value = "test2" };
+        QueryFilterParameter filter1 = new QueryFilterParameter { Field = "name1", Value = "test1" };
+        QueryFilterParameter filter2 = new QueryFilterParameter { Field = "name2", Value = "test2" };
 
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters = [filter1, filter2]
         };
 
         // Act
-        var allFilters = group.GetAllFilters();
+        List<QueryFilterParameter> allFilters = group.GetAllFilters();
 
         // Assert
         allFilters.Count.ShouldBe(2);
@@ -501,11 +501,11 @@ public sealed class QueryFilterGroupTests
     public void GetAllFilters_GroupWithSubGroups_ReturnsAllFiltersFlattened()
     {
         // Arrange
-        var filter1 = new QueryFilterParameter { Field = "name1", Value = "test1" };
-        var filter2 = new QueryFilterParameter { Field = "name2", Value = "test2" };
-        var filter3 = new QueryFilterParameter { Field = "name3", Value = "test3" };
+        QueryFilterParameter filter1 = new QueryFilterParameter { Field = "name1", Value = "test1" };
+        QueryFilterParameter filter2 = new QueryFilterParameter { Field = "name2", Value = "test2" };
+        QueryFilterParameter filter3 = new QueryFilterParameter { Field = "name3", Value = "test3" };
 
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters = [filter1],
             SubGroups =
@@ -518,7 +518,7 @@ public sealed class QueryFilterGroupTests
         };
 
         // Act
-        var allFilters = group.GetAllFilters();
+        List<QueryFilterParameter> allFilters = group.GetAllFilters();
 
         // Assert
         allFilters.Count.ShouldBe(3);
@@ -531,7 +531,7 @@ public sealed class QueryFilterGroupTests
     public void DefaultValues_SetCorrectly()
     {
         // Arrange & Act
-        var group = new QueryFilterGroup();
+        QueryFilterGroup group = new QueryFilterGroup();
 
         // Assert
         group.Filters.ShouldNotBeNull();
@@ -546,10 +546,10 @@ public sealed class QueryFilterGroupTests
     public void Properties_CanBeSetAndRetrieved()
     {
         // Arrange
-        var filter = new QueryFilterParameter { Field = "test", Value = "value" };
-        var subGroup = new QueryFilterGroup { Filters = [filter] };
+        QueryFilterParameter filter = new QueryFilterParameter { Field = "test", Value = "value" };
+        QueryFilterGroup subGroup = new QueryFilterGroup { Filters = [filter] };
 
-        var group = new QueryFilterGroup
+        QueryFilterGroup group = new QueryFilterGroup
         {
             Filters = [filter],
             SubGroups = [subGroup],

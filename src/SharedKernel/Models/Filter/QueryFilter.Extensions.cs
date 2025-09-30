@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -62,7 +63,7 @@ public static class QueryFilterExtensions
         if (!queryParams.Any())
             return query;
 
-        var filters = ParseQueryParameters(queryParams);
+        List<QueryFilterParameter> filters = ParseQueryParameters(queryParams);
         return query.ApplyFilters(filters);
     }
 
@@ -85,7 +86,7 @@ public static class QueryFilterExtensions
             return query;
 
         // Parse: Query string into dictionary format
-        var queryParams = ParseQueryString(filterParams.Filters);
+        Dictionary<string, string> queryParams = ParseQueryString(filterParams.Filters);
 
         // Apply: Filters using existing dictionary method
         return query.ApplyFilters(queryParams);
@@ -108,7 +109,7 @@ public static class QueryFilterExtensions
             return query;
 
         // Parse: Query string into dictionary format
-        var queryParams = ParseQueryString(queryString);
+        Dictionary<string, string> queryParams = ParseQueryString(queryString);
 
         // Apply: Filters using existing dictionary method
         return query.ApplyFilters(queryParams);
@@ -131,8 +132,8 @@ public static class QueryFilterExtensions
 
         try
         {
-            var filterGroups = BuildFilterGroups(filters);
-            var expression = BuildGroupExpression<T>(filterGroups);
+            QueryFilterGroup filterGroups = BuildFilterGroups(filters);
+            Expression<Func<T, bool>>? expression = BuildGroupExpression<T>(filterGroups);
 
             if (expression != null)
             {
@@ -166,20 +167,20 @@ public static class QueryFilterExtensions
         if (queryParams is null || !queryParams.Any())
             return [];
 
-        var filters = new List<QueryFilterParameter>();
+        List<QueryFilterParameter> filters = new List<QueryFilterParameter>();
 
         // Extract global settings first
-        var globalLogic = FilterLogicalOperator.All; // Default to AND
-        if (queryParams.TryGetValue("logic", out var logicValue) &&
+        FilterLogicalOperator globalLogic = FilterLogicalOperator.All; // Default to AND
+        if (queryParams.TryGetValue("logic", out string? logicValue) &&
             string.Equals(logicValue, "or", StringComparison.OrdinalIgnoreCase))
         {
             globalLogic = FilterLogicalOperator.Any;
         }
 
         // Process parameters in order to handle group assignments
-        var currentGroup = 0; // Default group
+        int currentGroup = 0; // Default group
 
-        foreach (var param in queryParams)
+        foreach (KeyValuePair<string, string> param in queryParams)
         {
             if (string.IsNullOrWhiteSpace(param.Key))
                 continue;
@@ -193,7 +194,7 @@ public static class QueryFilterExtensions
             // Check for group assignment parameters like "group1", "group2", etc.
             if (param.Key.StartsWith("group", StringComparison.OrdinalIgnoreCase) &&
                 param.Key.Length > 5 &&
-                int.TryParse(param.Value, out var groupId))
+                int.TryParse(param.Value, out int groupId))
             {
                 currentGroup = groupId;
                 continue;
@@ -203,7 +204,7 @@ public static class QueryFilterExtensions
             if (param.Key.Equals("logic", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var filter = ParseSingleQueryParameter(param.Key, param.Value, globalLogic, currentGroup);
+            QueryFilterParameter? filter = ParseSingleQueryParameter(param.Key, param.Value, globalLogic, currentGroup);
             if (filter != null)
             {
                 filters.Add(filter);
@@ -218,9 +219,9 @@ public static class QueryFilterExtensions
         if (string.IsNullOrWhiteSpace(key))
             return null;
 
-        var logicalOp = globalLogic; // Use global default
-        var isLogicalOpExplicit = false;
-        var originalKey = key;
+        FilterLogicalOperator logicalOp = globalLogic; // Use global default
+        bool isLogicalOpExplicit = false;
+        string originalKey = key;
 
         // Check for logical operator prefix: or_name[contains]=john
         if (key.StartsWith("or_", comparisonType: StringComparison.OrdinalIgnoreCase))
@@ -241,11 +242,11 @@ public static class QueryFilterExtensions
         // Expected format: field[operator]=value
         if (key.Contains('[') && key.Contains(']'))
         {
-            var fieldName = key.Substring(0, key.IndexOf('['));
-            var operatorStr = key.Substring(key.IndexOf('[') + 1,
+            string fieldName = key.Substring(0, key.IndexOf('['));
+            string operatorStr = key.Substring(key.IndexOf('[') + 1,
                 key.IndexOf(']') - key.IndexOf('[') - 1);
 
-            if (OperatorMap.TryGetValue(operatorStr.ToLower(), out var filterOperator))
+            if (OperatorMap.TryGetValue(operatorStr.ToLower(), out FilterOperator filterOperator))
             {
                 filter = new QueryFilterParameter
                 {
@@ -261,13 +262,13 @@ public static class QueryFilterExtensions
         // Alternative format: field_operator=value
         else if (key.Contains('_'))
         {
-            var parts = key.Split('_');
+            string[] parts = key.Split('_');
             if (parts.Length >= 2)
             {
-                var fieldName = string.Join("_", parts.Take(parts.Length - 1));
-                var operatorStr = parts.Last();
+                string fieldName = string.Join("_", parts.Take(parts.Length - 1));
+                string operatorStr = parts.Last();
 
-                if (OperatorMap.TryGetValue(operatorStr.ToLower(), out var filterOperator))
+                if (OperatorMap.TryGetValue(operatorStr.ToLower(), out FilterOperator filterOperator))
                 {
                     filter = new QueryFilterParameter
                     {
@@ -287,16 +288,16 @@ public static class QueryFilterExtensions
 
     private static QueryFilterGroup BuildFilterGroups(List<QueryFilterParameter> filters)
     {
-        var rootGroup = new QueryFilterGroup { GroupId = 0 };
-        var groups = new Dictionary<int, QueryFilterGroup> { { 0, rootGroup } };
+        QueryFilterGroup rootGroup = new QueryFilterGroup { GroupId = 0 };
+        Dictionary<int, QueryFilterGroup> groups = new Dictionary<int, QueryFilterGroup> { { 0, rootGroup } };
 
-        foreach (var filter in filters)
+        foreach (QueryFilterParameter filter in filters)
         {
-            var groupId = filter.Group ?? 0;
+            int groupId = filter.Group ?? 0;
 
             if (!groups.ContainsKey(groupId))
             {
-                var newGroup = new QueryFilterGroup { GroupId = groupId };
+                QueryFilterGroup newGroup = new QueryFilterGroup { GroupId = groupId };
                 groups[groupId] = newGroup;
 
                 if (groupId != 0)
@@ -313,8 +314,8 @@ public static class QueryFilterExtensions
 
     private static Expression<Func<T, bool>>? BuildGroupExpression<T>(QueryFilterGroup group)
     {
-        var parameter = Expression.Parameter(typeof(T), "x");
-        var expression = BuildGroupExpressionRecursive<T>(parameter, group);
+        ParameterExpression parameter = Expression.Parameter(typeof(T), "x");
+        Expression? expression = BuildGroupExpressionRecursive<T>(parameter, group);
 
         return expression != null ? Expression.Lambda<Func<T, bool>>(expression, parameter) : null;
     }
@@ -331,15 +332,15 @@ public static class QueryFilterExtensions
         if (hasOrFilter && group.Filters.Any(f => f.LogicalOperator == FilterLogicalOperator.All))
         {
             // Check if any AND filters are explicit (have and_ prefix)
-            var hasExplicitAndFilter = group.Filters.Any(f => f.LogicalOperator == FilterLogicalOperator.All && f.IsLogicalOperatorExplicit);
+            bool hasExplicitAndFilter = group.Filters.Any(f => f.LogicalOperator == FilterLogicalOperator.All && f.IsLogicalOperatorExplicit);
 
             // If no explicit AND filters, treat everything as OR (simple case)
             if (!hasExplicitAndFilter)
             {
                 // Treat everything as OR
-                foreach (var filter in group.Filters)
+                foreach (QueryFilterParameter filter in group.Filters)
                 {
-                    var filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
+                    Expression? filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
                     if (filterExpression != null)
                     {
                         groupExpression = groupExpression == null
@@ -351,16 +352,16 @@ public static class QueryFilterExtensions
             else
             {
                 // True mixed operators: group OR filters separately from AND filters
-                var orFilters = group.Filters.Where(f => f.LogicalOperator == FilterLogicalOperator.Any).ToList();
-                var andFilters = group.Filters.Where(f => f.LogicalOperator == FilterLogicalOperator.All).ToList();
+                List<QueryFilterParameter> orFilters = group.Filters.Where(f => f.LogicalOperator == FilterLogicalOperator.Any).ToList();
+                List<QueryFilterParameter> andFilters = group.Filters.Where(f => f.LogicalOperator == FilterLogicalOperator.All).ToList();
 
                 Expression? orExpression = null;
                 Expression? andExpression = null;
 
                 // Build OR expression from OR filters
-                foreach (var filter in orFilters)
+                foreach (QueryFilterParameter filter in orFilters)
                 {
-                    var filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
+                    Expression? filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
                     if (filterExpression != null)
                     {
                         orExpression = orExpression == null
@@ -370,9 +371,9 @@ public static class QueryFilterExtensions
                 }
 
                 // Build AND expression from AND filters  
-                foreach (var filter in andFilters)
+                foreach (QueryFilterParameter filter in andFilters)
                 {
-                    var filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
+                    Expression? filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
                     if (filterExpression != null)
                     {
                         andExpression = andExpression == null
@@ -399,11 +400,11 @@ public static class QueryFilterExtensions
         else
         {
             // All filters have the same logical operator
-            var logicalOp = group.Filters.FirstOrDefault()?.LogicalOperator ?? FilterLogicalOperator.All;
+            FilterLogicalOperator logicalOp = group.Filters.FirstOrDefault()?.LogicalOperator ?? FilterLogicalOperator.All;
 
-            foreach (var filter in group.Filters)
+            foreach (QueryFilterParameter filter in group.Filters)
             {
-                var filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
+                Expression? filterExpression = BuildQueryFilterExpression<T>(parameter, filter);
                 if (filterExpression != null)
                 {
                     if (groupExpression == null)
@@ -421,9 +422,9 @@ public static class QueryFilterExtensions
         }
 
         // Handle sub-groups
-        foreach (var subGroup in group.SubGroups)
+        foreach (QueryFilterGroup subGroup in group.SubGroups)
         {
-            var subExpression = BuildGroupExpressionRecursive<T>(parameter, subGroup);
+            Expression? subExpression = BuildGroupExpressionRecursive<T>(parameter, subGroup);
             if (subExpression != null)
             {
                 groupExpression = groupExpression == null
@@ -441,14 +442,14 @@ public static class QueryFilterExtensions
         try
         {
             // Use the enhanced property handling with flexible naming
-            var propertyExpression = GetPropertyExpression<T>(parameter, filter.Field);
-            var propertyType = propertyExpression.Type;
+            Expression propertyExpression = GetPropertyExpression<T>(parameter, filter.Field);
+            Type propertyType = propertyExpression.Type;
 
             // Handle nullable types
-            var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
             // Convert the filter to FilterCriteria to reuse existing logic
-            var criteria = new FilterCriteria
+            FilterCriteria criteria = new FilterCriteria
             {
                 PropertyName = filter.Field,
                 Operator = filter.Operator,
@@ -472,7 +473,7 @@ public static class QueryFilterExtensions
 
         return PropertyMappingCache.GetOrAdd(cacheKey, _ =>
         {
-            var mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, PropertyInfo> mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
             PropertyInfo[] properties = typeof(T).GetProperties()
                 .Where(p => p.CanRead)
                 .ToArray();
@@ -509,8 +510,8 @@ public static class QueryFilterExtensions
         containerType = typeof(T);
         PropertyInfo? property = null;
 
-        var segments = fieldPath.Split('.');
-        var propertyMapping = GetPropertyMapping<T>();
+        string[] segments = fieldPath.Split('.');
+        Dictionary<string, PropertyInfo> propertyMapping = GetPropertyMapping<T>();
 
         // Handle single property (no nesting)
         if (segments.Length == 1)
@@ -522,8 +523,8 @@ public static class QueryFilterExtensions
         Type currentType = typeof(T);
         for (int i = 0; i < segments.Length; i++)
         {
-            var segment = segments[i];
-            var currentMapping = GetPropertyMappingForType(currentType);
+            string segment = segments[i];
+            Dictionary<string, PropertyInfo> currentMapping = GetPropertyMappingForType(currentType);
             property = FindSingleProperty(currentMapping, segment);
 
             if (property == null)
@@ -547,7 +548,7 @@ public static class QueryFilterExtensions
 
         return PropertyMappingCache.GetOrAdd(cacheKey, _ =>
         {
-            var mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, PropertyInfo> mapping = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
             PropertyInfo[] properties = type.GetProperties()
                 .Where(p => p.CanRead)
                 .ToArray();
@@ -588,7 +589,7 @@ public static class QueryFilterExtensions
         // Try with normalized field name (remove underscores, hyphens, make lowercase)
         string normalizedFieldName = fieldName.Replace("_", "").Replace("-", "").ToLower();
 
-        foreach (var kvp in propertyMapping)
+        foreach (KeyValuePair<string, PropertyInfo> kvp in propertyMapping)
         {
             string normalizedMappingKey = kvp.Key.Replace("_", "").Replace("-", "").ToLower();
             if (normalizedMappingKey == normalizedFieldName)
@@ -608,7 +609,7 @@ public static class QueryFilterExtensions
         if (string.IsNullOrEmpty(input))
             return input;
 
-        var result = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         result.Append(char.ToLower(input[0]));
 
         for (int i = 1; i < input.Length; i++)
@@ -636,7 +637,7 @@ public static class QueryFilterExtensions
         if (string.IsNullOrEmpty(input))
             return input;
 
-        var result = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         result.Append(char.ToLower(input[0]));
 
         for (int i = 1; i < input.Length; i++)
@@ -662,29 +663,29 @@ public static class QueryFilterExtensions
     private static Expression GetPropertyExpression<T>(Expression parameter, string propertyName)
     {
         Expression body = parameter;
-        var segments = propertyName.Split('.');
+        string[] segments = propertyName.Split('.');
         Type currentType = typeof(T);
 
-        foreach (var segment in segments)
+        foreach (string segment in segments)
         {
             try
             {
-                var propertyMapping = GetPropertyMappingForType(currentType);
-                var property = FindSingleProperty(propertyMapping, segment);
+                Dictionary<string, PropertyInfo> propertyMapping = GetPropertyMappingForType(currentType);
+                PropertyInfo? property = FindSingleProperty(propertyMapping, segment);
 
                 if (property == null)
                 {
                     throw new ArgumentException($"Property '{segment}' not found on type '{currentType.Name}'. Available properties: {string.Join(", ", propertyMapping.Keys)}");
                 }
 
-                var propertyAccess = Expression.Property(body, property);
+                MemberExpression propertyAccess = Expression.Property(body, property);
 
                 // Add null check for reference types (except for the root parameter)
                 if (!body.Type.IsValueType && body != parameter)
                 {
                     // Create null check: body != null ? body.property : default(PropertyType)
-                    var nullCheck = Expression.Equal(body, Expression.Constant(null, body.Type));
-                    var defaultValue = Expression.Default(propertyAccess.Type);
+                    BinaryExpression nullCheck = Expression.Equal(body, Expression.Constant(null, body.Type));
+                    DefaultExpression defaultValue = Expression.Default(propertyAccess.Type);
 
                     body = Expression.Condition(nullCheck, defaultValue, propertyAccess);
                 }
@@ -700,7 +701,7 @@ public static class QueryFilterExtensions
             catch (ArgumentException)
             {
                 // Re-throw with enhanced error message
-                var availableProperties = GetPropertyMappingForType(currentType).Keys.Take(10);
+                IEnumerable<string> availableProperties = GetPropertyMappingForType(currentType).Keys.Take(10);
                 throw new ArgumentException($"Property path '{propertyName}' is invalid. Segment '{segment}' not found on type '{currentType.Name}'. Available properties: {string.Join(", ", availableProperties)}...");
             }
         }
@@ -742,8 +743,8 @@ public static class QueryFilterExtensions
             throw new ArgumentException("IN operator requires a non-null value.");
         }
 
-        var valueString = criterion.Value.ToString()!;
-        var values = valueString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        string valueString = criterion.Value.ToString()!;
+        string[] values = valueString.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(v => v.Trim())
             .ToArray();
 
@@ -752,15 +753,15 @@ public static class QueryFilterExtensions
             return Expression.Constant(false);
         }
 
-        var propertyType = property.Type;
-        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        Type propertyType = property.Type;
+        Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
-        var convertedValues = new List<object?>();
-        foreach (var value in values)
+        List<object?> convertedValues = new List<object?>();
+        foreach (string value in values)
         {
             try
             {
-                var convertedValue = ConvertValue(value, underlyingType);
+                object? convertedValue = ConvertValue(value, underlyingType);
                 convertedValues.Add(convertedValue);
             }
             catch
@@ -776,15 +777,15 @@ public static class QueryFilterExtensions
         }
 
         // Create array of converted values
-        var arrayType = underlyingType.MakeArrayType();
-        var valueArray = Array.CreateInstance(underlyingType, convertedValues.Count);
+        Type arrayType = underlyingType.MakeArrayType();
+        Array valueArray = Array.CreateInstance(underlyingType, convertedValues.Count);
         for (int i = 0; i < convertedValues.Count; i++)
         {
             valueArray.SetValue(convertedValues[i], i);
         }
 
-        var arrayExpression = Expression.Constant(valueArray, arrayType);
-        var containsMethod = typeof(Enumerable).GetMethods()
+        ConstantExpression arrayExpression = Expression.Constant(valueArray, arrayType);
+        MethodInfo containsMethod = typeof(Enumerable).GetMethods()
             .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
             .MakeGenericMethod(underlyingType);
 
@@ -798,25 +799,25 @@ public static class QueryFilterExtensions
             throw new ArgumentException("Range operator requires a non-null value.");
         }
 
-        var valueString = criterion.Value.ToString()!;
-        var parts = valueString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        string valueString = criterion.Value.ToString()!;
+        string[] parts = valueString.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length != 2)
         {
             throw new ArgumentException("Range operator requires exactly two comma-separated values.");
         }
 
-        var propertyType = property.Type;
-        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        Type propertyType = property.Type;
+        Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
-        var minValue = ConvertValue(parts[0].Trim(), underlyingType);
-        var maxValue = ConvertValue(parts[1].Trim(), underlyingType);
+        object? minValue = ConvertValue(parts[0].Trim(), underlyingType);
+        object? maxValue = ConvertValue(parts[1].Trim(), underlyingType);
 
-        var minExpression = Expression.Constant(minValue, propertyType);
-        var maxExpression = Expression.Constant(maxValue, propertyType);
+        ConstantExpression minExpression = Expression.Constant(minValue, propertyType);
+        ConstantExpression maxExpression = Expression.Constant(maxValue, propertyType);
 
-        var greaterThanOrEqual = Expression.GreaterThanOrEqual(property, minExpression);
-        var lessThanOrEqual = Expression.LessThanOrEqual(property, maxExpression);
+        BinaryExpression greaterThanOrEqual = Expression.GreaterThanOrEqual(property, minExpression);
+        BinaryExpression lessThanOrEqual = Expression.LessThanOrEqual(property, maxExpression);
 
         return Expression.AndAlso(greaterThanOrEqual, lessThanOrEqual);
     }
@@ -828,10 +829,10 @@ public static class QueryFilterExtensions
             return Expression.Constant(false);
         }
 
-        var valueExpression = Expression.Constant(criterion.Value.ToString());
-        var comparisonExpression = Expression.Constant(StringComparison.OrdinalIgnoreCase);
+        ConstantExpression valueExpression = Expression.Constant(criterion.Value.ToString());
+        ConstantExpression comparisonExpression = Expression.Constant(StringComparison.OrdinalIgnoreCase);
 
-        var methodCall = (Expression)(criterion.Operator switch
+        Expression methodCall = (Expression)(criterion.Operator switch
         {
             FilterOperator.Contains => Expression.Call(property, StringContainsMethod, valueExpression, comparisonExpression),
             FilterOperator.StartsWith => Expression.Call(property, StringStartsWithMethod, valueExpression, comparisonExpression),
@@ -850,10 +851,10 @@ public static class QueryFilterExtensions
             throw new ArgumentException("Comparison operators require a non-null value.");
         }
 
-        var propertyType = property.Type;
-        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        var convertedValue = ConvertValue(criterion.Value, underlyingType);
-        var valueExpression = Expression.Constant(convertedValue, propertyType);
+        Type propertyType = property.Type;
+        Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        object? convertedValue = ConvertValue(criterion.Value, underlyingType);
+        ConstantExpression valueExpression = Expression.Constant(convertedValue, propertyType);
 
         return criterion.Operator switch
         {
@@ -886,7 +887,7 @@ public static class QueryFilterExtensions
         if (value == null)
             return null;
 
-        var stringValue = value.ToString();
+        string? stringValue = value.ToString();
         if (string.IsNullOrEmpty(stringValue))
             return null;
 
@@ -937,11 +938,11 @@ public static class QueryFilterExtensions
 
     private static MethodInfo GetCachedMethod(Type type, string methodName, params Type[] parameterTypes)
     {
-        var key = $"{type.FullName}.{methodName}({string.Join(",", parameterTypes.Select(t => t.FullName))})";
+        string key = $"{type.FullName}.{methodName}({string.Join(",", parameterTypes.Select(t => t.FullName))})";
 
         return MethodCache.GetOrAdd(key, _ =>
         {
-            var method = type.GetMethod(methodName, parameterTypes);
+            MethodInfo? method = type.GetMethod(methodName, parameterTypes);
             return method ?? throw new InvalidOperationException($"Method {methodName} not found on type {type.Name}");
         });
     }
@@ -962,19 +963,19 @@ public static class QueryFilterExtensions
         if (queryString.StartsWith('?'))
             queryString = queryString[1..];
 
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
             // Parse: Standard query string using System.Web utilities if available
-            var collection = System.Web.HttpUtility.ParseQueryString(queryString);
+            NameValueCollection collection = System.Web.HttpUtility.ParseQueryString(queryString);
 
             foreach (string? key in collection.AllKeys)
             {
                 if (!string.IsNullOrEmpty(key))
                 {
                     // Assign: First value if multiple values exist for same key
-                    var value = collection[key] ?? string.Empty;
+                    string value = collection[key] ?? string.Empty;
                     result[key] = value;
                 }
             }
@@ -995,24 +996,24 @@ public static class QueryFilterExtensions
     /// <returns>A dictionary of query parameters.</returns>
     private static Dictionary<string, string> ParseQueryStringManually(string queryString)
     {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // Guard: Empty query string
         if (string.IsNullOrWhiteSpace(queryString))
             return result;
 
         // Split: Query string into key-value pairs
-        var pairs = queryString.Split('&', StringSplitOptions.RemoveEmptyEntries);
+        string[] pairs = queryString.Split('&', StringSplitOptions.RemoveEmptyEntries);
 
-        foreach (var pair in pairs)
+        foreach (string pair in pairs)
         {
             // Parse: Each key-value pair
-            var keyValue = pair.Split('=', 2);
+            string[] keyValue = pair.Split('=', 2);
             if (keyValue.Length >= 1)
             {
                 // Decode: URL-encoded key and value
-                var key = Uri.UnescapeDataString(keyValue[0]);
-                var value = keyValue.Length == 2 ? Uri.UnescapeDataString(keyValue[1]) : string.Empty;
+                string key = Uri.UnescapeDataString(keyValue[0]);
+                string value = keyValue.Length == 2 ? Uri.UnescapeDataString(keyValue[1]) : string.Empty;
 
                 // Assign: Non-empty keys only
                 if (!string.IsNullOrEmpty(key))

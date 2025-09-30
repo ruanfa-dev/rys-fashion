@@ -17,11 +17,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithNullSearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: null);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: null);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -34,11 +34,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithEmptySearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -48,11 +48,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithWhitespaceSearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "   ");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "   ");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -62,11 +62,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_FullTextSearch_SearchesAllStringProperties()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "apple");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "apple");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -77,11 +77,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_CaseInsensitiveByDefault_FindsMatches()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "APPLE");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "APPLE");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -92,12 +92,12 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithCaseSensitiveOption_RespectsCasing()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "APPLE");
-        var options = new SearchOptions { CaseSensitive = true };
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "APPLE");
+        SearchOptions options = new SearchOptions { CaseSensitive = true };
 
         // Act
-        var result = query.ApplySearch(searchParams, options).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams, options).ToList();
 
         // Assert
         result.Count.ShouldBe(0); // No matches with case sensitivity
@@ -107,12 +107,12 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithExactMatchOption_FindsExactMatches()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Apple");
-        var options = new SearchOptions { ExactMatch = true };
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Apple");
+        SearchOptions options = new SearchOptions { ExactMatch = true };
 
         // Act
-        var result = query.ApplySearch(searchParams, options).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams, options).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -123,12 +123,12 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithStartsWithOption_FindsStartsWithMatches()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Blue");
-        var options = new SearchOptions { StartsWith = true };
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Blue");
+        SearchOptions options = new SearchOptions { StartsWith = true };
 
         // Act
-        var result = query.ApplySearch(searchParams, options).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams, options).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -139,11 +139,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithNullableStringProperty_HandlesNullsGracefully()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "HasValue");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "HasValue");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -159,11 +159,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithSpecificSearchFields_SearchesOnlyThoseFields()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: ["StringProperty"]);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: ["StringProperty"]);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -174,11 +174,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithMultipleSearchFields_SearchesAllSpecifiedFields()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Value", SearchFields: ["StringProperty", "NullableStringProperty"]);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Value", SearchFields: ["StringProperty", "NullableStringProperty"]);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(2); // "HasValue" and "AnotherValue"
@@ -190,11 +190,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithInvalidSearchField_IgnoresInvalidField()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: ["InvalidField", "StringProperty"]);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: ["InvalidField", "StringProperty"]);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -205,11 +205,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithNonStringSearchField_IgnoresNonStringField()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "10", SearchFields: ["IntProperty", "StringProperty"]);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "10", SearchFields: ["IntProperty", "StringProperty"]);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         // Should only search StringProperty, ignoring IntProperty
@@ -221,11 +221,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithEmptySearchFields_PerformsFullTextSearch()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: []);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: []);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -236,11 +236,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithNullSearchFields_PerformsFullTextSearch()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: null);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Apple", SearchFields: null);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -251,12 +251,12 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithOptionsInSearchParams_IgnoresEmbeddedOptions()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var options = new SearchOptions { CaseSensitive = true };
-        var searchParams = new SearchParameter(SearchTerm: "APPLE", Options: options);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchOptions options = new SearchOptions { CaseSensitive = true };
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "APPLE", Options: options);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         // The current implementation ignores embedded options and uses default options
@@ -268,13 +268,13 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithBothEmbeddedAndParameterOptions_PrioritizesParameterOptions()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var embeddedOptions = new SearchOptions { CaseSensitive = true };
-        var parameterOptions = new SearchOptions { CaseSensitive = false };
-        var searchParams = new SearchParameter(SearchTerm: "APPLE", Options: embeddedOptions);
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchOptions embeddedOptions = new SearchOptions { CaseSensitive = true };
+        SearchOptions parameterOptions = new SearchOptions { CaseSensitive = false };
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "APPLE", Options: embeddedOptions);
 
         // Act
-        var result = query.ApplySearch(searchParams, parameterOptions).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams, parameterOptions).ToList();
 
         // Assert
         result.Count.ShouldBe(1); // Parameter options override embedded options
@@ -289,10 +289,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithSingleExpression_SearchesSpecifiedProperty()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch("Apple", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.ApplySearch("Apple", e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -303,10 +303,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithMultipleExpressions_SearchesAllSpecifiedProperties()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch("Value",
+        List<TestEntity> result = query.ApplySearch("Value",
             e => e.StringProperty,
             e => e.NullableStringProperty!).ToList();
 
@@ -320,10 +320,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithExpressionsEmptySearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch("", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.ApplySearch("", e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -333,10 +333,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithExpressionsNullSearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch(null!, e => e.StringProperty).ToList();
+        List<TestEntity> result = query.ApplySearch(null!, e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -346,10 +346,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithNoExpressions_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch("Apple").ToList();
+        List<TestEntity> result = query.ApplySearch("Apple").ToList();
 
         // Assert
         result.Count.ShouldBe(3); // No expressions provided, returns all
@@ -359,10 +359,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithNullableStringExpression_HandlesNullsGracefully()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch("NonExistentValue", e => e.NullableStringProperty!).ToList();
+        List<TestEntity> result = query.ApplySearch("NonExistentValue", e => e.NullableStringProperty!).ToList();
 
         // Assert
         result.Count.ShouldBe(0);
@@ -372,10 +372,10 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithExpressions_AlwaysCaseInsensitive()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.ApplySearch("APPLE", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.ApplySearch("APPLE", e => e.StringProperty).ToList();
 
         // Assert
         // Expression-based search always converts to lowercase, so this should find "Apple"
@@ -391,10 +391,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchIn_WithValidSearchTerm_ReturnsMatchingResults()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.SearchIn("Banana", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.SearchIn("Banana", e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -405,10 +405,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchIn_WithEmptySearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.SearchIn("", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.SearchIn("", e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -418,10 +418,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchIn_WithNullSearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.SearchIn(null!, e => e.StringProperty).ToList();
+        List<TestEntity> result = query.SearchIn(null!, e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -431,10 +431,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchIn_WithWhitespaceSearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.SearchIn("   ", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.SearchIn("   ", e => e.StringProperty).ToList();
 
         // Assert
         result.Count.ShouldBe(3);
@@ -444,10 +444,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchIn_AlwaysCaseInsensitive()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.SearchIn("BANANA", e => e.StringProperty).ToList();
+        List<TestEntity> result = query.SearchIn("BANANA", e => e.StringProperty).ToList();
 
         // Assert
         // SearchIn uses expression-based search which is always case insensitive
@@ -463,10 +463,10 @@ public sealed class SearchParamsExtensionsTests
     public void Search_CreatesSearchBuilder()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var builder = query.Search("Apple");
+        SearchBuilder<TestEntity> builder = query.Search("Apple");
 
         // Assert
         builder.ShouldNotBeNull();
@@ -477,10 +477,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithSingleField_SearchesCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("Apple")
+        List<TestEntity> result = query.Search("Apple")
             .In(e => e.StringProperty)
             .Execute()
             .ToList();
@@ -494,10 +494,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithMultipleFields_SearchesCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("Value")
+        List<TestEntity> result = query.Search("Value")
             .In(e => e.StringProperty, e => e.NullableStringProperty!)
             .Execute()
             .ToList();
@@ -512,10 +512,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithCaseSensitive_DoesNotRespectCasingSensitivityWhenUsingFields()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("APPLE")
+        List<TestEntity> result = query.Search("APPLE")
             .In(e => e.StringProperty)
             .CaseSensitive()
             .Execute()
@@ -531,10 +531,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithCaseSensitive_RespectsOptionsWhenNoFieldsSpecified()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("APPLE")
+        List<TestEntity> result = query.Search("APPLE")
             .CaseSensitive()
             .Execute()
             .ToList();
@@ -548,10 +548,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithExactMatch_FindsExactMatches()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("Apple")
+        List<TestEntity> result = query.Search("Apple")
             .In(e => e.StringProperty)
             .ExactMatch()
             .Execute()
@@ -566,10 +566,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithStartsWith_FindsStartsWithMatches()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("Blue")
+        List<TestEntity> result = query.Search("Blue")
             .In(e => e.StringProperty)
             .StartsWith()
             .Execute()
@@ -584,10 +584,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithChainedOptions_AppliesAllOptions()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("blue")
+        List<TestEntity> result = query.Search("blue")
             .In(e => e.StringProperty)
             .StartsWith()
             .CaseSensitive(false) // Explicitly set case insensitive
@@ -603,10 +603,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithEmptySearchTerm_ReturnsOriginalQuery()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("")
+        List<TestEntity> result = query.Search("")
             .In(e => e.StringProperty)
             .Execute()
             .ToList();
@@ -619,10 +619,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WithNoFields_PerformsFullTextSearch()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query.Search("Apple")
+        List<TestEntity> result = query.Search("Apple")
             .Execute()
             .ToList();
 
@@ -635,11 +635,11 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_ImplicitConversion_Works()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
         Func<IQueryable<TestEntity>> searchFunc = query.Search("Apple").In(e => e.StringProperty);
-        var result = searchFunc().ToList();
+        List<TestEntity> result = searchFunc().ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -654,7 +654,7 @@ public sealed class SearchParamsExtensionsTests
     public void SearchOptions_DefaultValues_AreCorrect()
     {
         // Arrange & Act
-        var options = new SearchOptions();
+        SearchOptions options = new SearchOptions();
 
         // Assert
         options.CaseSensitive?.ShouldBeFalse();
@@ -666,7 +666,7 @@ public sealed class SearchParamsExtensionsTests
     public void SearchOptions_WithInit_SetsValuesCorrectly()
     {
         // Arrange & Act
-        var options = new SearchOptions
+        SearchOptions options = new SearchOptions
         {
             CaseSensitive = true,
             ExactMatch = true,
@@ -683,10 +683,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchOptions_WithRecord_SupportsWithExpression()
     {
         // Arrange
-        var options = new SearchOptions();
+        SearchOptions options = new SearchOptions();
 
         // Act
-        var newOptions = options with { CaseSensitive = true };
+        SearchOptions newOptions = options with { CaseSensitive = true };
 
         // Assert
         options.CaseSensitive?.ShouldBeFalse(); // Original unchanged
@@ -701,11 +701,11 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithComplexSearchTerm_HandlesCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData();
-        var searchParams = new SearchParameter(SearchTerm: "Has Value");
+        IQueryable<TestEntity> query = GetQueryableTestData();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Has Value");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         // Should not find anything since "Has Value" (with space) is not in the data
@@ -716,7 +716,7 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithSpecialCharacters_HandlesCorrectly()
     {
         // Arrange
-        var testDataWithSpecialChars = new List<TestEntity>
+        List<TestEntity> testDataWithSpecialChars = new List<TestEntity>
         {
             new TestEntity
             {
@@ -726,11 +726,11 @@ public sealed class SearchParamsExtensionsTests
                 Status = TestStatus.Active
             }
         };
-        var query = testDataWithSpecialChars.AsQueryable();
-        var searchParams = new SearchParameter(SearchTerm: "@Email");
+        IQueryable<TestEntity> query = testDataWithSpecialChars.AsQueryable();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "@Email");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -741,13 +741,13 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_CombinedWithOtherLinqOperations_WorksCorrectly()
     {
         // Arrange
-        var query = GetQueryableTestData()
+        IOrderedQueryable<TestEntity> query = GetQueryableTestData()
             .Where(e => e.Status == TestStatus.Active)
             .OrderBy(e => e.Id);
-        var searchParams = new SearchParameter(SearchTerm: "Apple");
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Apple");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1);
@@ -759,7 +759,7 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithLargeDataset_PerformsEfficiently()
     {
         // Arrange
-        var largeDataset = new List<TestEntity>();
+        List<TestEntity> largeDataset = new List<TestEntity>();
         for (int i = 0; i < 1000; i++)
         {
             largeDataset.Add(new TestEntity
@@ -770,11 +770,11 @@ public sealed class SearchParamsExtensionsTests
                 Status = TestStatus.Active
             });
         }
-        var query = largeDataset.AsQueryable();
-        var searchParams = new SearchParameter(SearchTerm: "Even");
+        IQueryable<TestEntity> query = largeDataset.AsQueryable();
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Even");
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(500); // Half should match "Even"
@@ -789,12 +789,12 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WorksWithTestEntityComplexScenario()
     {
         // Arrange
-        var query = GetQueryableTestData()
+        IQueryable<TestEntity> query = GetQueryableTestData()
             .Where(e => e.Status != TestStatus.Inactive);
-        var searchParams = new SearchParameter(SearchTerm: "Value", SearchFields: ["NullableStringProperty"]);
+        SearchParameter searchParams = new SearchParameter(SearchTerm: "Value", SearchFields: ["NullableStringProperty"]);
 
         // Act
-        var result = query.ApplySearch(searchParams).ToList();
+        List<TestEntity> result = query.ApplySearch(searchParams).ToList();
 
         // Assert
         result.Count.ShouldBe(1); // Only the Active entity with "HasValue"
@@ -807,10 +807,10 @@ public sealed class SearchParamsExtensionsTests
     public void SearchBuilder_WorksWithTestEntityPropertiesChaining()
     {
         // Arrange
-        var query = GetQueryableTestData();
+        IQueryable<TestEntity> query = GetQueryableTestData();
 
         // Act
-        var result = query
+        List<TestEntity> result = query
             .Where(e => e.IntProperty >= 20)
             .Search("another")
             .In(e => e.NullableStringProperty!)

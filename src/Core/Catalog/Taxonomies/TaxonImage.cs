@@ -29,9 +29,9 @@ public sealed class TaxonImage : Asset
     {
         return StylesMap.Select(kvp =>
         {
-            var size = kvp.Value;
-            var (w, h) = ParseSize(size);
-            var url = ImageMethods.GenerateUrl(Url, size);
+            string size = kvp.Value;
+            (int w, int h) = ParseSize(size);
+            string url = ImageMethods.GenerateUrl(Url, size);
             return new StyleDescriptor(url, size, w, h);
         });
     }
@@ -39,14 +39,14 @@ public sealed class TaxonImage : Asset
     private static (int width, int height) ParseSize(string size)
     {
         if (string.IsNullOrWhiteSpace(size)) return (0, 0);
-        var m = Regex.Match(size, @"(\\d+)x(\\d+)");
-        if (m.Success && int.TryParse(m.Groups[1].Value, out var w) && int.TryParse(m.Groups[2].Value, out var h))
+        Match m = Regex.Match(size, @"(\\d+)x(\\d+)");
+        if (m.Success && int.TryParse(m.Groups[1].Value, out int w) && int.TryParse(m.Groups[2].Value, out int h))
             return (w, h);
 
-        var parts = size.Split('x', 'X');
+        string[] parts = size.Split('x', 'X');
         if (parts.Length >= 2 &&
-            int.TryParse(parts[0].Trim(), out var w2) &&
-            int.TryParse(parts[1].Trim(), out var h2))
+            int.TryParse(parts[0].Trim(), out int w2) &&
+            int.TryParse(parts[1].Trim(), out int h2))
         {
             return (w2, h2);
         }

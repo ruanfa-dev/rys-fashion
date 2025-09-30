@@ -23,12 +23,12 @@ public partial class GetTodoListById
         public async Task<ErrorOr<TodoListResult>> Handle(Query request, CancellationToken cancellationToken)
         {
             // Check: todo list existence
-            var todoList = await context.TodoLists
+            TodoList? todoList = await context.TodoLists
                 .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
             if (todoList == null)
                 return TodoList.Errors.TodoListNotFound;
 
-            var todoListResult = mapper.Map<TodoListResult>(todoList);
+            TodoListResult todoListResult = mapper.Map<TodoListResult>(todoList);
 
             return todoListResult;
         }

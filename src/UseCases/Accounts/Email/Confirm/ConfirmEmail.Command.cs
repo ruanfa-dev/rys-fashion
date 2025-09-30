@@ -28,10 +28,10 @@ public static partial class ConfirmEmail
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
 
             // Validate: User existence
-            var user = await userManager.FindByIdAsync(param.UserId.ToString());
+            User? user = await userManager.FindByIdAsync(param.UserId.ToString());
             if (user == null)
             {
                 Log.Warning("ConfirmEmail: User {UserId} not found", param.UserId);
@@ -39,7 +39,7 @@ public static partial class ConfirmEmail
             }
 
             // Decode: token with enhanced error handling
-            var decodedTokenResult = param.Code.DecodeToken();
+            ErrorOr<string> decodedTokenResult = param.Code.DecodeToken();
             if (decodedTokenResult.IsError)
             {
                 Log.Warning("ConfirmEmail: Token decoding failed for user {UserId}", param.UserId);
@@ -70,7 +70,7 @@ public static partial class ConfirmEmail
             }
 
             // Confirm: email address
-            var result = await userManager.ConfirmEmailAsync(user, decodedToken);
+            IdentityResult result = await userManager.ConfirmEmailAsync(user, decodedToken);
             if (!result.Succeeded)
             {
                 Log.Warning("ConfirmEmail: Initial confirmation failed for user {UserId}: {Errors}",
@@ -92,7 +92,7 @@ public static partial class ConfirmEmail
             string userId)
         {
             // Additional Security: Check if target email is already in use
-            var existingUser = await userManager.FindByEmailAsync(changedEmail);
+            User? existingUser = await userManager.FindByEmailAsync(changedEmail);
             if (existingUser != null && existingUser.Id != user.Id)
             {
                 Log.Warning("ConfirmEmail: Email change blocked for user {UserId} - email {Email} already in use by user {ExistingUserId}",
@@ -102,10 +102,10 @@ public static partial class ConfirmEmail
             }
 
             // Store original email for logging
-            var originalEmail = user.Email;
+            string? originalEmail = user.Email;
 
             // Execute: email change
-            var changeResult = await userManager.ChangeEmailAsync(user, changedEmail, decodedToken);
+            IdentityResult changeResult = await userManager.ChangeEmailAsync(user, changedEmail, decodedToken);
             if (!changeResult.Succeeded)
             {
                 Log.Warning("ConfirmEmail: Email change failed for user {UserId}: {Errors}",
@@ -129,7 +129,7 @@ public static partial class ConfirmEmail
         {
             if (originalEmail != null && string.Equals(user.UserName, originalEmail, StringComparison.OrdinalIgnoreCase))
             {
-                var setUserNameResult = await userManager.SetUserNameAsync(user, newEmail);
+                IdentityResult setUserNameResult = await userManager.SetUserNameAsync(user, newEmail);
                 if (!setUserNameResult.Succeeded)
                 {
                     Log.Warning("ConfirmEmail: Failed to update username for user {UserId}: {Errors}",

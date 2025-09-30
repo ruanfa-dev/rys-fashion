@@ -28,8 +28,8 @@ public static class AuthorizationExtensions
         if (string.IsNullOrWhiteSpace(permission))
             throw new ArgumentException("Permission cannot be null or whitespace.", nameof(permission));
 
-        var cacheKey = $"perm:{permission}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(permissions: permission));
+        string cacheKey = $"perm:{permission}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(permissions: permission));
         return builder.RequireAuthorization(attribute);
     }
 
@@ -64,12 +64,12 @@ public static class AuthorizationExtensions
         if (permissions is null || permissions.Length == 0)
             throw new ArgumentException("At least one permission must be specified.", nameof(permissions));
 
-        var combinedPermissions = string.Join(",", permissions.Where(p => !string.IsNullOrWhiteSpace(p)));
+        string combinedPermissions = string.Join(",", permissions.Where(p => !string.IsNullOrWhiteSpace(p)));
         if (string.IsNullOrEmpty(combinedPermissions))
             throw new ArgumentException("At least one valid permission must be specified.", nameof(permissions));
 
-        var cacheKey = $"perms:{combinedPermissions}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(permissions: combinedPermissions));
+        string cacheKey = $"perms:{combinedPermissions}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(permissions: combinedPermissions));
         return builder.RequireAuthorization(attribute);
     }
 
@@ -87,7 +87,7 @@ public static class AuthorizationExtensions
         if (permissions is null || permissions.Length == 0)
             throw new ArgumentException("At least one permission must be specified.", nameof(permissions));
 
-        var permissionNames = permissions.Where(p => p != null).Select(p => p.Name).ToArray();
+        string[] permissionNames = permissions.Where(p => p != null).Select(p => p.Name).ToArray();
         return builder.RequirePermissions(permissionNames);
     }
 
@@ -105,8 +105,8 @@ public static class AuthorizationExtensions
         if (string.IsNullOrWhiteSpace(policy))
             throw new ArgumentException("Policy cannot be null or whitespace.", nameof(policy));
 
-        var cacheKey = $"policy:{policy}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(policies: policy));
+        string cacheKey = $"policy:{policy}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(policies: policy));
         return builder.RequireAuthorization(attribute);
     }
 
@@ -124,12 +124,12 @@ public static class AuthorizationExtensions
         if (policies is null || policies.Length == 0)
             throw new ArgumentException("At least one policy must be specified.", nameof(policies));
 
-        var combinedPolicies = string.Join(",", policies.Where(p => !string.IsNullOrWhiteSpace(p)));
+        string combinedPolicies = string.Join(",", policies.Where(p => !string.IsNullOrWhiteSpace(p)));
         if (string.IsNullOrEmpty(combinedPolicies))
             throw new ArgumentException("At least one valid policy must be specified.", nameof(policies));
 
-        var cacheKey = $"policies:{combinedPolicies}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(policies: combinedPolicies));
+        string cacheKey = $"policies:{combinedPolicies}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(policies: combinedPolicies));
         return builder.RequireAuthorization(attribute);
     }
 
@@ -147,8 +147,8 @@ public static class AuthorizationExtensions
         if (string.IsNullOrWhiteSpace(role))
             throw new ArgumentException("Role cannot be null or whitespace.", nameof(role));
 
-        var cacheKey = $"role:{role}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(roles: role));
+        string cacheKey = $"role:{role}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(roles: role));
         return builder.RequireAuthorization(attribute);
     }
 
@@ -166,12 +166,12 @@ public static class AuthorizationExtensions
         if (roles is null || roles.Length == 0)
             throw new ArgumentException("At least one role must be specified.", nameof(roles));
 
-        var combinedRoles = string.Join(",", roles.Where(r => !string.IsNullOrWhiteSpace(r)));
+        string combinedRoles = string.Join(",", roles.Where(r => !string.IsNullOrWhiteSpace(r)));
         if (string.IsNullOrEmpty(combinedRoles))
             throw new ArgumentException("At least one valid role must be specified.", nameof(roles));
 
-        var cacheKey = $"roles:{combinedRoles}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(roles: combinedRoles));
+        string cacheKey = $"roles:{combinedRoles}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey, _ => new RequestAuthorizeAttribute(roles: combinedRoles));
         return builder.RequireAuthorization(attribute);
     }
 
@@ -198,8 +198,8 @@ public static class AuthorizationExtensions
             throw new ArgumentException("At least one authorization parameter must be specified.");
         }
 
-        var cacheKey = $"custom:p:{permissions ?? ""},pol:{policies ?? ""},r:{roles ?? ""}";
-        var attribute = AttributeCache.GetOrAdd(cacheKey,
+        string cacheKey = $"custom:p:{permissions ?? ""},pol:{policies ?? ""},r:{roles ?? ""}";
+        RequestAuthorizeAttribute attribute = AttributeCache.GetOrAdd(cacheKey,
             _ => new RequestAuthorizeAttribute(permissions, roles, policies));
 
         return builder.RequireAuthorization(attribute);
@@ -215,8 +215,8 @@ public static class AuthorizationExtensions
     public static TBuilder RequireAdminAccess<TBuilder>(this TBuilder builder, string? resource = null)
         where TBuilder : IEndpointConventionBuilder
     {
-        var adminRole = "Administrator";
-        var adminPermissions = resource != null ? $"Admin.{resource}.Manage" : "Admin.Manage";
+        string adminRole = "Administrator";
+        string adminPermissions = resource != null ? $"Admin.{resource}.Manage" : "Admin.Manage";
 
         return builder.RequireCustomAuthorization(permissions: adminPermissions, roles: adminRole);
     }

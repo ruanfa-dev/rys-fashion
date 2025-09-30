@@ -6,8 +6,8 @@ public static class ClaimsPrincipalExtensions
 {
     public static Guid? GetUserId(this ClaimsPrincipal user)
     {
-        var idValue = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(idValue, out var guid) ? guid : null;
+        string? idValue = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(idValue, out Guid guid) ? guid : null;
     }
 
     public static string? GetUserName(this ClaimsPrincipal user)

@@ -31,10 +31,10 @@ public static class TranslatableExtensions
         value = null;
         if (resource is null) return false;
 
-        var translations = resource.Translations;
+        ICollection<TTranslation>? translations = resource.Translations;
         if (translations is null || translations.Count == 0) return false;
 
-        var t = translations.GetTranslationForCulture(culture, fallback);
+        TTranslation? t = translations.GetTranslationForCulture(culture, fallback);
         if (t is null) return false;
 
         value = GetStringField(t, fieldName);
@@ -47,7 +47,7 @@ public static class TranslatableExtensions
     public static string? GetFieldOrDefault<TTranslation>(this ITranslatable<TTranslation>? resource, string fieldName, string culture, bool fallback = true, string? defaultValue = null)
         where TTranslation : class, ITranslation
     {
-        if (resource.TryGetField(fieldName, culture, fallback, out var v))
+        if (resource.TryGetField(fieldName, culture, fallback, out string? v))
             return v;
 
         return defaultValue;
@@ -59,12 +59,12 @@ public static class TranslatableExtensions
     public static IDictionary<string, string?> LocalizedFieldForLocales<TTranslation>(this ITranslatable<TTranslation>? resource, IEnumerable<string>? locales, string fieldName = "Slug")
         where TTranslation : class, ITranslation
     {
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string?> result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (resource is null || locales is null) return result;
 
-        foreach (var locale in locales)
+        foreach (string locale in locales)
         {
-            var value = resource.GetFieldOrDefault(fieldName, locale, fallback: true, defaultValue: null);
+            string? value = resource.GetFieldOrDefault(fieldName, locale, fallback: true, defaultValue: null);
             result[locale] = value;
         }
 
@@ -88,21 +88,21 @@ public static class TranslatableExtensions
             return fallback ? translations.Select(fieldSelector).FirstOrDefault(v => !string.IsNullOrEmpty(v)) : null;
 
         // exact culture
-        var exact = translations.FirstOrDefault(t => string.Equals(t.Culture, culture, StringComparison.OrdinalIgnoreCase));
-        var val = exact is null ? null : fieldSelector(exact);
+        TTranslation? exact = translations.FirstOrDefault(t => string.Equals(t.Culture, culture, StringComparison.OrdinalIgnoreCase));
+        string? val = exact is null ? null : fieldSelector(exact);
         if (val is not null || !fallback) return val;
 
         // neutral language (e.g. "en" from "en-US")
-        var neutral = GetNeutralCulture(culture);
+        string neutral = GetNeutralCulture(culture);
         if (!string.Equals(neutral, culture, StringComparison.OrdinalIgnoreCase))
         {
-            var neutralMatch = translations.FirstOrDefault(t => string.Equals(t.Culture, neutral, StringComparison.OrdinalIgnoreCase));
+            TTranslation? neutralMatch = translations.FirstOrDefault(t => string.Equals(t.Culture, neutral, StringComparison.OrdinalIgnoreCase));
             val = neutralMatch is null ? null : fieldSelector(neutralMatch);
             if (val is not null) return val;
         }
 
         // fallback to default translation
-        var defaultTrans = translations.FirstOrDefault(t => t.IsDefault);
+        TTranslation? defaultTrans = translations.FirstOrDefault(t => t.IsDefault);
         if (defaultTrans != null) return fieldSelector(defaultTrans);
 
         // fallback to first available translation value
@@ -120,21 +120,21 @@ public static class TranslatableExtensions
             return fallback ? translations.FirstOrDefault() : null;
 
         // exact
-        var exact = translations.FirstOrDefault(t => string.Equals(t.Culture, culture, StringComparison.OrdinalIgnoreCase));
+        TTranslation? exact = translations.FirstOrDefault(t => string.Equals(t.Culture, culture, StringComparison.OrdinalIgnoreCase));
         if (exact != null) return exact;
 
         if (!fallback) return null;
 
         // neutral
-        var neutral = GetNeutralCulture(culture);
+        string neutral = GetNeutralCulture(culture);
         if (!string.Equals(neutral, culture, StringComparison.OrdinalIgnoreCase))
         {
-            var neutralMatch = translations.FirstOrDefault(t => string.Equals(t.Culture, neutral, StringComparison.OrdinalIgnoreCase));
+            TTranslation? neutralMatch = translations.FirstOrDefault(t => string.Equals(t.Culture, neutral, StringComparison.OrdinalIgnoreCase));
             if (neutralMatch != null) return neutralMatch;
         }
 
         // default marked translation
-        var defaultTrans = translations.FirstOrDefault(t => t.IsDefault);
+        TTranslation? defaultTrans = translations.FirstOrDefault(t => t.IsDefault);
         if (defaultTrans != null) return defaultTrans;
 
         // fallback to first
@@ -158,7 +158,7 @@ public static class TranslatableExtensions
     private static string GetNeutralCulture(string culture)
     {
         if (string.IsNullOrWhiteSpace(culture)) return string.Empty;
-        var parts = culture.Split(new[] { '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = culture.Split(new[] { '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 0 ? parts[0] : culture;
     }
 
@@ -169,22 +169,22 @@ public static class TranslatableExtensions
         if (string.IsNullOrWhiteSpace(fieldName)) return null;
 
         // First try Fields dictionary (case-insensitive key)
-        var fields = translation.Fields;
+        IDictionary<string, string?>? fields = translation.Fields;
         if (fields != null)
         {
-            if (fields.TryGetValue(fieldName, out var v) && !string.IsNullOrEmpty(v))
+            if (fields.TryGetValue(fieldName, out string? v) && !string.IsNullOrEmpty(v))
                 return v;
 
             // case-insensitive lookup
-            var matched = fields.FirstOrDefault(kv => string.Equals(kv.Key, fieldName, StringComparison.OrdinalIgnoreCase));
+            KeyValuePair<string, string?> matched = fields.FirstOrDefault(kv => string.Equals(kv.Key, fieldName, StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrEmpty(matched.Value))
                 return matched.Value;
         }
 
         // Fall back to reflection property on translation type
-        var pi = translation.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+        PropertyInfo? pi = translation.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
         if (pi is null) return null;
-        var val = pi.GetValue(translation);
+        object? val = pi.GetValue(translation);
         return val?.ToString();
     }
 

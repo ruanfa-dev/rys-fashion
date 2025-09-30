@@ -43,25 +43,25 @@ public static partial class CreateRole
     {
         public async Task<ErrorOr<Result>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var param = request.Param;
+            Param param = request.Param;
             try
             {
                 // Check: if role already exists
-                var existingRole = await roleManager.FindByNameAsync(param.Name);
+                Role? existingRole = await roleManager.FindByNameAsync(param.Name);
                 if (existingRole != null)
                     return Role.Errors.RoleAlreadyExists(param.Name);
 
                 // Create: new role
-                var role = Role.Create(
+                Role role = Role.Create(
                     name: param.Name,
                     description: param.Description,
                     priority: param.Priority,
                     isSystemRole: param.IsSystemRole);
 
-                var result = await roleManager.CreateAsync(role);
+                IdentityResult result = await roleManager.CreateAsync(role);
                 if (!result.Succeeded)
                 {
-                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    string errors = string.Join("; ", result.Errors.Select(e => e.Description));
                     logger.LogError("Failed to create role {RoleName}: {Errors}", param.Name, errors);
                     return result.Errors.ToApplicationResult(
                         prefix: "Role",

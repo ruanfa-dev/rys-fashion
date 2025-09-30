@@ -30,7 +30,7 @@ public static class SortParamExtensions
 
         IOrderedQueryable<T>? orderedQuery = null;
 
-        foreach (var sort in sortParams?.Where(s => !string.IsNullOrWhiteSpace(s.SortBy)) ?? Enumerable.Empty<SortParams>())
+        foreach (SortParams sort in sortParams?.Where(s => !string.IsNullOrWhiteSpace(s.SortBy)) ?? Enumerable.Empty<SortParams>())
         {
             if (orderedQuery == null)
             {
@@ -65,37 +65,37 @@ public static class SortParamExtensions
 
     private static IQueryable<T> ApplySingleSort<T>(this IQueryable<T> query, string sortBy, string sortOrder)
     {
-        var propertyKey = $"{typeof(T).Name}.{sortBy}";
-        var propertyInfo = _propertyCache.GetOrAdd(propertyKey, _ =>
+        string propertyKey = $"{typeof(T).Name}.{sortBy}";
+        PropertyInfo? propertyInfo = _propertyCache.GetOrAdd(propertyKey, _ =>
             typeof(T).GetProperty(sortBy, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase));
 
         if (propertyInfo == null)
             return query;
 
-        var isDescending = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
+        bool isDescending = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
         return query.ApplyOrderBy(propertyInfo, isDescending);
     }
 
     private static IOrderedQueryable<T> ApplyThenBy<T>(this IOrderedQueryable<T> query, string sortBy, string sortOrder)
     {
-        var propertyKey = $"{typeof(T).Name}.{sortBy}";
-        var propertyInfo = _propertyCache.GetOrAdd(propertyKey, _ =>
+        string propertyKey = $"{typeof(T).Name}.{sortBy}";
+        PropertyInfo? propertyInfo = _propertyCache.GetOrAdd(propertyKey, _ =>
             typeof(T).GetProperty(sortBy, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase));
 
         if (propertyInfo == null)
             return query;
 
-        var isDescending = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
+        bool isDescending = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
         return query.ApplyThenByInternal(propertyInfo, isDescending) ?? query;
     }
 
     private static IQueryable<T> ApplyOrderBy<T>(this IQueryable<T> query, PropertyInfo propertyInfo, bool descending)
     {
-        var methodKey = $"{typeof(T).Name}.{propertyInfo.Name}.{propertyInfo.PropertyType.Name}.{(descending ? "Desc" : "Asc")}";
+        string methodKey = $"{typeof(T).Name}.{propertyInfo.Name}.{propertyInfo.PropertyType.Name}.{(descending ? "Desc" : "Asc")}";
 
-        var method = _methodCache.GetOrAdd(methodKey, _ =>
+        object method = _methodCache.GetOrAdd(methodKey, _ =>
         {
-            var methodName = descending ? "OrderByDescending" : "OrderBy";
+            string methodName = descending ? "OrderByDescending" : "OrderBy";
             return typeof(Queryable).GetMethods()
                 .First(m => m.Name == methodName &&
                            m.GetParameters().Length == 2 &&
@@ -103,20 +103,20 @@ public static class SortParamExtensions
                 .MakeGenericMethod(typeof(T), propertyInfo.PropertyType);
         });
 
-        var parameter = Expression.Parameter(typeof(T), "x");
-        var property = Expression.Property(parameter, propertyInfo);
-        var lambda = Expression.Lambda(property, parameter);
+        ParameterExpression parameter = Expression.Parameter(typeof(T), "x");
+        MemberExpression property = Expression.Property(parameter, propertyInfo);
+        LambdaExpression lambda = Expression.Lambda(property, parameter);
 
         return (IQueryable<T>)((MethodInfo)method).Invoke(null, [query, lambda])!;
     }
 
     private static IOrderedQueryable<T> ApplyThenByInternal<T>(this IOrderedQueryable<T> query, PropertyInfo propertyInfo, bool descending)
     {
-        var methodKey = $"{typeof(T).Name}.{propertyInfo.Name}.{propertyInfo.PropertyType.Name}.Then{(descending ? "Desc" : "Asc")}";
+        string methodKey = $"{typeof(T).Name}.{propertyInfo.Name}.{propertyInfo.PropertyType.Name}.Then{(descending ? "Desc" : "Asc")}";
 
-        var method = _methodCache.GetOrAdd(methodKey, _ =>
+        object method = _methodCache.GetOrAdd(methodKey, _ =>
         {
-            var methodName = descending ? "ThenByDescending" : "ThenBy";
+            string methodName = descending ? "ThenByDescending" : "ThenBy";
             return typeof(Queryable).GetMethods()
                 .First(m => m.Name == methodName &&
                            m.GetParameters().Length == 2 &&
@@ -124,9 +124,9 @@ public static class SortParamExtensions
                 .MakeGenericMethod(typeof(T), propertyInfo.PropertyType);
         });
 
-        var parameter = Expression.Parameter(typeof(T), "x");
-        var property = Expression.Property(parameter, propertyInfo);
-        var lambda = Expression.Lambda(property, parameter);
+        ParameterExpression parameter = Expression.Parameter(typeof(T), "x");
+        MemberExpression property = Expression.Property(parameter, propertyInfo);
+        LambdaExpression lambda = Expression.Lambda(property, parameter);
 
         return (IOrderedQueryable<T>)(((MethodInfo)method).Invoke(null, [query, lambda]) ?? query);
     }

@@ -34,13 +34,13 @@ public sealed class TaxonTranslation : ITranslation
     // Convenience accessors that read/write from Fields with sensible fallbacks
     private string? GetField(string key)
     {
-        if (Fields != null && Fields.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v))
+        if (Fields != null && Fields.TryGetValue(key, out string? v) && !string.IsNullOrWhiteSpace(v))
             return v;
 
         // case-insensitive fallback
         if (Fields != null)
         {
-            var matched = Fields.FirstOrDefault(kv => string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase));
+            KeyValuePair<string, string?> matched = Fields.FirstOrDefault(kv => string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrWhiteSpace(matched.Value)) return matched.Value;
         }
 
@@ -106,35 +106,35 @@ public sealed class TaxonTranslation : ITranslation
     public void UpdatePrettyNameAndPermalink(Taxon taxon)
     {
         // Resolve localized name (translation field or fallback to taxon.Name)
-        var localizedName = Name ?? taxon.Name;
+        string localizedName = Name ?? taxon.Name;
 
         // If translation lacks pretty name, generate from taxon/parent context
         if (string.IsNullOrWhiteSpace(PrettyName))
         {
-            var parentPretty = taxon.Parent?.PrettyName;
+            string? parentPretty = taxon.Parent?.PrettyName;
             // Try to use parent's localized pretty name if available
             if (taxon.Parent != null)
             {
-                var localizedParent = taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
+                TaxonTranslation? localizedParent = taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
                 if (localizedParent != null)
                     parentPretty = localizedParent.PrettyName ?? parentPretty;
             }
 
-            var pretty = string.Join(" -> ", new[] { parentPretty, localizedName }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string pretty = string.Join(" -> ", new[] { parentPretty, localizedName }.Where(s => !string.IsNullOrWhiteSpace(s)));
             PrettyName = pretty;
         }
 
         if (string.IsNullOrWhiteSpace(Permalink))
         {
-            var source = string.IsNullOrWhiteSpace(Permalink) ? localizedName : Permalink?.Split('/').Last();
-            var slugPart = Slugifier.Parameterize(source ?? string.Empty);
+            string? source = string.IsNullOrWhiteSpace(Permalink) ? localizedName : Permalink?.Split('/').Last();
+            string slugPart = Slugifier.Parameterize(source ?? string.Empty);
             string? parentPermalink = null;
 
             if (taxon.Parent != null)
             {
                 // Prefer localized parent's permalink when available
-                var localizedParent = taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
-                var localizedParentPermalink = localizedParent?.Permalink;
+                TaxonTranslation? localizedParent = taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
+                string? localizedParentPermalink = localizedParent?.Permalink;
                 parentPermalink = !string.IsNullOrWhiteSpace(localizedParentPermalink) ? localizedParentPermalink : taxon.Parent.Permalink;
             }
 
@@ -152,13 +152,13 @@ public sealed class TaxonTranslation : ITranslation
 
         if (Taxon.Parent != null)
         {
-            var localizedParent = Taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
-            var parentPermalink = localizedParent != null && !string.IsNullOrWhiteSpace(localizedParent.Permalink)
+            TaxonTranslation? localizedParent = Taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
+            string? parentPermalink = localizedParent != null && !string.IsNullOrWhiteSpace(localizedParent.Permalink)
                 ? localizedParent.Permalink
                 : Taxon.Parent.Permalink;
 
-            var source = string.IsNullOrWhiteSpace(Permalink) ? Name : Permalink?.Split('/').Last();
-            var slugPart = Slugifier.Parameterize(source ?? string.Empty);
+            string? source = string.IsNullOrWhiteSpace(Permalink) ? Name : Permalink?.Split('/').Last();
+            string slugPart = Slugifier.Parameterize(source ?? string.Empty);
             return string.Join('/', new[] { parentPermalink?.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
 
@@ -175,8 +175,8 @@ public sealed class TaxonTranslation : ITranslation
 
         if (Taxon.Parent != null)
         {
-            var localizedParent = Taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
-            var parentPretty = localizedParent != null && !string.IsNullOrWhiteSpace(localizedParent.PrettyName)
+            TaxonTranslation? localizedParent = Taxon.Parent.Translations.FirstOrDefault(t => string.Equals(t.Culture, Culture, StringComparison.OrdinalIgnoreCase));
+            string? parentPretty = localizedParent != null && !string.IsNullOrWhiteSpace(localizedParent.PrettyName)
                 ? localizedParent.PrettyName
                 : Taxon.Parent.PrettyName;
 

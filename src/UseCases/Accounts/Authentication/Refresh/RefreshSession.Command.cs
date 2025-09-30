@@ -35,7 +35,7 @@ public static partial class RefreshSession
 
         public async Task<ErrorOr<AuthenticationResult>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var ipAddress = _httpContext.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            string ipAddress = _httpContext.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             string refreshToken = request.Param.RefreshToken;
             bool rememberMe = request.Param.RememberMe;
 
@@ -51,7 +51,7 @@ public static partial class RefreshSession
             try
             {
                 // Validate refresh token
-                var validationResult = await _refreshTokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
+                ErrorOr<RefreshTokenValidationResult> validationResult = await _refreshTokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
                 if (validationResult.IsError)
                 {
                     _logger.LogWarning("Invalid refresh token used from IP {IpAddress}", ipAddress);
@@ -59,10 +59,10 @@ public static partial class RefreshSession
                     return validationResult.Errors;
                 }
 
-                var user = validationResult.Value.User;
+                User user = validationResult.Value.User;
 
                 // Security validation (placeholder — adapt to your project's security checks)
-                var securityValidation = await ValidateUserSecurityAsync(user, cancellationToken);
+                ErrorOr<Success> securityValidation = await ValidateUserSecurityAsync(user, cancellationToken);
                 if (securityValidation.IsError)
                 {
                     // Revoke token for security
@@ -73,7 +73,7 @@ public static partial class RefreshSession
                 }
 
                 // Rotate token
-                var rotationResult = await _refreshTokenService.RotateRefreshTokenAsync(
+                ErrorOr<RefreshTokenResult> rotationResult = await _refreshTokenService.RotateRefreshTokenAsync(
                     refreshToken, ipAddress, rememberMe, cancellationToken);
                 if (rotationResult.IsError)
                 {
@@ -82,7 +82,7 @@ public static partial class RefreshSession
                 }
 
                 // Generate new access token
-                var accessResult = await jwtTokenService.GenerateAccessTokenAsync(user, cancellationToken);
+                ErrorOr<AccessTokenResult> accessResult = await jwtTokenService.GenerateAccessTokenAsync(user, cancellationToken);
                 if (accessResult.IsError)
                 {
                     await _unitOfWork.RollbackTransactionAsync(cancellationToken);

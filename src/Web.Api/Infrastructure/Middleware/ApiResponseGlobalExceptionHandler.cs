@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Reflection;
 
 using ErrorOr;
 
@@ -88,8 +89,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     {
         LogException(exception);
 
-        var errors = MapExceptionToErrors(exception);
-        var apiResponse = CreateApiResponseFromErrors(errors, httpContext.Request.Path);
+        IReadOnlyList<Error> errors = MapExceptionToErrors(exception);
+        ApiResponse<object> apiResponse = CreateApiResponseFromErrors(errors, httpContext.Request.Path);
 
         await WriteApiResponseAsync(httpContext, apiResponse, cancellationToken);
         return true;
@@ -104,7 +105,7 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     private void LogException(Exception exception)
     {
         // Log with different levels based on exception type
-        var logLevel = GetLogLevelForException(exception);
+        LogLevel logLevel = GetLogLevelForException(exception);
 
         _logger.Log(logLevel, exception,
             "Unhandled exception occurred: {ExceptionType} - {ExceptionMessage}",
@@ -139,13 +140,13 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
         // Handle FluentValidation exceptions with reflection to avoid hard dependency
         if (IsFluentValidationException(exception))
         {
-            var validationErrors = ExtractFluentValidationErrors(exception);
+            List<Error> validationErrors = ExtractFluentValidationErrors(exception);
             if (validationErrors.Count > 0)
                 return validationErrors;
         }
 
         // Map common .NET exceptions to appropriate ErrorOr error types
-        var error = CreateErrorFromException(exception);
+        Error error = CreateErrorFromException(exception);
         return [error];
     }
 
@@ -160,10 +161,10 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
         if (errors.Count == 0)
             return CreateGenericErrorApiResponse(requestPath);
 
-        var firstError = errors[0];
+        Error firstError = errors[0];
 
         // Group errors by full error code (not just category)
-        var errorGroups = errors
+        Dictionary<string, string[]> errorGroups = errors
             .GroupBy(e => GetErrorCode(e))
             .ToDictionary(
                 g => g.Key,
@@ -220,17 +221,17 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>List of validation errors with full error codes</returns>
     private static List<Error> ExtractFluentValidationErrors(Exception exception)
     {
-        var errors = new List<Error>();
+        List<Error> errors = new List<Error>();
 
         try
         {
-            var errorsProperty = exception.GetType().GetProperty("Errors");
+            PropertyInfo? errorsProperty = exception.GetType().GetProperty("Errors");
             if (errorsProperty?.GetValue(exception) is not IEnumerable<object> validationFailures)
                 return errors;
 
-            foreach (var failure in validationFailures)
+            foreach (object failure in validationFailures)
             {
-                var error = CreateValidationErrorFromFailure(failure);
+                Error? error = CreateValidationErrorFromFailure(failure);
                 if (error.HasValue)
                     errors.Add(error.Value);
             }
@@ -255,10 +256,10 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     {
         try
         {
-            var type = failure.GetType();
-            var propertyName = GetPropertyValue<string>(failure, type, "PropertyName") ?? "Unknown";
-            var errorMessage = GetPropertyValue<string>(failure, type, "ErrorMessage") ?? "Validation failed";
-            var errorCode = GetPropertyValue<string>(failure, type, "ErrorCode") ?? "ValidationError";
+            Type type = failure.GetType();
+            string propertyName = GetPropertyValue<string>(failure, type, "PropertyName") ?? "Unknown";
+            string errorMessage = GetPropertyValue<string>(failure, type, "ErrorMessage") ?? "Validation failed";
+            string errorCode = GetPropertyValue<string>(failure, type, "ErrorCode") ?? "ValidationError";
 
             return Error.Validation(
                 code: $"{propertyName}.{errorCode}",
@@ -280,7 +281,7 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>Property value or null</returns>
     private static T? GetPropertyValue<T>(object obj, Type type, string propertyName) where T : class
     {
-        var property = type.GetProperty(propertyName);
+        PropertyInfo? property = type.GetProperty(propertyName);
         return property?.GetValue(obj) as T;
     }
 
@@ -369,8 +370,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with not found error structure</returns>
     private static ApiResponse<object> CreateNotFoundApiResponse(Error error, string requestPath)
     {
-        var title = GetErrorCode(error);
-        var detail = error.Description;
+        string title = GetErrorCode(error);
+        string detail = error.Description;
 
         return new ApiResponse<object>
         {
@@ -395,8 +396,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with unauthorized error structure</returns>
     private static ApiResponse<object> CreateUnauthorizedApiResponse(Error error, string requestPath)
     {
-        var title = GetErrorCode(error);
-        var detail = error.Description;
+        string title = GetErrorCode(error);
+        string detail = error.Description;
 
         return new ApiResponse<object>
         {
@@ -422,8 +423,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with conflict error structure</returns>
     private static ApiResponse<object> CreateConflictApiResponse(Error firstError, Dictionary<string, string[]> errorGroups, string requestPath)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<object>
         {
@@ -450,8 +451,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with forbidden error structure</returns>
     private static ApiResponse<object> CreateForbiddenApiResponse(Error firstError, Dictionary<string, string[]> errorGroups, string requestPath)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<object>
         {
@@ -478,8 +479,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with server error structure</returns>
     private static ApiResponse<object> CreateFailureApiResponse(Error firstError, Dictionary<string, string[]> errorGroups, string requestPath)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<object>
         {
@@ -506,8 +507,8 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with unexpected error structure</returns>
     private static ApiResponse<object> CreateUnexpectedApiResponse(Error firstError, Dictionary<string, string[]> errorGroups, string requestPath)
     {
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<object>
         {
@@ -534,9 +535,9 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>ApiResponse with generic error structure</returns>
     private static ApiResponse<object> CreateGenericErrorApiResponse(Error firstError, Dictionary<string, string[]> errorGroups, string requestPath)
     {
-        var statusCode = GetStatusCode(firstError.Type);
-        var title = GetErrorCode(firstError);
-        var detail = firstError.Description;
+        int statusCode = GetStatusCode(firstError.Type);
+        string title = GetErrorCode(firstError);
+        string detail = firstError.Description;
 
         return new ApiResponse<object>
         {

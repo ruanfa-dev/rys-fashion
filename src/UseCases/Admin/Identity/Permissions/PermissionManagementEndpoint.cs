@@ -1,5 +1,7 @@
 using Carter;
 
+using ErrorOr;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 
 using SharedKernel.Models;
 using SharedKernel.Models.Filter;
+using SharedKernel.Models.PagedLists;
 using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
@@ -30,7 +33,7 @@ public sealed class PermissionManagementEndpoint : ICarterModule
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(Route)
+        RouteGroupBuilder group = app.MapGroup(Route)
             .WithName(Name)
             .WithTags(Tag)
             .WithSummary(Summary)
@@ -46,23 +49,23 @@ public sealed class PermissionManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            var param = new ListAvailablePermissions.Param
+            ListAvailablePermissions.Param param = new ListAvailablePermissions.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            var query = new ListAvailablePermissions.Query(param);
-            var result = await mediator.Send(query, cancellationToken);
-            var apiResponse = result.ToApiResponsePaged("Available permissions retrieved successfully");
+            ListAvailablePermissions.Query query = new ListAvailablePermissions.Query(param);
+            ErrorOr<PagedList<ListAvailablePermissions.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<ListAvailablePermissions.Result>> apiResponse = result.ToApiResponsePaged("Available permissions retrieved successfully");
 
             // Add pagination and admin management links
             if (apiResponse.IsSuccess && apiResponse.Data != null)
             {
                 // Add pagination links
-                var currentPage = (pagination.PageIndex ?? 0) + 1;
-                var pageSize = pagination.PageSize ?? 10;
+                int currentPage = (pagination.PageIndex ?? 0) + 1;
+                int pageSize = pagination.PageSize ?? 10;
 
                 apiResponse.WithLink("self", $"{Route}/available?page_index={currentPage}&page_size={pageSize}");
 

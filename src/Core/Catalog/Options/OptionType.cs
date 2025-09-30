@@ -39,7 +39,7 @@ public sealed class OptionType : AuditableEntity
     {
         if (string.IsNullOrWhiteSpace(presentation)) return Errors.PresentationRequired;
 
-        var ot = new OptionType
+        OptionType ot = new OptionType
         {
             Name = name.Trim(),
             Presentation = presentation.Trim(),
@@ -53,7 +53,7 @@ public sealed class OptionType : AuditableEntity
 
     public ErrorOr<OptionType> Update(string? presentation = null, bool? filterable = null, int? position = null)
     {
-        var changed = false;
+        bool changed = false;
         if (presentation != null && presentation.Trim() != Presentation)
         {
             if (string.IsNullOrWhiteSpace(presentation)) return Errors.PresentationRequired;
