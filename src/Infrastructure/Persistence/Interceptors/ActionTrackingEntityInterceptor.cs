@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using SharedKernel.Domain.Attributes;
+using SharedKernel.Domain.Attributes.Assignable;
 
 using UseCases.Common.Security.Authentication.Contexts;
 

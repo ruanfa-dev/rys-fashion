@@ -39,9 +39,4 @@
     <ProjectReference Include="..\UseCases\UseCases.csproj" />
   </ItemGroup>
 
-
-  <ItemGroup>
-    <Folder Include="Migrations\" />
-  </ItemGroup>
-
 </Project>

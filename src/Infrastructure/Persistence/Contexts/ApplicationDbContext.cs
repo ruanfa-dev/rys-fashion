@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using Core.Catalog.Properties;
+using Core.Catalog.Taxonomies;
 using Core.Identity.Permissions;
 using Core.Identity.Roles;
 using Core.Identity.Tokens;
@@ -15,6 +16,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 using UseCases.Common.Persistence.Context;
+using Infrastructure.Persistence.Configurations.Common;
+using SharedKernel.Domain.Attributes.Metadata;
 
 namespace Infrastructure.Persistence.Contexts;
 
@@ -32,6 +35,8 @@ public sealed class ApplicationDbContext(
         builder.HasDefaultSchema(Schema.Default);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         builder.ApplyUtcDateTimeConverter();
+        builder.ApplyMetadataSupportConversions();
+        builder.ApplyTranslationEntityConfigurations();
     }
 
     // Define DbSets for your entities here
@@ -42,4 +47,9 @@ public sealed class ApplicationDbContext(
 
     // Catalog
     public DbSet<Property> Properties { get; set; } = null!;
+
+    // Taxonomies
+    public DbSet<Taxonomy> Taxonomies { get; set; } = null!;
+    public DbSet<Taxon> Taxons { get; set; } = null!;
+    public DbSet<TaxonomyTranslation> TaxonomyTranslations { get; set; } = null!;
 }

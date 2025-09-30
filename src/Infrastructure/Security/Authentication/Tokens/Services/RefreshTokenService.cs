@@ -1,6 +1,5 @@
 ﻿using System.Security.Cryptography;
 
-using Core.Identity;
 using Core.Identity.Tokens;
 using Core.Identity.Users;
 
@@ -19,35 +18,25 @@ using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.Security.Authentication.Tokens.Services;
 
-public sealed class RefreshTokenService : IRefreshTokenService
+public sealed class RefreshTokenService(
+    IUnitOfWork unitOfWork,
+    IOptions<JwtOptions> options,
+    UserManager<User> userManager,
+    ILogger<RefreshTokenService> logger)
+    : IRefreshTokenService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<RefreshTokenService> _logger;
-    private readonly JwtOptions _options;
-    private readonly UserManager<User> _userManager;
+    private readonly JwtOptions _options = options.Value;
 
     private const int SecureTokenBytes = 64;
-
-    public RefreshTokenService(
-        IUnitOfWork unitOfWork,
-        IOptions<JwtOptions> options,
-        UserManager<User> userManager,
-        ILogger<RefreshTokenService> logger)
-    {
-        _unitOfWork = unitOfWork;
-        _logger = logger;
-        _userManager = userManager;
-        _options = options.Value;
-    }
 
     public async Task<ErrorOr<RefreshTokenResult>> GenerateRefreshTokenAsync(
         Guid userId, string ipAddress, bool rememberMe = false, CancellationToken cancellationToken = default)
     {
-        var user = await _userManager.FindByIdAsync(userId.ToString());
+        var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
             return User.Errors.UserNotFound;
 
-        if (await _userManager.IsLockedOutAsync(user))
+        if (await userManager.IsLockedOutAsync(user))
             return User.Errors.LockedOut;
 
         try
@@ -63,10 +52,10 @@ public sealed class RefreshTokenService : IRefreshTokenService
                 DateTimeOffset.UtcNow.AddDays(lifetimeDays),
                 ipAddress);
 
-            _unitOfWork.Context.RefreshTokens.Add(token);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            unitOfWork.Context.RefreshTokens.Add(token);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Refresh token generated for user {UserId}", userId);
+            logger.LogInformation("Refresh token generated for user {UserId}", userId);
 
             return new RefreshTokenResult
             {
@@ -79,7 +68,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Refresh token generation failed for user {UserId}", userId);
+            logger.LogError(ex, "Refresh token generation failed for user {UserId}", userId);
             return RefreshToken.Errors.GenerationFailed;
         }
     }
@@ -91,7 +80,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
             return RefreshToken.Errors.RefreshTokenRequired;
 
         var hash = RefreshToken.Hash(rawCurrentToken);
-        var oldToken = await _unitOfWork.Context.RefreshTokens
+        var oldToken = await unitOfWork.Context.RefreshTokens
             .Include(t => t.User)
             .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
@@ -100,21 +89,20 @@ public sealed class RefreshTokenService : IRefreshTokenService
         if (oldToken.IsRevoked)
         {
             // SECURITY ALERT: A revoked token was used. This is a critical sign of token theft.
-            _logger.LogError("SECURITY ALERT: Token reuse attempt detected for user {UserId} from IP {IpAddress}",
+            logger.LogError("SECURITY ALERT: Token reuse attempt detected for user {UserId} from IP {IpAddress}",
                 oldToken.UserId, ipAddress);
             return RefreshToken.Errors.Revoked;
         }
         if (oldToken.IsExpired) return RefreshToken.Errors.Expired;
-        if (oldToken.User is null) return User.Errors.UserNotFound;
 
         // Start transaction for atomic operation
-        await using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
             // 1. Revoke the old token
             oldToken.Revoke(ipAddress, "Token rotated");
-            _unitOfWork.Context.RefreshTokens.Update(oldToken);
+            unitOfWork.Context.RefreshTokens.Update(oldToken);
 
             // 2. Generate and save the new token
             var newRefreshTokenResult = await GenerateRefreshTokenAsync(oldToken.UserId, ipAddress, rememberMe, cancellationToken);
@@ -124,16 +112,16 @@ public sealed class RefreshTokenService : IRefreshTokenService
                 return newRefreshTokenResult.Errors;
             }
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogInformation("Token rotated successfully for user {UserId}", oldToken.UserId);
+            logger.LogInformation("Token rotated successfully for user {UserId}", oldToken.UserId);
             return newRefreshTokenResult.Value;
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Token rotation failed for user {UserId}", oldToken.UserId);
+            logger.LogError(ex, "Token rotation failed for user {UserId}", oldToken.UserId);
             return RefreshToken.Errors.RotationFailed;
         }
     }
@@ -148,7 +136,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
             return RefreshToken.Errors.RefreshTokenRequired;
 
         var hash = RefreshToken.Hash(rawToken);
-        var token = await _unitOfWork.Context.RefreshTokens
+        var token = await unitOfWork.Context.RefreshTokens
             .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
         if (token is null || token.IsRevoked)
@@ -157,15 +145,15 @@ public sealed class RefreshTokenService : IRefreshTokenService
         try
         {
             token.Revoke(ipAddress, reason ?? "Manual revocation");
-            _unitOfWork.Context.RefreshTokens.Update(token);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            unitOfWork.Context.RefreshTokens.Update(token);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Token revoked successfully for user {UserId}", token.UserId);
+            logger.LogInformation("Token revoked successfully for user {UserId}", token.UserId);
             return Result.Success;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Token revocation failed for token {TokenHash}", token.TokenHash);
+            logger.LogError(ex, "Token revocation failed for token {TokenHash}", token.TokenHash);
             return RefreshToken.Errors.RevocationFailed;
         }
     }
@@ -176,18 +164,18 @@ public sealed class RefreshTokenService : IRefreshTokenService
         {
             var now = DateTimeOffset.UtcNow;
             var retentionCutoff = now.AddDays(-_options.RevokedTokenRetentionDays);
-            var deletedCount = await _unitOfWork.Context.RefreshTokens
+            var deletedCount = await unitOfWork.Context.RefreshTokens
                 .Where(t => t.ExpiresAt < now || (t.IsRevoked && t.RevokedAt < retentionCutoff))
                 .ExecuteDeleteAsync(cancellationToken);
 
             if (deletedCount > 0)
-                _logger.LogInformation("Token cleanup removed {Count} tokens", deletedCount);
+                logger.LogInformation("Token cleanup removed {Count} tokens", deletedCount);
 
             return deletedCount;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Token cleanup operation failed");
+            logger.LogError(ex, "Token cleanup operation failed");
             return RefreshToken.Errors.CleanupFailed;
         }
     }
@@ -202,7 +190,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
         try
         {
             var hash = RefreshToken.Hash(token);
-            var stored = await _unitOfWork.Context.RefreshTokens
+            var stored = await unitOfWork.Context.RefreshTokens
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
@@ -219,7 +207,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Refresh token validation failed");
+            logger.LogError(ex, "Refresh token validation failed");
             return RefreshToken.Errors.ValidationFailed;
         }
     }
@@ -254,7 +242,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
                 }
             }
 
-            var tokens = await _unitOfWork.Context.RefreshTokens
+            var tokens = await unitOfWork.Context.RefreshTokens
                 .Where(t => t.UserId == userId && !t.IsRevoked && (exceptHash == null || t.TokenHash != exceptHash))
                 .ToListAsync(cancellationToken);
 
@@ -264,17 +252,17 @@ public sealed class RefreshTokenService : IRefreshTokenService
             foreach (var t in tokens)
             {
                 t.Revoke(ipAddress, reason ?? "Revoke all user tokens");
-                _unitOfWork.Context.RefreshTokens.Update(t);
+                unitOfWork.Context.RefreshTokens.Update(t);
             }
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Revoked {Count} tokens for user {UserId}", tokens.Count, userId);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Revoked {Count} tokens for user {UserId}", tokens.Count, userId);
 
             return tokens.Count;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to revoke all tokens for user {UserId}", userId);
+            logger.LogError(ex, "Failed to revoke all tokens for user {UserId}", userId);
             return RefreshToken.Errors.RevokeAllFailed;
         }
     }

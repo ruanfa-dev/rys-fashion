@@ -1,10 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using SharedKernel.Domain.Attributes;
+using SharedKernel.Domain.Attributes.Assignable;
 
 using UseCases.Common.Persistence.Constants;
-
 
 namespace Infrastructure.Persistence.Configurations.Common;
 public class AssignableEntityConfiguration<TEntity> : IEntityTypeConfiguration<TEntity>

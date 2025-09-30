@@ -1,4 +1,6 @@
-﻿namespace Infrastructure.Persistence.Constants;
+﻿using System.Transactions;
+
+namespace Infrastructure.Persistence.Constants;
 
 public static class Schema
 {
@@ -34,11 +36,14 @@ public static class Schema
     public const string Taxonomies = "taxonomies"; // Root systems: Categories, Occasions, Seasons
     public const string Taxons = "taxons"; // Hierarchical: Women > Clothing > Dresses > Casual
     public const string ProductTaxons = "product_taxons"; // Many-to-many relationships
-    
+
+    // Translations - Multi-language support
+    public static string TranslationFor(string tableName) => $"{tableName}_translations";
+
     // ===========================================
     // PHASE 2: PRODUCT CORE (Weeks 2-3) - E-commerce foundation
     // ===========================================
-    
+
     // Product Architecture - Spree-inspired complexity
     public const string Products = "products";
     public const string ProductMasterData = "product_master_data"; // Master catalog info
@@ -60,11 +65,17 @@ public static class Schema
     public const string VariantImages = "variant_images"; // Color-specific images
     public const string VariantOptionValues = "variant_option_values";
     public const string Prices = "prices"; // Multi-currency, location-based pricing
-    
+
+    // Prototypes - Predefined sets of properties/options
+    public const string Prototypes = "prototypes";
+    public const string PrototypeProperties = "prototype_properties";
+    public const string PrototypeOptionTypes = "prototype_option_types";
+    public const string PrototypeTaxons = "prototype_taxons";
+
     // ===========================================
     // PHASE 3: INVENTORY & ORDERS (Weeks 3-4) - Business operations
     // ===========================================
-    
+
     // Advanced Inventory - Multi-location complexity
     public const string StockLocations = "stock_locations"; // Warehouses + stores
     public const string InventoryUnits = "inventory_units"; // Individual stock items

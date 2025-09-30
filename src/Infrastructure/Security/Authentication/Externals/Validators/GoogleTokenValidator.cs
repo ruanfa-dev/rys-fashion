@@ -39,7 +39,7 @@ public sealed class GoogleTokenValidator : IExternalTokenValidator
                 
             return new GoogleJsonWebSignature.ValidationSettings()
             {
-                Audience = new[] { _googleOptions.ClientId }
+                Audience = [_googleOptions.ClientId]
             };
         });
     }

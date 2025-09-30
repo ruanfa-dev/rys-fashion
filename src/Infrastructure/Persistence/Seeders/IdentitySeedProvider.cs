@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Permissions;
+﻿using Core.Identity.Permissions;
 using Core.Identity.Roles;
 using Core.Identity.Users;
 
@@ -49,26 +48,30 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         Log.Information("[IdentitySeed:Permissions] Ensuring all permissions exist in database");
 
         // Get all predefined permissions from the Feature class
-        var allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions;
-        
-        // Get existing permissions from database
+        var allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions ?? Array.Empty<Permission>();
+
+        // Get existing permission names from database (normalize to lower-case for comparison)
         var existingPermissionNames = await dbContext.Permissions
-            .Select(p => p.Name)
+            .Select(p => p.Name.ToLowerInvariant())
             .ToHashSetAsync(cancellationToken);
 
-        var permissionsToAdd = new List<Permission>();
-
-        foreach (var permission in allPermissions)
-        {
-            if (!existingPermissionNames.Contains(permission.Name))
-            {
-                permissionsToAdd.Add(permission);
-                Log.Information("[IdentitySeed:Permissions] Adding permission: {PermissionName}", permission.Name);
-            }
-        }
+        // Deduplicate the source permissions by name (case-insensitive) to avoid adding the same logical
+        // permission multiple times. Also create fresh Permission instances when inserting so the
+        // in-memory provider doesn't see duplicated primary keys from any shared/static instances.
+        var permissionsToAdd = allPermissions
+            .GroupBy(p => (p.Name).ToLowerInvariant())
+            .Select(g => g.First())
+            .Where(p => !existingPermissionNames.Contains((p.Name ?? string.Empty).ToLowerInvariant()))
+            .Select(p => Permission.Create(p.Area, p.Resource, p.Action, p.Description, p.DisplayName))
+            .ToList();
 
         if (permissionsToAdd.Count > 0)
         {
+            foreach (var permission in permissionsToAdd)
+            {
+                Log.Information("[IdentitySeed:Permissions] Adding permission: {PermissionName}", permission.Name);
+            }
+
             await dbContext.Permissions.AddRangeAsync(permissionsToAdd, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             Log.Information("[IdentitySeed:Permissions] Added {Count} new permissions", permissionsToAdd.Count);
@@ -111,6 +114,40 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         }
 
         Log.Information("[IdentitySeed:Roles] All roles ensured");
+
+        // Deduplicate roles by NormalizedName to avoid multiple entries that break
+        // Identity APIs (SingleOrDefault queries). This can happen in in-memory DB
+        // scenarios when seeders run multiple times across test host lifecycles.
+        try
+        {
+            var allRolesList = await roleManager.Roles.ToListAsync(cancellationToken);
+            var duplicates = allRolesList
+                .GroupBy(r => r.NormalizedName)
+                .Where(g => g.Count() > 1)
+                .ToList();
+
+            foreach (var dupGroup in duplicates)
+            {
+                // Keep the first and delete the rest
+                var keep = dupGroup.First();
+                foreach (var remove in dupGroup.Skip(1))
+                {
+                    var delResult = await roleManager.DeleteAsync(remove);
+                    if (!delResult.Succeeded)
+                    {
+                        Log.Warning("[IdentitySeed:Roles] Failed to remove duplicate role {RoleName}: {Errors}", remove.Name, string.Join(";", delResult.Errors.Select(e => e.Description)));
+                    }
+                    else
+                    {
+                        Log.Information("[IdentitySeed:Roles] Removed duplicate role entry {RoleName}", remove.Name);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "[IdentitySeed:Roles] Could not deduplicate roles: {Message}", ex.Message);
+        }
     }
 
     private static async Task SeedUsersPerRoleAsync(

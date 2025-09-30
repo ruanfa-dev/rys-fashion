@@ -194,7 +194,7 @@ public static class AuthenticationConfiguration
     private static T GetRequiredOptions<T>(IConfiguration configuration, string sectionName) where T : class, new()
     {
         var options = configuration.GetSection(sectionName).Get<T>();
-        Guard.Against.Null(options, nameof(options), $"{typeof(T).Name} options must be configured in appsettings at section '{sectionName}'.");
+        Guard.Against.Null(options, $"{typeof(T).Name} options must be configured in appsettings at section '{sectionName}'.");
         return options;
     }
 

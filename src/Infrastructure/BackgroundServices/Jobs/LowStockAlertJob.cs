@@ -11,25 +11,18 @@ public sealed class LowStockItem
     public int CurrentStock { get; set; }
     public int MinimumStock { get; set; }
 }
-public sealed class LowStockAlertJob
+public sealed class LowStockAlertJob(IUnitOfWork unitOfWork, ILogger<LowStockAlertJob> logger)
 {
     public const string RecurringJobId = "low-stock-alert";
     public const string CronExpression = "0 9 * * 1";
     public const string Description = "Sends alerts for products with stock below minimum threshold.";
     public const string Tag = "low-stock-alert";
 
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<LowStockAlertJob> _logger;
-
-    public LowStockAlertJob(IUnitOfWork unitOfWork, ILogger<LowStockAlertJob> logger)
-    {
-        _unitOfWork = unitOfWork;
-        _logger = logger;
-    }
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Starting low stock alert job");
+        logger.LogInformation("Starting low stock alert job");
 
         try
         {
@@ -38,16 +31,16 @@ public sealed class LowStockAlertJob
             if (lowStockItems.Count > 0)
             {
                 await SendLowStockAlerts(lowStockItems, cancellationToken);
-                _logger.LogInformation("Successfully sent low stock alerts for {Count} items", lowStockItems.Count);
+                logger.LogInformation("Successfully sent low stock alerts for {Count} items", lowStockItems.Count);
             }
             else
             {
-                _logger.LogInformation("No low stock items found");
+                logger.LogInformation("No low stock items found");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred during low stock alert processing");
+            logger.LogError(ex, "Error occurred during low stock alert processing");
             throw;
         }
     }

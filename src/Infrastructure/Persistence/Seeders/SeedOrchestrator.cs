@@ -3,16 +3,11 @@
 using Serilog;
 
 namespace Infrastructure.Persistence.Seeders;
-public class SeedOrchestrator : IHostedService
+public class SeedOrchestrator(IEnumerable<IDataSeeder> seeders) : IHostedService
 {
-    private readonly IEnumerable<IDataSeeder> _seeders;
-
-    public SeedOrchestrator(IEnumerable<IDataSeeder> seeders)
-        => _seeders = seeders;
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        foreach (var seeder in _seeders)
+        foreach (var seeder in seeders)
         {
             var name = seeder.GetType().Name;
             Log.Information("[SeedOrchestrator] Running {Seeder}", name);

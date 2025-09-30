@@ -1,11 +1,11 @@
-﻿using Core.Catalog.Properties;
+using Core.Catalog.Properties;
 
 using Infrastructure.Persistence.Constants;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Infrastructure.Persistence.Configurations.Catalogs;
+namespace Infrastructure.Persistence.Configurations.Catalogs.Properties;
 public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
 {
     public void Configure(EntityTypeBuilder<Property> builder)
@@ -38,6 +38,12 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.HasMany(p => p.ProductProperties)
             .WithOne(pp => pp.Property)
             .HasForeignKey(pp => pp.PropertyId);
+
+        // Translations relationship
+        builder.HasMany(p => p.Translations)
+            .WithOne(t => t.Property)
+            .HasForeignKey(t => t.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Indexes
         builder.HasIndex(p => p.Name);

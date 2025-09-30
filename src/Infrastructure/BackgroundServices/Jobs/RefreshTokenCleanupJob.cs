@@ -5,26 +5,19 @@ using UseCases.Common.Security.Authentication.Tokens.Services;
 
 namespace Infrastructure.BackgroundServices.Jobs;
 
-public sealed class RefreshTokenCleanupJob
+public sealed class RefreshTokenCleanupJob(
+    IRefreshTokenService refreshTokenService,
+    IUnitOfWork unitOfWork,
+    ILogger<RefreshTokenCleanupJob> logger)
 {
-    private readonly IRefreshTokenService _refreshTokenService;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<RefreshTokenCleanupJob> _logger;
+    private readonly IRefreshTokenService _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly ILogger<RefreshTokenCleanupJob> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public const string RecurringJobId = "refresh-token-cleanup";
     public const string CronExpression = "0 2 * * *"; // Every day at 2 AM
     public const string Description = "Cleans up expired and revoked refresh tokens.";
     public const string Tag = "security";
-
-    public RefreshTokenCleanupJob(
-        IRefreshTokenService refreshTokenService,
-        IUnitOfWork unitOfWork,
-        ILogger<RefreshTokenCleanupJob> logger)
-    {
-        _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {

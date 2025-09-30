@@ -21,10 +21,10 @@ public sealed class StorageOptions
 
     [Required(ErrorMessage = "At least one file extension must be allowed")]
     [MinLength(1, ErrorMessage = "At least one file extension must be allowed")]
-    public string[] AllowedExtensions { get; set; } = new[]
-    {
+    public string[] AllowedExtensions { get; set; } =
+    [
         ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".xls", ".xlsx"
-    };
+    ];
 
     // Performance settings
     public int UploadTimeoutSeconds { get; set; } = 300; // 5 minutes

@@ -1,4 +1,3 @@
-using Core.Identity;
 using Core.Identity.Permissions;
 
 using Infrastructure.Persistence.Constants;

@@ -1,5 +1,4 @@
-﻿using Core.Identity;
-using Core.Identity.Tokens;
+﻿using Core.Identity.Tokens;
 
 using Infrastructure.Persistence.Constants;
 

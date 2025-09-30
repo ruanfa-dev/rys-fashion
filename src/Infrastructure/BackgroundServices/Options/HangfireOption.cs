@@ -36,7 +36,7 @@ public sealed class HangfireServerOptions
     /// Background job queues for different priorities
     /// For fashion e-shop: default, email, inventory, reports
     /// </summary>
-    public string[] Queues { get; init; } = new[] { "default", "email", "inventory", "reports" };
+    public string[] Queues { get; init; } = ["default", "email", "inventory", "reports"];
 
     /// <summary>
     /// Server polling interval in seconds
