@@ -107,7 +107,7 @@ public static class SortParamExtensions
         var property = Expression.Property(parameter, propertyInfo);
         var lambda = Expression.Lambda(property, parameter);
 
-        return (IQueryable<T>)((MethodInfo)method).Invoke(null, new object[] { query, lambda })!;
+        return (IQueryable<T>)((MethodInfo)method).Invoke(null, [query, lambda])!;
     }
 
     private static IOrderedQueryable<T> ApplyThenByInternal<T>(this IOrderedQueryable<T> query, PropertyInfo propertyInfo, bool descending)
@@ -128,7 +128,7 @@ public static class SortParamExtensions
         var property = Expression.Property(parameter, propertyInfo);
         var lambda = Expression.Lambda(property, parameter);
 
-        return (IOrderedQueryable<T>)(((MethodInfo)method).Invoke(null, new object[] { query, lambda }) ?? query);
+        return (IOrderedQueryable<T>)(((MethodInfo)method).Invoke(null, [query, lambda]) ?? query);
     }
 }
 

@@ -7,26 +7,21 @@ namespace SharedKernel.Domain.Primitives;
 /// <summary>
 /// Base entity class with ID and domain events support, without auditing capabilities
 /// </summary>
-public abstract class Entity<TId> : IEntity<TId>, IEquatable<Entity<TId>>, IHasDomainEvent
+public abstract class Entity<TId>(TId id) : IEntity<TId>, IEquatable<Entity<TId>>, IHasDomainEvent
     where TId : notnull
 {
     #region Properties
-    public TId Id { get; set; }
-    
+    public TId Id { get; set; } = id;
+
     private readonly List<IDomainEvent> _domainEvents = [];
     protected IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
     #endregion
 
     #region Constructors
-    public Entity()
+    public Entity() : this(default!)
     {
-        Id = default!;
     }
 
-    public Entity(TId id)
-    {
-        Id = id;
-    }
     #endregion
 
     #region Methods

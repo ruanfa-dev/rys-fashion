@@ -315,17 +315,17 @@ public static class SearchParamsExtensions
         Expression searchCall;
         if (options.ExactMatch.HasValue && options.ExactMatch.Value)
         {
-            MethodInfo? equalsMethod = typeof(string).GetMethod("Equals", new[] { typeof(string) });
+            MethodInfo? equalsMethod = typeof(string).GetMethod("Equals", [typeof(string)]);
             searchCall = Expression.Call(searchExpression, equalsMethod!, searchConstant);
         }
         else if (options.StartsWith.HasValue && options.StartsWith.Value)
         {
-            MethodInfo? startsWithMethod = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
+            MethodInfo? startsWithMethod = typeof(string).GetMethod("StartsWith", [typeof(string)]);
             searchCall = Expression.Call(searchExpression, startsWithMethod!, searchConstant);
         }
         else
         {
-            MethodInfo? containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+            MethodInfo? containsMethod = typeof(string).GetMethod("Contains", [typeof(string)]);
             searchCall = Expression.Call(searchExpression, containsMethod!, searchConstant);
         }
 
@@ -345,22 +345,14 @@ public static class SearchParamsExtensions
         return new ParameterReplacer(oldParameter, newParameter).Visit(expression);
     }
 
-    private class ParameterReplacer : ExpressionVisitor
+    private class ParameterReplacer(
+        ParameterExpression oldParameter,
+        ParameterExpression newParameter)
+        : ExpressionVisitor
     {
-        private readonly ParameterExpression _oldParameter;
-        private readonly ParameterExpression _newParameter;
-
-        public ParameterReplacer(
-            ParameterExpression oldParameter,
-            ParameterExpression newParameter)
-        {
-            _oldParameter = oldParameter;
-            _newParameter = newParameter;
-        }
-
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            return node == _oldParameter ? _newParameter : base.VisitParameter(node);
+            return node == oldParameter ? newParameter : base.VisitParameter(node);
         }
     }
 }
