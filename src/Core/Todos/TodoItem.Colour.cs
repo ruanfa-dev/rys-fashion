@@ -38,7 +38,7 @@ public sealed class Colour(string code) : ValueObject
 
     public static Colour Grey => new("#999999");
 
-    public string Code { get; private set; } = string.IsNullOrWhiteSpace(code) ? "#000000" : code;
+    public string Code { get; set; } = string.IsNullOrWhiteSpace(code) ? "#000000" : code;
 
     public static implicit operator string(Colour colour)
     {

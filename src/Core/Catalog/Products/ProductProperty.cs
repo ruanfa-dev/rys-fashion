@@ -1,9 +1,9 @@
 ﻿using Core.Catalog.Properties;
-using Core.Commons.Extensions;
 
 using ErrorOr;
 
 using SharedKernel.Domain.Primitives;
+using SharedKernel.Extensions.Text;
 using SharedKernel.Messaging;
 
 namespace Core.Catalog.Products;
@@ -19,27 +19,27 @@ public sealed class ProductProperty : AuditableEntity
     /// <summary>
     /// The actual value for the property on this product (translatable in Spree).
     /// </summary>
-    public string Value { get; private set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
 
     /// <summary>
     /// A parameterized version used for filtering (e.g. "cotton-100").
     /// </summary>
-    public string? FilterParam { get; private set; }
+    public string? FilterParam { get; set; }
 
     /// <summary>
     /// Position used for ordering (acts_as_list scope: product)
     /// </summary>
-    public int Position { get; private set; }
+    public int Position { get; set; }
 
     #endregion
 
     #region Relationships
 
-    public Guid ProductId { get; private set; }
-    public Product Product { get; private set; } = null!;
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; } = null!;
 
-    public Guid PropertyId { get; private set; }
-    public Property Property { get; private set; } = null!;
+    public Guid PropertyId { get; set; }
+    public Property Property { get; set; } = null!;
 
 
     #endregion
@@ -83,14 +83,14 @@ public sealed class ProductProperty : AuditableEntity
             return Errors.ValueTooLong;
         if (!System.Text.RegularExpressions.Regex.IsMatch(value, Constraints.ValueAllowedPattern))
             return Errors.InvalidValue;
-        var filterParamCandidate = value.ComputeFilterParam();
+        var filterParamCandidate = value.Parameterize();
 
         // Validate: FilterParam (max length, allowed characters)
         if (filterParamCandidate.Length > Constraints.MaxFilterParamLength)
             return Errors.FilterParamTooLong;
         if (!System.Text.RegularExpressions.Regex.IsMatch(filterParamCandidate, Constraints.FilterParamAllowedPattern))
             return Errors.InvalidFilterParam;
-       
+
         var productProperty = new ProductProperty(
             productId: productId,
             propertyId: propertyId,
@@ -152,7 +152,7 @@ public sealed class ProductProperty : AuditableEntity
         if (string.IsNullOrWhiteSpace(candidate))
             return;
 
-        FilterParam = candidate.ComputeFilterParam();
+        FilterParam = candidate.Parameterize();
     }
     #endregion
 

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-using SharedKernel.Domain.Attributes;
+using SharedKernel.Domain.Attributes.Assignable;
 
 namespace Core.Identity.Roles;
 public sealed class RoleClaim : IdentityRoleClaim<Guid>, IAssignable

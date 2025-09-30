@@ -10,22 +10,22 @@ namespace Core.Identity.Tokens;
 /// </summary>
 public sealed partial class RefreshToken
 {
-    public Guid Id { get; private set; } = Guid.NewGuid();
-    public Guid UserId { get; private set; }
-    public string TokenHash { get; private set; } = string.Empty;
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
+    public string TokenHash { get; set; } = string.Empty;
 
-    public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
-    public string CreatedByIp { get; private set; } = string.Empty;
-    public DateTimeOffset ExpiresAt { get; private set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public string CreatedByIp { get; set; } = string.Empty;
+    public DateTimeOffset ExpiresAt { get; set; }
 
-    public DateTimeOffset? RevokedAt { get; private set; }
-    public string? RevokedByIp { get; private set; }
-    public string? RevokedReason { get; private set; }
+    public DateTimeOffset? RevokedAt { get; set; }
+    public string? RevokedByIp { get; set; }
+    public string? RevokedReason { get; set; }
 
     public bool IsExpired => DateTimeOffset.UtcNow >= ExpiresAt;
     public bool IsRevoked => RevokedAt.HasValue;
 
-    public User User { get; private set; } = null!;
+    public User User { get; set; } = null!;
 
     // Private constructor for EF Core
     private RefreshToken() { }

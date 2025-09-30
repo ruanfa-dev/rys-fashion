@@ -3,6 +3,9 @@ using Core.Catalog.Prototypes;
 
 using ErrorOr;
 
+using SharedKernel.Domain.Attributes.Metadata;
+using SharedKernel.Domain.Attributes.Parameterizable;
+using SharedKernel.Domain.Attributes.TranslatableResource;
 using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging;
 
@@ -13,48 +16,62 @@ namespace Core.Catalog.Properties;
 /// Mirrors Spree::Property: has name, presentation, kind, filterable flag,
 /// display_on target, and ordering (position).
 /// </summary>
-public sealed class Property : AuditableEntity
+public sealed class Property :
+    AuditableEntity,
+    IParameterizableName,
+    IMetadataSupport,
+    ITranslatable<PropertyTranslation>
 {
     #region Properties
+    #region Core Properties
 
     /// <summary>
     /// Internal identifier name (required, unique).
     /// Example: "material".
     /// </summary>
-    public string Name { get; private set; } = null!;
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// User-facing label (required).
     /// Example: "Material".
     /// </summary>
-    public string Presentation { get; private set; } = null!;
+    public string Presentation { get; set; } = null!;
 
     /// <summary>
     /// Type of property value (short text, long text, number, rich text).
     /// Mirrors Spree::Property#kind.
     /// </summary>
-    public PropertyKind Kind { get; private set; } = PropertyKind.ShortText;
+    public PropertyKind Kind { get; set; } = PropertyKind.ShortText;
 
     /// <summary>
     /// Whether this property is filterable (used in storefront filtering).
     /// </summary>
-    public bool Filterable { get; private set; }
+    public bool Filterable { get; set; }
 
     /// <summary>
     /// Where the property should be displayed (frontend, backend, both, or none).
     /// Mirrors Spree::Property#display_on.
     /// </summary>
-    public DisplayOn DisplayOn { get; private set; } = DisplayOn.Both;
+    public DisplayOn DisplayOn { get; set; } = DisplayOn.Both;
 
     /// <summary>
     /// Position for ordering in lists.
     /// </summary>
-    public int Position { get; private set; }
+    public int Position { get; set; }
+    #endregion
 
-    public ICollection<PrototypeProperty> PrototypeProperties { get; set; } = new List<PrototypeProperty>();
+    public ICollection<PropertyPrototype> PrototypeProperties { get; set; } = new List<PropertyPrototype>();
     public ICollection<ProductProperty> ProductProperties { get; set; } = new List<ProductProperty>();
     public IEnumerable<Product> Products => ProductProperties.Select(pp => pp.Product);
-    public IEnumerable<Prototype> Prototypes => PrototypeProperties.Select(pp => pp.Prototype);
+    public IEnumerable<Prototype> Prototypes => PrototypeProperties.Select(pp => pp.Prototype).Where(p => p != null).Cast<Prototype>();
+    public ICollection<PropertyTranslation> Translations { get; set; } = new List<PropertyTranslation>();
+
+    // Metadata
+    public IDictionary<string, string?>? PublicMetadata { get; set; } = new Dictionary<string, string?>();
+    public IDictionary<string, string?>? PrivateMetadata { get; set; } = new Dictionary<string, string?>();
+
+    public IReadOnlyCollection<string> TranslatableFields => [nameof(Presentation)];
+
     #endregion
 
     #region Constraints
@@ -153,7 +170,9 @@ public sealed class Property : AuditableEntity
         PropertyKind kind = PropertyKind.ShortText,
         bool filterable = false,
         DisplayOn displayOn = DisplayOn.Both,
-        int position = 0)
+        int position = 0,
+        IDictionary<string, string?>? publicMetadata = null,
+        IDictionary<string, string?>? privateMetadata = null)
     {
         var property = new Property
         {
@@ -164,6 +183,11 @@ public sealed class Property : AuditableEntity
             DisplayOn = displayOn,
             Position = Math.Max(position, Constraints.PositionMin)
         };
+        // assign optional metadata if provided
+        if (publicMetadata != null)
+            property.PublicMetadata = new Dictionary<string, string?>(publicMetadata);
+        if (privateMetadata != null)
+            property.PrivateMetadata = new Dictionary<string, string?>(privateMetadata);
 
         property.AddDomainEvent(new Events.Created(property.Id));
         return property;
@@ -179,15 +203,19 @@ public sealed class Property : AuditableEntity
         PropertyKind? kind = null,
         bool? filterable = null,
         DisplayOn? displayOn = null,
-        int? position = null)
+        int? position = null,
+        IDictionary<string, string?>? publicMetadata = null,
+        IDictionary<string, string?>? privateMetadata = null)
     {
         bool changed = false;
+        bool nameChanged = false, presentationChanged = false, kindChanged = false, filterableChanged = false, displayOnChanged = false, positionChanged = false;
 
         if (!string.IsNullOrWhiteSpace(name) && name != Name)
         {
             var result = SetName(name);
             if (result.IsError) return result.Errors;
             changed = true;
+            nameChanged = true;
         }
 
         if (!string.IsNullOrWhiteSpace(presentation) && presentation != Presentation)
@@ -195,39 +223,95 @@ public sealed class Property : AuditableEntity
             var result = SetPresentation(presentation);
             if (result.IsError) return result.Errors;
             changed = true;
+            presentationChanged = true;
         }
 
         if (kind.HasValue && kind.Value != Kind)
         {
-            Kind = kind.Value;
-            changed = true;
-        }
-
-        if (filterable.HasValue && filterable.Value != Filterable)
-        {
-            SetFilterable(filterable.Value);
-            changed = true;
+            filterableChanged = true;
         }
 
         if (displayOn.HasValue && displayOn.Value != DisplayOn)
         {
             DisplayOn = displayOn.Value;
             changed = true;
+            displayOnChanged = true;
         }
 
         if (position.HasValue && position.Value != Position)
         {
             SetPosition(position.Value);
             changed = true;
+            positionChanged = true;
+        }
+
+        if (publicMetadata != null)
+        {
+            PublicMetadata = new Dictionary<string, string?>(publicMetadata);
+            changed = true;
+        }
+
+        if (privateMetadata != null)
+        {
+            PrivateMetadata = new Dictionary<string, string?>(privateMetadata);
+            changed = true;
         }
 
         if (changed)
         {
+            // If one of the dependency fields changed, touch related products (mimics after_update behavior)
+            if (nameChanged || presentationChanged || kindChanged || filterableChanged || displayOnChanged || positionChanged)
+            {
+                TouchAllProducts();
+            }
+
             MarkAsUpdated();
             AddDomainEvent(new Events.Updated(Id));
         }
 
         return this;
+    }
+
+    // Ported helpers to mimic Rails scopes/defaults
+    public static IQueryable<Property> ApplyDefaultOrdering(IQueryable<Property> query)
+    {
+        if (query == null) throw new ArgumentNullException(nameof(query));
+        return query.OrderBy(p => p.Position).ThenBy(p => p.CreatedAt);
+    }
+
+    public static IQueryable<Property> ApplySorted(IQueryable<Property> query)
+    {
+        if (query == null) throw new ArgumentNullException(nameof(query));
+        return query.OrderBy(p => p.Name);
+    }
+
+    public static IQueryable<Property> FilterableScope(IQueryable<Property> query)
+    {
+        if (query == null) throw new ArgumentNullException(nameof(query));
+        return query.Where(p => p.Filterable);
+    }
+
+    /// <summary>
+    /// Returns unique pairs of (filter_param, value) from the associated product properties.
+    /// If productPropertiesScope is provided, filters by those ProductProperty Ids.
+    /// Note: this operates on the loaded ProductProperties collection; for large datasets prefer a repository query.
+    /// </summary>
+    public List<(string? FilterParam, string Value)> UniqValues(IEnumerable<Guid>? productPropertiesScope = null)
+    {
+        var props = ProductProperties.AsEnumerable();
+        if (productPropertiesScope != null)
+        {
+            var ids = productPropertiesScope.ToHashSet();
+            props = props.Where(pp => ids.Contains(pp.Id));
+        }
+
+        var pairs = props
+            .Where(pp => !string.IsNullOrWhiteSpace(pp.Value))
+            .Select(pp => (pp.FilterParam, pp.Value))
+            .Distinct()
+            .ToList();
+
+        return pairs;
     }
 
     public ErrorOr<Success> SetName(string name)
@@ -289,8 +373,6 @@ public sealed class Property : AuditableEntity
     {
         if (ProductProperties.Any())
             return Errors.CannotDeleteInUse(Id, ProductProperties.Count);
-
-
 
         AddDomainEvent(new Events.Deleted(Id));
         return Result.Deleted;
