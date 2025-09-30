@@ -138,7 +138,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
 
         // Map common .NET exceptions to appropriate ErrorOr error types
         var error = CreateErrorFromException(exception);
-        return new[] { error };
+        return [error];
     }
 
     /// <summary>

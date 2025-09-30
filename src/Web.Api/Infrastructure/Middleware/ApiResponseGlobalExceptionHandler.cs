@@ -146,7 +146,7 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
 
         // Map common .NET exceptions to appropriate ErrorOr error types
         var error = CreateErrorFromException(exception);
-        return new[] { error };
+        return [error];
     }
 
     /// <summary>
@@ -161,7 +161,6 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
             return CreateGenericErrorApiResponse(requestPath);
 
         var firstError = errors[0];
-        var statusCode = GetStatusCode(firstError.Type);
 
         // Group errors by full error code (not just category)
         var errorGroups = errors
