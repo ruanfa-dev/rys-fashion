@@ -13,16 +13,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
 
     #region Test Implementations
 
-    private sealed class TestValueObject : ValueObject
+    private sealed class TestValueObject(string value1, int value2) : ValueObject
     {
-        public string Value1 { get; }
-        public int Value2 { get; }
-
-        public TestValueObject(string value1, int value2)
-        {
-            Value1 = value1;
-            Value2 = value2;
-        }
+        public string Value1 { get; } = value1;
+        public int Value2 { get; } = value2;
 
         protected override IEnumerable<object?> GetEqualityComponents()
         {
@@ -31,14 +25,9 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         }
     }
 
-    private sealed class SingleValueObject : ValueObject
+    private sealed class SingleValueObject(string value) : ValueObject
     {
-        public string Value { get; }
-
-        public SingleValueObject(string value)
-        {
-            Value = value;
-        }
+        public string Value { get; } = value;
 
         protected override IEnumerable<object?> GetEqualityComponents()
         {
@@ -46,25 +35,21 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         }
     }
 
-    private sealed class ComplexValueObject : ValueObject
+    private sealed class ComplexValueObject(
+        string stringValue,
+        int intValue,
+        decimal decimalValue,
+        DateTime dateValue,
+        bool boolValue,
+        string? nullableValue = null)
+        : ValueObject
     {
-        public string StringValue { get; }
-        public int IntValue { get; }
-        public decimal DecimalValue { get; }
-        public DateTime DateValue { get; }
-        public bool BoolValue { get; }
-        public string? NullableValue { get; }
-
-        public ComplexValueObject(string stringValue, int intValue, decimal decimalValue,
-            DateTime dateValue, bool boolValue, string? nullableValue = null)
-        {
-            StringValue = stringValue;
-            IntValue = intValue;
-            DecimalValue = decimalValue;
-            DateValue = dateValue;
-            BoolValue = boolValue;
-            NullableValue = nullableValue;
-        }
+        public string StringValue { get; } = stringValue;
+        public int IntValue { get; } = intValue;
+        public decimal DecimalValue { get; } = decimalValue;
+        public DateTime DateValue { get; } = dateValue;
+        public bool BoolValue { get; } = boolValue;
+        public string? NullableValue { get; } = nullableValue;
 
         protected override IEnumerable<object?> GetEqualityComponents()
         {
@@ -85,14 +70,9 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         }
     }
 
-    private sealed class DifferentTypeValueObject : ValueObject
+    private sealed class DifferentTypeValueObject(string value) : ValueObject
     {
-        public string Value { get; }
-
-        public DifferentTypeValueObject(string value)
-        {
-            Value = value;
-        }
+        public string Value { get; } = value;
 
         protected override IEnumerable<object?> GetEqualityComponents()
         {
@@ -101,16 +81,10 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     }
 
     // Value object using record syntax but not inheriting from ValueObject
-    private sealed class RecordLikeValueObject : ValueObject
+    private sealed class RecordLikeValueObject(string value1, int value2) : ValueObject
     {
-        public string Value1 { get; }
-        public int Value2 { get; }
-
-        public RecordLikeValueObject(string value1, int value2)
-        {
-            Value1 = value1;
-            Value2 = value2;
-        }
+        public string Value1 { get; } = value1;
+        public int Value2 { get; } = value2;
 
         protected override IEnumerable<object?> GetEqualityComponents()
         {

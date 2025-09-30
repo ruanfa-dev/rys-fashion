@@ -12,12 +12,7 @@ namespace UseCases.UnitTests.Common.Extensions;
 /// </summary>
 public class TypedResultsExampleServiceTests
 {
-    private readonly TypedResultsExampleService _service;
-
-    public TypedResultsExampleServiceTests()
-    {
-        _service = new TypedResultsExampleService();
-    }
+    private readonly TypedResultsExampleService _service = new();
 
     #region GetProductByIdAsync Tests
 

@@ -7,12 +7,7 @@ namespace SharedKernel.UnitTests.Models.Sort;
 
 public sealed class SortParamExtensionsTests
 {
-    private readonly List<TestEntity> _testData;
-
-    public SortParamExtensionsTests()
-    {
-        _testData = TestEntity.GetTestData();
-    }
+    private readonly List<TestEntity> _testData = TestEntity.GetTestData();
 
     private IQueryable<TestEntity> GetQueryableTestData() => _testData.AsQueryable();
 

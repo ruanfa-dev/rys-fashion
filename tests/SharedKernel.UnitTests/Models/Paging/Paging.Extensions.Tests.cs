@@ -24,44 +24,39 @@ public sealed class PagingExtensionsTests
         Inactive
     }
 
-    private readonly List<User> _users;
-
-    public PagingExtensionsTests()
+    private readonly List<User> _users = new()
     {
-        _users = new List<User>
+        new User
         {
-            new User
-            {
-                Id = 1,
-                Name = "John Doe",
-                CreatedUtc = DateTime.Parse("2023-01-01T00:00:00Z"),
-                CreatedOffset = DateTimeOffset.Parse("2023-01-01T00:00:00+00:00"),
-                LastLoginUtc = DateTime.Parse("2023-06-01T00:00:00Z"),
-                LastActivityOffset = DateTimeOffset.Parse("2023-06-01T00:00:00+00:00"),
-                Status = UserStatus.Active
-            },
-            new User
-            {
-                Id = 2,
-                Name = "Jane Smith",
-                CreatedUtc = DateTime.Parse("2023-02-01T00:00:00Z"),
-                CreatedOffset = DateTimeOffset.Parse("2023-02-01T00:00:00+00:00"),
-                LastLoginUtc = null,
-                LastActivityOffset = null,
-                Status = UserStatus.Inactive
-            },
-            new User
-            {
-                Id = 3,
-                Name = "Bob Johnson",
-                CreatedUtc = DateTime.Parse("2022-12-01T00:00:00Z"),
-                CreatedOffset = DateTimeOffset.Parse("2022-12-01T00:00:00+00:00"),
-                LastLoginUtc = DateTime.Parse("2023-07-01T00:00:00Z"),
-                LastActivityOffset = DateTimeOffset.Parse("2023-07-01T00:00:00+00:00"),
-                Status = UserStatus.Active
-            }
-        };
-    }
+            Id = 1,
+            Name = "John Doe",
+            CreatedUtc = DateTime.Parse("2023-01-01T00:00:00Z"),
+            CreatedOffset = DateTimeOffset.Parse("2023-01-01T00:00:00+00:00"),
+            LastLoginUtc = DateTime.Parse("2023-06-01T00:00:00Z"),
+            LastActivityOffset = DateTimeOffset.Parse("2023-06-01T00:00:00+00:00"),
+            Status = UserStatus.Active
+        },
+        new User
+        {
+            Id = 2,
+            Name = "Jane Smith",
+            CreatedUtc = DateTime.Parse("2023-02-01T00:00:00Z"),
+            CreatedOffset = DateTimeOffset.Parse("2023-02-01T00:00:00+00:00"),
+            LastLoginUtc = null,
+            LastActivityOffset = null,
+            Status = UserStatus.Inactive
+        },
+        new User
+        {
+            Id = 3,
+            Name = "Bob Johnson",
+            CreatedUtc = DateTime.Parse("2022-12-01T00:00:00Z"),
+            CreatedOffset = DateTimeOffset.Parse("2022-12-01T00:00:00+00:00"),
+            LastLoginUtc = DateTime.Parse("2023-07-01T00:00:00Z"),
+            LastActivityOffset = DateTimeOffset.Parse("2023-07-01T00:00:00+00:00"),
+            Status = UserStatus.Active
+        }
+    };
 
     private IQueryable<User> GetQueryableUsers() => _users.AsQueryable();
 

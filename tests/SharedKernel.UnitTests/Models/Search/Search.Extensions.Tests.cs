@@ -7,12 +7,7 @@ namespace SharedKernel.UnitTests.Models.Search;
 
 public sealed class SearchParamsExtensionsTests
 {
-    private readonly List<TestEntity> _testData;
-
-    public SearchParamsExtensionsTests()
-    {
-        _testData = TestEntity.GetTestData();
-    }
+    private readonly List<TestEntity> _testData = TestEntity.GetTestData();
 
     private IQueryable<TestEntity> GetQueryableTestData() => _testData.AsQueryable();
 

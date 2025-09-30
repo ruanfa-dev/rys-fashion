@@ -14,10 +14,20 @@
         <PackageReference Include="Shouldly" />
         <PackageReference Include="xunit.runner.visualstudio" />
         <PackageReference Include="xunit.v3" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     </ItemGroup>
 
     <ItemGroup>
         <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Web.Api\Web.Api.csproj" />
+        <ProjectReference Include="..\..\src\Infrastructure\Infrastructure.csproj" />
+        <ProjectReference Include="..\..\src\Core\Core.csproj" />
+        <ProjectReference Include="..\..\src\UseCases\UseCases.csproj" />
     </ItemGroup>
 
 </Project>

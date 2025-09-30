@@ -15,15 +15,8 @@ namespace UseCases.UnitTests.Common.Extensions;
 /// Performance, stress, and edge case tests for ErrorOrTypedResultsExtensions
 /// These tests verify the extensions handle extreme scenarios gracefully
 /// </summary>
-public class ErrorOrTypedResultsPerformanceTests
+public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
 {
-    private readonly ITestOutputHelper _output;
-
-    public ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
     #region Performance Tests
 
     [Fact]
@@ -41,7 +34,7 @@ public class ErrorOrTypedResultsPerformanceTests
         // Assert
         result.ShouldBeOfType<Ok<TestProductModel>>();
         stopwatch.ElapsedMilliseconds.ShouldBeLessThan(10); // Should be very fast
-        _output.WriteLine($"Single success conversion took: {stopwatch.ElapsedTicks} ticks");
+        output.WriteLine($"Single success conversion took: {stopwatch.ElapsedTicks} ticks");
     }
 
     [Fact]
@@ -59,7 +52,7 @@ public class ErrorOrTypedResultsPerformanceTests
         // Assert
         result.ShouldBeOfType<ProblemHttpResult>();
         stopwatch.ElapsedMilliseconds.ShouldBeLessThan(10);
-        _output.WriteLine($"Single error conversion took: {stopwatch.ElapsedTicks} ticks");
+        output.WriteLine($"Single error conversion took: {stopwatch.ElapsedTicks} ticks");
     }
 
     [Theory]
@@ -88,7 +81,7 @@ public class ErrorOrTypedResultsPerformanceTests
         validationDetails.ShouldNotBeNull();
         validationDetails.Errors.Count.ShouldBe(errorCount);
 
-        _output.WriteLine($"{errorCount} validation errors took: {stopwatch.ElapsedMilliseconds}ms");
+        output.WriteLine($"{errorCount} validation errors took: {stopwatch.ElapsedMilliseconds}ms");
 
         // Performance should be reasonable even with many errors
         stopwatch.ElapsedMilliseconds.ShouldBeLessThan(errorCount / 10 + 100);
@@ -118,7 +111,7 @@ public class ErrorOrTypedResultsPerformanceTests
         var maxTime = times.Max();
         var minTime = times.Min();
         
-        _output.WriteLine($"Average: {averageTime} ticks, Min: {minTime} ticks, Max: {maxTime} ticks");
+        output.WriteLine($"Average: {averageTime} ticks, Min: {minTime} ticks, Max: {maxTime} ticks");
         
         // Performance should be consistent (max shouldn't be more than 100x average for micro-operations)
         // This is more lenient to account for system variations
