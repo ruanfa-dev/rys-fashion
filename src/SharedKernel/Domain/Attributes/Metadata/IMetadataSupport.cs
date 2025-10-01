@@ -17,9 +17,3 @@ public interface IMetadataSupport
     /// </summary>
     IDictionary<string, string?>? PrivateMetadata { get; set; }
 }
-
-public record MetadataParam : IMetadataSupport
-{
-    public IDictionary<string, string?>? PublicMetadata { get; set; }
-    public IDictionary<string, string?>? PrivateMetadata { get; set; }
-}

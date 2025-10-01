@@ -15,7 +15,7 @@ public static class IAssignableExtensions
     /// Recommended usage inside an implementer:
     ///   public void MarkAsAssigned(string? userId = default) => this.ApplyMarkAsAssigned(userId);
     /// </summary>
-    public static void ApplyMarkAsAssigned(this IAssignable? target, string? userId = default)
+    public static void ApplyMarkAsAssigned(this IAssignable? target, string? userId = null)
     {
         if (target is null) return;
 
@@ -26,7 +26,7 @@ public static class IAssignableExtensions
     /// <summary>
     /// Marks as assigned only when not already assigned.
     /// </summary>
-    public static void MarkAsAssignedIfBlank(this IAssignable? target, string? userId = default)
+    public static void MarkAsAssignedIfBlank(this IAssignable? target, string? userId = null)
     {
         if (target is null) return;
         if (target.AssignedAt.HasValue) return;

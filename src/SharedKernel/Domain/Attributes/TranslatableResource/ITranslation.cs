@@ -18,12 +18,6 @@ public interface ITranslation
     IDictionary<string, string?>? Fields { get; set; }
 }
 
-public record TranslationParam : ITranslation
-{
-    public string Culture { get; set; } = string.Empty;
-    public bool IsDefault { get; set; }
-    public IDictionary<string, string?>? Fields { get; set; }
-}
 
 public abstract class BaseTranslation : ITranslation
 {

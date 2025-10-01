@@ -6,6 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Domain\NewFolder\**" />
+    <EmbeddedResource Remove="Domain\NewFolder\**" />
+    <None Remove="Domain\NewFolder\**" />
+  </ItemGroup>
+
     <ItemGroup>
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
             <_Parameter1>SharedKernel.UnitTests</_Parameter1>

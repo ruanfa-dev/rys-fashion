@@ -1,4 +1,4 @@
-﻿using SharedKernel.Domain.Attributes;
+﻿using SharedKernel.Domain.Attributes.Auditable;
 
 namespace SharedKernel.Domain.Primitives;
 
@@ -16,28 +16,15 @@ public abstract class AuditableEntity<TId> : Entity<TId>, IAuditable
     #endregion
 
     #region Constructors
-    public AuditableEntity() : base()
+
+    protected AuditableEntity() : base()
     {
-        MarkAsCreated();
+        this.ApplyMarkAsCreated();
     }
 
-    public AuditableEntity(TId id) : base(id)
+    protected AuditableEntity(TId id) : base(id)
     {
-        MarkAsCreated();
-    }
-    #endregion
-
-    #region Auditable Methods
-    public void MarkAsCreated(string? userId = null)
-    {
-        CreatedAt = DateTimeOffset.UtcNow;
-        CreatedBy = userId;
-    }
-
-    public void MarkAsUpdated(string? userId = null)
-    {
-        UpdatedAt = DateTimeOffset.UtcNow;
-        UpdatedBy = userId;
+        this.ApplyMarkAsCreated();
     }
     #endregion
 }
@@ -47,12 +34,12 @@ public abstract class AuditableEntity<TId> : Entity<TId>, IAuditable
 /// </summary>
 public abstract class AuditableEntity : AuditableEntity<Guid>
 {
-    public AuditableEntity() : base()
+    protected AuditableEntity() : base()
     {
         Id = Guid.NewGuid();
     }
 
-    public AuditableEntity(Guid id) : base(id)
+    protected AuditableEntity(Guid id) : base(id)
     {
     }
 }

@@ -79,7 +79,7 @@ public static class MinimalApiBindHelper
     private static string ToSnakeCase(string name)
     {
         if (string.IsNullOrEmpty(name)) return name;
-        StringBuilder sb = new System.Text.StringBuilder();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < name.Length; i++)
         {
             char c = name[i];

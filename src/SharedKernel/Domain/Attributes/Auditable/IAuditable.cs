@@ -1,4 +1,4 @@
-﻿namespace SharedKernel.Domain.Attributes;
+﻿namespace SharedKernel.Domain.Attributes.Auditable;
 
 public interface IAuditable
 {
@@ -6,7 +6,4 @@ public interface IAuditable
     DateTimeOffset? UpdatedAt { get; set; }
     string? CreatedBy { get; set; }
     string? UpdatedBy { get; set; }
-
-    void MarkAsCreated(string? userId = default);
-    void MarkAsUpdated(string? userId = default);
 }
