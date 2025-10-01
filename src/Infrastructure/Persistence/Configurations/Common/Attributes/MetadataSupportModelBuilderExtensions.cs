@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using SharedKernel.Domain.Attributes.Metadata;
 
-namespace Infrastructure.Persistence.Configurations.Common;
+namespace Infrastructure.Persistence.Configurations.Common.Attributes;
 
 internal static class MetadataSupportModelBuilderExtensions
 {

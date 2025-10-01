@@ -17,16 +17,6 @@ public class OptionTypeConfiguration : IEntityTypeConfiguration<OptionType>
 		// Primary key
 		builder.HasKey(ot => ot.Id);
 
-		// Properties
-		builder.Property(p => p.Name)
-			.HasMaxLength(OptionType.Constraints.NameMaxLength)
-			.IsRequired();
-		builder.Property(p => p.Presentation)
-			.HasMaxLength(OptionType.Constraints.PresentationMaxLength)
-			.IsRequired();
-		builder.Property(p => p.Position)
-			.IsRequired();
-
 		// Relationships
 		builder.HasMany(ot => ot.OptionValues)
 			.WithOne(ov => ov.OptionType)
@@ -50,8 +40,6 @@ public class OptionTypeConfiguration : IEntityTypeConfiguration<OptionType>
 			.OnDelete(DeleteBehavior.Cascade);
 
 		// Indexes
-		builder.HasIndex(ot => ot.Name);
-		builder.HasIndex(ot => ot.Presentation);
-		builder.HasIndex(ot => ot.Position);
+		builder.HasIndex(ot => ot.Filterable);
 	}
 }

@@ -56,7 +56,7 @@ public sealed class EmailSenderService(
 
             IFluentEmail? email = fluentEmail
                 .SetFrom(_emailOption.FromEmail, _emailOption.FromName)
-                .To(notificationData.Receivers.Select(m => new FluentEmail.Core.Models.Address(m)))
+                .To(notificationData.Receivers.Select(m => new Address(m)))
                 .Subject(notificationData.Title)
                 .PlaintextAlternativeBody(notificationData.Content)
                 .Body(notificationData.HtmlContent, isHtml: true);
@@ -102,7 +102,7 @@ public sealed class EmailSenderService(
     {
         try
         {
-            MailAddress addr = new System.Net.Mail.MailAddress(email);
+            MailAddress addr = new MailAddress(email);
             return addr.Address == email;
         }
         catch

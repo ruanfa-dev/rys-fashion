@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SharedKernel.Domain.Attributes.TranslatableResource;
 
-namespace Infrastructure.Persistence.Configurations.Common;
+namespace Infrastructure.Persistence.Configurations.Common.Attributes;
 
 /// <summary>
 /// Generic configuration helper for entities implementing ITranslatable{TTranslation}.

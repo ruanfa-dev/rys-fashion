@@ -2,8 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-using SharedKernel.Domain.Attributes;
 using SharedKernel.Domain.Attributes.Assignable;
+using SharedKernel.Domain.Attributes.Auditable;
+using SharedKernel.Domain.Attributes.SoftDelete; 
 
 using UseCases.Common.Security.Authentication.Contexts;
 
@@ -36,7 +37,11 @@ internal sealed class ActionTrackingEntityInterceptor(IUserContext userContext)
 
         IEnumerable<EntityEntry> entries = context.ChangeTracker
             .Entries()
-            .Where(e => e.Entity is IAuditable || e.Entity is IAssignable);
+            .Where(e =>
+                e.Entity is IAuditable ||
+                e.Entity is IAssignable ||
+                e.Entity is ISoftDeletable 
+            );
 
         foreach (EntityEntry entry in entries)
         {
@@ -44,26 +49,35 @@ internal sealed class ActionTrackingEntityInterceptor(IUserContext userContext)
             {
                 if (entry.State == EntityState.Added)
                 {
-                    auditable.MarkAsCreated(userString);
+                    auditable.ApplyMarkAsCreated(userString);
                 }
                 else if (entry.State == EntityState.Modified || HasChangedOwnedEntities(entry))
                 {
                     entry.Property(nameof(IAuditable.CreatedAt)).IsModified = false;
                     entry.Property(nameof(IAuditable.CreatedBy)).IsModified = false;
 
-                    auditable.MarkAsUpdated(userString);
+                    auditable.ApplyMarkAsUpdated(userString);
                 }
             }
             if (entry.Entity is IAssignable assignable)
             {
                 if (entry.State == EntityState.Added)
                 {
-                    assignable.MarkAsAssigned(userString);
+                    assignable.ApplyMarkAsAssigned(userString);
                 }
                 else if (entry.State == EntityState.Modified || HasChangedOwnedEntities(entry))
                 {
                     entry.Property(nameof(IAssignable.AssignedAt)).IsModified = false;
                     entry.Property(nameof(IAssignable.AssignedBy)).IsModified = false;
+                }
+            }
+            if (entry.Entity is ISoftDeletable softDeletable)
+            {
+                if (entry.State == EntityState.Deleted)
+                {
+                    // Soft delete: mark as deleted, set metadata, and prevent hard delete
+                    softDeletable.ApplyMarkAsDeleted(userString);
+                    entry.State = EntityState.Modified;
                 }
             }
         }

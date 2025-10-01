@@ -5,7 +5,7 @@ using SharedKernel.Domain.Attributes.Assignable;
 
 using UseCases.Common.Persistence.Constants;
 
-namespace Infrastructure.Persistence.Configurations.Common;
+namespace Infrastructure.Persistence.Configurations.Common.Attributes;
 public class AssignableEntityConfiguration<TEntity> : IEntityTypeConfiguration<TEntity>
     where TEntity : class, IAssignable
 {

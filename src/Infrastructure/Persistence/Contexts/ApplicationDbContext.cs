@@ -8,6 +8,7 @@ using Core.Identity.Tokens;
 using Core.Identity.Users;
 using Core.Todos;
 
+using Infrastructure.Persistence.Configurations.Common.Attributes;
 using Infrastructure.Persistence.Constants;
 using Infrastructure.Persistence.Converters;
 
@@ -16,8 +17,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 using UseCases.Common.Persistence.Context;
-using Infrastructure.Persistence.Configurations.Common;
-using SharedKernel.Domain.Attributes.Metadata;
 
 namespace Infrastructure.Persistence.Contexts;
 
@@ -34,9 +33,15 @@ public sealed class ApplicationDbContext(
         base.OnModelCreating(builder);
         builder.HasDefaultSchema(Schema.Default);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        // DateTimeOffset to Utc
         builder.ApplyUtcDateTimeConverter();
+
+        // Custom Conversions
         builder.ApplyMetadataSupportConversions();
         builder.ApplyTranslationEntityConfigurations();
+        builder.ApplyParameterizableNameConversions();
+        builder.ApplyPositionableConversions();
+        builder.ApplySeoSupportConversions();
     }
 
     // Define DbSets for your entities here

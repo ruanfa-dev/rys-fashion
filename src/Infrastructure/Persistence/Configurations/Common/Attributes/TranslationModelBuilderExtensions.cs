@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SharedKernel.Domain.Attributes.TranslatableResource;
 
-namespace Infrastructure.Persistence.Configurations.Common;
+namespace Infrastructure.Persistence.Configurations.Common.Attributes;
 
 /// <summary>
 /// Apply generic translation-related IEntityTypeConfiguration implementations for all matching CLR types

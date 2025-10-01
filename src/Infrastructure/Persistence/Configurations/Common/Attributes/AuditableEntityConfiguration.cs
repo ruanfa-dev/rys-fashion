@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using SharedKernel.Domain.Attributes;
+using SharedKernel.Domain.Attributes.Auditable;
 
 using UseCases.Common.Persistence.Constants;
 
-namespace Infrastructure.Persistence.Configurations.Common;
+namespace Infrastructure.Persistence.Configurations.Common.Attributes;
 public sealed class AuditableEntityConfiguration<TEntity> : IEntityTypeConfiguration<TEntity>
     where TEntity : class, IAuditable
 {

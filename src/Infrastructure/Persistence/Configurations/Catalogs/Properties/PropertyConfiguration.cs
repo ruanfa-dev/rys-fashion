@@ -17,12 +17,6 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.HasKey(p => p.Id);
 
         // Properties
-        builder.Property(p => p.Name)
-            .HasMaxLength(Property.Constraints.NameMaxLength)
-            .IsRequired();
-        builder.Property(p => p.Presentation)
-            .HasMaxLength(Property.Constraints.PresentationMaxLength)
-            .IsRequired();
         builder.Property(p => p.Kind)
             .HasConversion<int>()
             .IsRequired();

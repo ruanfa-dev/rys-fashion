@@ -214,7 +214,7 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
             // Check if permission claim already exists for this role
             if (!existingClaims.Any(c => c.Type == CustomClaim.Permission && c.Value == permission.Name))
             {
-                Claim claim = new System.Security.Claims.Claim(CustomClaim.Permission, permission.Name);
+                Claim claim = new Claim(CustomClaim.Permission, permission.Name);
                 await roleManager.AddClaimAsync(systemAdminRole, claim);
                 addedCount++;
             }

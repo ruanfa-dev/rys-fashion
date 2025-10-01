@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Infrastructure.Persistence.Configurations.Taxonomies;
+namespace Infrastructure.Persistence.Configurations.Catalogs.Taxonomies;
 
 public sealed class TaxonConfiguration : IEntityTypeConfiguration<Taxon>
 {
@@ -35,11 +35,6 @@ public sealed class TaxonConfiguration : IEntityTypeConfiguration<Taxon>
         builder.Property(t => t.Permalink)
             .HasMaxLength(Taxon.Constraints.PermalinkMaxLength)
             .IsRequired();
-
-        // SEO
-        builder.Property(t => t.MetaTitle).HasMaxLength(Taxon.Constraints.MetaFieldMaxLength).IsRequired(false);
-        builder.Property(t => t.MetaDescription).HasMaxLength(Taxon.Constraints.MetaFieldMaxLength).IsRequired(false);
-        builder.Property(t => t.MetaKeywords).HasMaxLength(Taxon.Constraints.MetaFieldMaxLength).IsRequired(false);
 
         // Behavior flags and fields
         builder.Property(t => t.Automatic).IsRequired();
@@ -90,7 +85,7 @@ public sealed class TaxonConfiguration : IEntityTypeConfiguration<Taxon>
         // Indexes
         builder.HasIndex(t => t.TaxonomyId);
         // Ensure permalink uniqueness within taxonomy (prevent duplicate permalinks per taxonomy)
-        builder.HasIndex(t => new { t.TaxonomyId, t.Permalink }).IsUnique();
+        builder.HasIndex(t => new { t.TaxonomyId, Permalink = t.Permalink }).IsUnique();
 
         // Ignore convenience / computed properties not part of relational model
         builder.Ignore("TranslatableFields");     // often provided by ITranslatable implementations

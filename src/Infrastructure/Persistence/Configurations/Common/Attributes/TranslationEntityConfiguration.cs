@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using SharedKernel.Domain.Attributes.TranslatableResource;
 
-namespace Infrastructure.Persistence.Configurations.Common;
+namespace Infrastructure.Persistence.Configurations.Common.Attributes;
 
 /// <summary>
 /// Generic configuration for translation entities implementing ITranslation.
@@ -19,12 +19,12 @@ public sealed class TranslationEntityConfiguration<TTranslation> : IEntityTypeCo
     public void Configure(EntityTypeBuilder<TTranslation> builder)
     {
         // Culture column
-        builder.Property<string>(m => m.Culture)
+        builder.Property(m => m.Culture)
             .HasMaxLength(TranslatableConstraints.CultureMaxLength)
             .IsRequired();
 
         // IsDefault flag - bool is non-nullable, mark as required (cannot be optional)
-        builder.Property<bool>(m => m.IsDefault)
+        builder.Property(m => m.IsDefault)
             .IsRequired();
 
         // Fields dictionary stored as JSON using the nullable-aware converter/comparer
