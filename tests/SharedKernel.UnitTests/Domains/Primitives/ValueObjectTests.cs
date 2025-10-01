@@ -644,7 +644,7 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
         bool[] equalityResults = new bool[count * count];
         int index = 0;
 
-        Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         for (int i = 0; i < count; i++)
         {

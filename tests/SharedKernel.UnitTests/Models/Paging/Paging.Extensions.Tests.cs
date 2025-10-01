@@ -395,7 +395,7 @@ public sealed class PagingExtensionsTests
             .AsQueryable();
 
         PagingParams @params = new PagingParams(PageSize: 20, PageIndex: 50); // Page 51 with 20 items per page
-        Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         List<User> result = largeUserList.ApplyPagingOrDefault(@params).ToList();
 

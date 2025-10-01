@@ -1,3 +1,4 @@
+using SharedKernel.Domain.Attributes.Auditable;
 using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging.Abstracts;
 
@@ -218,7 +219,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         DateTimeOffset beforeUpdate = DateTimeOffset.UtcNow;
 
         // Act
-        entity.MarkAsUpdated();
+        entity.ApplyMarkAsCreated();
         DateTimeOffset afterUpdate = DateTimeOffset.UtcNow;
 
         // Assert
@@ -241,7 +242,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         DateTimeOffset beforeUpdate = DateTimeOffset.UtcNow;
 
         // Act
-        entity.MarkAsUpdated(userId);
+        entity.ApplyMarkAsCreated(userId);
         DateTimeOffset afterUpdate = DateTimeOffset.UtcNow;
 
         // Assert
