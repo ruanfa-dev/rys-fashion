@@ -41,7 +41,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             if (eventTaxon != null)
             {
                 await RecomputeNestedSetsForTaxonomy(eventTaxon.TaxonomyId, cancellationToken);
-                _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) after creating taxon {TaxonId}.", notification.TaxonId);
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Nested set values recalculated after creating taxon {TaxonId}.", notification.TaxonId);
                 return;
             }
 
@@ -59,7 +60,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             }
 
             await RecomputeNestedSetsForTaxonomy(taxon.TaxonomyId, cancellationToken);
-            _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) after creating taxon {TaxonId}.", notification.TaxonId);
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Nested set values recalculated after creating taxon {TaxonId}.", notification.TaxonId);
         }
         catch (Exception ex)
         {
@@ -77,7 +79,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             if (eventTaxon != null)
             {
                 await RecomputeNestedSetsForTaxonomy(eventTaxon.TaxonomyId, cancellationToken);
-                _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) after updating taxon {TaxonId}.", notification.TaxonId);
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Nested set values recalculated after updating taxon {TaxonId}.", notification.TaxonId);
                 return;
             }
 
@@ -94,7 +97,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             }
 
             await RecomputeNestedSetsForTaxonomy(taxon.TaxonomyId, cancellationToken);
-            _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) after updating taxon {TaxonId}.", notification.TaxonId);
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Nested set values recalculated after updating taxon {TaxonId}.", notification.TaxonId);
         }
         catch (Exception ex)
         {
@@ -112,7 +116,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             if (eventTaxon != null)
             {
                 await RecomputeNestedSetsForTaxonomy(eventTaxon.TaxonomyId, cancellationToken);
-                _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) after deleting taxon {TaxonId}.", notification.TaxonId);
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Nested set values recalculated after deleting taxon {TaxonId}.", notification.TaxonId);
                 return;
             }
 
@@ -123,7 +128,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             if (taxon != null)
             {
                 await RecomputeNestedSetsForTaxonomy(taxon.TaxonomyId, cancellationToken);
-                _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) after deleting taxon {TaxonId}.", notification.TaxonId);
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Nested set values recalculated after deleting taxon {TaxonId}.", notification.TaxonId);
                 return;
             }
 
@@ -132,8 +138,9 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             {
                 await RecomputeNestedSetsForTaxonomy(taxonomyId, cancellationToken);
             }
+            await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Nested set values recalculated (will be saved by outer SaveChanges) for all taxonomies after deleting taxon {TaxonId}.", notification.TaxonId);
+            _logger.LogInformation("Nested set values recalculated for all taxonomies after deleting taxon {TaxonId}.", notification.TaxonId);
         }
         catch (Exception ex)
         {
@@ -172,7 +179,7 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             _logger.LogInformation("Domain Event: {DomainEvent} for Taxon {TaxonId} (onlyOnce={OnlyOnce})", notification.GetType().Name, notification.TaxonId, notification.OnlyOnce);
 
             // Load taxon with rules and current classifications
-            Taxon? taxon = await context.Set<Taxon>()
+            Taxon? taxon = await _context.Set<Taxon>()
                 .Include(t => t.TaxonRules)
                 .Include(t => t.Classifications)
                     .ThenInclude(c => c.Product)
@@ -192,37 +199,37 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             }
 
             // Get all products (use Set<T>() so we don't rely on a dedicated DbSet property)
-            IQueryable<Product> allProductsQuery = context.Set<Product>().AsQueryable();
+            IQueryable<Product> allProductsQuery = _context.Set<Product>().AsQueryable();
 
             // Apply each rule and merge results according to rules match policy
             bool anyPolicy = taxon.RulesMatchPolicy == "any";
-            IEnumerable<Product> resultProducts = anyPolicy ? Enumerable.Empty<Product>() : allProductsQuery;
+            IQueryable<Product> resultProductsQuery = anyPolicy ? allProductsQuery.Where(p => false) : allProductsQuery;
 
             foreach (TaxonRule rule in taxon.TaxonRules)
             {
                 IQueryable<Product> matched = rule.Apply(allProductsQuery);
                 if (anyPolicy)
                 {
-                    resultProducts = resultProducts.Concat(matched).Distinct();
+                    resultProductsQuery = resultProductsQuery.Concat(matched).Distinct();
                 }
                 else
                 {
-                    resultProducts = resultProducts.Intersect(matched);
+                    resultProductsQuery = resultProductsQuery.Intersect(matched);
                 }
             }
 
-            List<Product> matchedList = resultProducts.ToList();
+            List<Product> matchedList = await resultProductsQuery.ToListAsync(cancellationToken);
 
             // Update classifications: remove ones not present, add missing ones
             List<Classification> currentClassifications = taxon.Classifications.ToList();
 
             // Remove classifications for products no longer matched
-            List<Classification> toRemove = currentClassifications.Where(c => c.Product == null || !matchedList.Any(p => p.Id == c.Product.Id)).ToList();
+            List<Classification> toRemove = currentClassifications.Where(c => c.Product == null || matchedList.All(p => p.Id != c.Product.Id)).ToList();
             if (toRemove.Any())
             {
                 foreach (Classification rem in toRemove)
                 {
-                    context.Set<Classification>().Remove(rem);
+                    _context.Set<Classification>().Remove(rem);
                 }
             }
 
@@ -239,11 +246,11 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
                     Product = prod,
                     Position = 0
                 };
-                await context.Set<Classification>().AddAsync(classification, cancellationToken);
+                await _context.Set<Classification>().AddAsync(classification, cancellationToken);
             }
 
             // Persist changes
-            await context.SaveChangesAsync(cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Regeneration completed for Taxon {TaxonId}. Added: {AddedCount}, Removed: {RemovedCount}", taxon.Id, toAdd.Count, toRemove.Count);
         }
@@ -283,17 +290,16 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
 
             foreach (Taxon ancestor in ancestors)
             {
-                ancestor.MarkAsUpdated();
                 ancestor.AddDomainEvent(new Taxon.Events.Updated(ancestor.Id, ancestor));
             }
 
             if (taxon.Taxonomy != null)
             {
-                taxon.Taxonomy.MarkAsUpdated();
                 taxon.Taxonomy.AddDomainEvent(new Taxonomy.Events.Updated(taxon.Taxonomy.Id));
             }
 
-            _logger.LogInformation("Touched featured sections for taxon {TaxonId} and its ancestors (changes will be persisted by outer SaveChanges).", notification.TaxonId);
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Touched featured sections for taxon {TaxonId} and its ancestors.", notification.TaxonId);
         }
         catch (Exception ex)
         {
@@ -321,7 +327,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
                 translation.UpdatePrettyNameAndPermalink(taxon);
             }
 
-            _logger.LogInformation("Removed featured sections for taxon {TaxonId} (changes will be persisted by outer SaveChanges).", notification.TaxonId);
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Removed featured sections for taxon {TaxonId}.", notification.TaxonId);
         }
         catch (Exception ex)
         {
@@ -349,7 +356,8 @@ public class TaxonEventHandlers(IApplicationDbContext context, ILogger<TaxonEven
             }
 
             await RecomputeNestedSetsForTaxonomy(taxonomyId, cancellationToken);
-            _logger.LogInformation("Taxon {TaxonId} moved to ParentId: {ParentId}, Index: {NewIndex}. Nested sets recalculated (will be saved by outer SaveChanges).",
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Taxon {TaxonId} moved to ParentId: {ParentId}, Index: {NewIndex}. Nested sets recalculated.",
                 notification.TaxonId, notification.ParentId, notification.NewIndex);
         }
         catch (Exception ex)

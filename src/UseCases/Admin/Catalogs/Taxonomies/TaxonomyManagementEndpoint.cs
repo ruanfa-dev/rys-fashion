@@ -56,7 +56,7 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             ErrorOr<CreateTaxonomy.Result> result = await mediator.Send(command, cancellationToken);
             ApiResponse<CreateTaxonomy.Result> apiResponse = result.ToApiResponseCreated("Taxonomy created successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
@@ -100,7 +100,7 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             ErrorOr<PagedList<GetTaxonomyPagedList.Result>> result = await mediator.Send(query, cancellationToken);
             ApiResponse<List<GetTaxonomyPagedList.Result>> apiResponse = result.ToApiResponsePaged("Taxonomies retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 int currentPage = (pagination.PageIndex ?? 0) + 1;
                 int pageSize = pagination.PageSize ?? 10;
@@ -186,7 +186,7 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             ErrorOr<GetTaxonomyById.Result> result = await mediator.Send(query, cancellationToken);
             ApiResponse<GetTaxonomyById.Result> apiResponse = result.ToApiResponse("Taxonomy details retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -221,7 +221,7 @@ public sealed class TaxonomyManagementEndpoint : ICarterModule
             ErrorOr<UpdateTaxonomy.Result> result = await mediator.Send(command, cancellationToken);
             ApiResponse<UpdateTaxonomy.Result> apiResponse = result.ToApiResponse("Taxonomy updated successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")

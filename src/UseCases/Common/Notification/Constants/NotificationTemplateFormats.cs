@@ -10,9 +10,9 @@ public static partial class NotificationFormats
     public sealed class FormatDescription
     {
         public NotificationFormat Format { get; set; }
-        public string Name { get; set; } = default!;
-        public string Description { get; set; } = default!;
-        public string SampleData { get; set; } = default!;
+        public string Name { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public string SampleData { get; set; } = null!;
     }
 
     public static readonly Dictionary<NotificationFormat, FormatDescription> Description = new()

@@ -58,7 +58,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             ApiResponse<CreateRole.Result> apiResponse = result.ToApiResponseCreated("Role created successfully");
             
             // Add admin role management HATEOAS links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
@@ -111,7 +111,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             ApiResponse<List<ListRoles.Result>> apiResponse = result.ToApiResponsePaged("Roles retrieved successfully");
             
             // Add pagination and admin management links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 // Add pagination links
                 int currentPage = (pagination.PageIndex ?? 0) + 1;
@@ -179,7 +179,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             ApiResponse<GetRoleById.Result> apiResponse = result.ToApiResponse("Role details retrieved successfully");
             
             // Add role-specific admin management links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -218,7 +218,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             ApiResponse<UpdateRole.Result> apiResponse = result.ToApiResponse("Role updated successfully");
             
             // Add role management links and update metadata
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -293,7 +293,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             ApiResponse<AssignRoleToBatchUsers.Result> apiResponse = result.ToApiResponse("Users assigned to role successfully");
             
             // Add user assignment metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("role-details", $"{Route}/{id}")
@@ -334,7 +334,7 @@ public sealed class RoleManagementEndpoint : ICarterModule
             ApiResponse<AssignBatchPermissionsToRole.Result> apiResponse = result.ToApiResponse("Permissions assigned to role successfully");
             
             // Add permission assignment metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("role-details", $"{Route}/{id}")

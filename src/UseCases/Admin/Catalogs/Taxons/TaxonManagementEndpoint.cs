@@ -102,7 +102,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             ErrorOr<PagedList<GetTaxonPagedList.Result>> result = await mediator.Send(query, cancellationToken);
             ApiResponse<List<GetTaxonPagedList.Result>> apiResponse = result.ToApiResponsePaged("Taxons retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 int currentPage = (pagination.PageIndex ?? 0) + 1;
                 int pageSize = pagination.PageSize ?? 10;
@@ -188,7 +188,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             ErrorOr<GetTaxonById.Result> result = await mediator.Send(query, cancellationToken);
             ApiResponse<GetTaxonById.Result> apiResponse = result.ToApiResponse("Taxon details retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -223,7 +223,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             ErrorOr<UpdateTaxon.Result> result = await mediator.Send(command, cancellationToken);
             ApiResponse<UpdateTaxon.Result> apiResponse = result.ToApiResponse("Taxon updated successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -259,7 +259,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             ErrorOr<RepositionTaxon.Result> result = await mediator.Send(command, cancellationToken);
             ApiResponse<RepositionTaxon.Result> apiResponse = result.ToApiResponse("Taxon repositioned successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
@@ -332,7 +332,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
             ErrorOr<List<GetTaxonTree.Result>> result = await mediator.Send(query, cancellationToken);
             ApiResponse<List<GetTaxonTree.Result>> apiResponse = result.ToApiResponse("Taxon tree retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 List<string> qs = new List<string>();
                 if (taxonomyId.HasValue) qs.Add($"taxonomy_id={taxonomyId}");

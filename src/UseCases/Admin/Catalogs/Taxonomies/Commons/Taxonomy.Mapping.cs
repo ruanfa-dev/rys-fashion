@@ -13,7 +13,7 @@ public sealed class TaxonomyMapping : IRegister
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.Name, src => src.Name)
             .Map(dest => dest.Position, src => src.Position)
-            .Map(dest => dest.StoreId, src => src.StoreId)
+            .Map(dest => dest.TaxonsCount, src => src.Taxons.Count)
             .Map(dest => dest.CreatedAt, src => src.CreatedAt)
             .Map(dest => dest.UpdatedAt, src => src.UpdatedAt);
 
@@ -22,7 +22,7 @@ public sealed class TaxonomyMapping : IRegister
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.Name, src => src.Name)
             .Map(dest => dest.Position, src => src.Position)
-            .Map(dest => dest.StoreId, src => src.StoreId)
+            .Map(dest => dest.TaxonsCount, src => src.Taxons.Count)
             .Map(dest => dest.CreatedAt, src => src.CreatedAt)
             .Map(dest => dest.UpdatedAt, src => src.UpdatedAt)
             .Map(dest => dest.CreatedBy, src => src.CreatedBy)

@@ -1,5 +1,7 @@
-using FluentValidation;
 using Core.Catalog.Taxonomies;
+
+using FluentValidation;
+
 using UseCases.Common.Validations.Attributes;
 
 namespace UseCases.Admin.Catalogs.Taxons.Commons;
@@ -7,6 +9,10 @@ public sealed class TaxonParamValidator : AbstractValidator<TaxonParam>
 {
     public TaxonParamValidator()
     {
+        this.ApplyMetadataSupportRules(nameof(Taxon));
+        this.ApplySeoRules(nameof(Taxon));
+        this.ApplyPositionableRules(nameof(Taxon));
+
         RuleFor(x => x.Name)
             .NotEmpty()
             .WithErrorCode(Taxon.Errors.NameRequired.Code)
@@ -36,24 +42,6 @@ public sealed class TaxonParamValidator : AbstractValidator<TaxonParam>
             .WithErrorCode(Taxon.Errors.InvalidSortOrder.Code)
             .WithMessage(Taxon.Errors.InvalidSortOrder.Description);
 
-        RuleFor(x => x.MetaTitle)
-            .MaximumLength(Taxon.Constraints.MetaFieldMaxLength)
-            .WithErrorCode(Taxon.Errors.MetaTitleTooLong.Code)
-            .WithMessage(Taxon.Errors.MetaTitleTooLong.Description)
-            .When(x => !string.IsNullOrWhiteSpace(x.MetaTitle));
-
-        RuleFor(x => x.MetaDescription)
-            .MaximumLength(Taxon.Constraints.MetaFieldMaxLength)
-            .WithErrorCode(Taxon.Errors.MetaDescriptionTooLong.Code)
-            .WithMessage(Taxon.Errors.MetaDescriptionTooLong.Description)
-            .When(x => !string.IsNullOrWhiteSpace(x.MetaDescription));
-
-        RuleFor(x => x.MetaKeywords)
-            .MaximumLength(Taxon.Constraints.MetaFieldMaxLength)
-            .WithErrorCode(Taxon.Errors.MetaKeywordsTooLong.Code)
-            .WithMessage(Taxon.Errors.MetaKeywordsTooLong.Description)
-            .When(x => !string.IsNullOrWhiteSpace(x.MetaKeywords));
-
         RuleFor(x => x.ImageUrl)
             .Must(x => x == null || Uri.TryCreate(x, UriKind.Absolute, out Uri? uri) &&
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
@@ -69,7 +57,5 @@ public sealed class TaxonParamValidator : AbstractValidator<TaxonParam>
             .WithErrorCode(Taxon.Errors.InvalidSquareImageContentType.Code)
             .WithMessage(Taxon.Errors.InvalidSquareImageContentType.Description)
             .When(x => !string.IsNullOrWhiteSpace(x.SquareImageUrl));
-
-        Include(new MetadataSupportValidator());
     }
 }

@@ -10,14 +10,19 @@ using Microsoft.Extensions.Logging;
 
 using SharedKernel.Messaging.Abstracts;
 using SharedKernel.Models.PagedLists;
+using SharedKernel.Models.Queries;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
 
+using UseCases.Admin.Catalogs.Taxonomies.Commons;
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Taxonomies.Get.OptionList;
 public partial class GetTaxonomyOptionList
 {
+    public sealed record Param : QueryParams;
+    public sealed record Result : TaxonomyResult.ListItem;
+    public sealed record Query(Param Param) : IQuery<PagedList<Result>>;
     public sealed class Handler(
         IApplicationDbContext context,
         ILogger<Handler> logger
@@ -29,6 +34,7 @@ public partial class GetTaxonomyOptionList
             {
                 Param param = request.Param;
                 PagedList<Result> paginatedList = await context.Set<Taxonomy>()
+                    .Include(m=> m.Taxons)
                     .AsQueryable()
                     .AsNoTracking()
                     .ApplySearch(param.Search)

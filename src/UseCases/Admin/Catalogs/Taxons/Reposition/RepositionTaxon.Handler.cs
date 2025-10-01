@@ -48,17 +48,30 @@ public partial class RepositionTaxon
                     entity.ParentId = param.ParentId;
                     // set navigation if available
                     Taxon? newParent = await context.Set<Taxon>().FirstOrDefaultAsync(t => t.Id == param.ParentId.Value, cancellationToken);
-                    if (newParent != null) entity.Parent = newParent;
+                    if (newParent != null)
+                    {
+                        var setParentResult = entity.SetParent(newParent);
+                        if (setParentResult.IsError)
+                            return setParentResult.Errors;
+
+                    }
                 }
 
                 // setting child index raises moved domain event
-                entity.ChildIndex = param.Index;
+                var updateIndexResult = entity.UpdateChildIndex(param.Index);
+                if (updateIndexResult.IsError)
+                    return updateIndexResult.Errors;
 
                 // regenerate pretty name/permalink after reparenting
-                try { entity.RegeneratePrettyNameAndPermalink(); } catch { }
+                try { entity.RegeneratePrettyNameAndPermalink(); }
+                catch (Exception exception)
+                {
+                    Log.Error(exception, "Error regenerating pretty name and permalink for taxon {TaxonId} after repositioning", entity.Id);
+                    throw;
+                }
 
                 // Emit moved event explicitly so handlers can react
-                entity.AddDomainEvent(new Core.Catalog.Taxonomies.Taxon.Events.Moved(entity.Id, entity.ParentId, param.Index));
+                entity.AddDomainEvent(new Taxon.Events.Moved(entity.Id, entity.ParentId, param.Index));
 
                 await context.SaveChangesAsync(cancellationToken);
 

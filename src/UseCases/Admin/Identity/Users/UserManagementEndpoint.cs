@@ -54,7 +54,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<CreateUser.Result> apiResponse = result.ToApiResponseCreated("User created successfully");
 
             // Add admin user management HATEOAS links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
@@ -98,7 +98,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<List<ListUsers.Result>> apiResponse = result.ToApiResponsePaged("Users retrieved successfully");
 
             // Add pagination and admin management links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 // Add pagination links
                 apiResponse.WithLink("self", $"{Route}?page_index={page}&page_size={pageSize}");
@@ -152,7 +152,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<GetUserById.Result> apiResponse = result.ToApiResponse("User details retrieved successfully");
 
             // Add user-specific admin management links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -190,7 +190,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<UpdateUser.Result> apiResponse = result.ToApiResponse("User updated successfully");
 
             // Add user management links and update metadata
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -229,7 +229,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<DeleteUser.Result> apiResponse = result.ToApiResponse("User deleted successfully");
 
             // Add admin audit metadata and navigation links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("all-users", Route)
@@ -265,7 +265,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<AssignBatchRolesToUser.Result> apiResponse = result.ToApiResponse("Roles assigned successfully");
 
             // Add role assignment metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("user-details", $"{Route}/{id}")
@@ -306,7 +306,7 @@ public sealed class UserManagementEndpoint : ICarterModule
             ApiResponse<AssignBatchPermissionsToUser.Result> apiResponse = result.ToApiResponse("Permissions assigned successfully");
 
             // Add permission assignment metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("user-details", $"{Route}/{id}")

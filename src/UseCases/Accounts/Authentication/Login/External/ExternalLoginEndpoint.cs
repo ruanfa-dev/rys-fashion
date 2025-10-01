@@ -44,7 +44,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             ApiResponse<List<GetExternalProviders.Result>> apiResponse = result.ToApiResponse("External providers retrieved successfully");
 
             // Add external auth related links and metadata
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("google-config", $"{Route}/config/google")
@@ -104,7 +104,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             ApiResponse<GetOAuthConfig.Result> apiResponse = result.ToApiResponse($"OAuth configuration for {provider} retrieved successfully");
 
             // Add OAuth-specific metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("providers", $"{Route}/providers")
@@ -168,7 +168,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             ApiResponse<ExchangeExternalToken.Result> apiResponse = result.ToApiResponse($"External token exchanged successfully for {provider}");
 
             // Add authentication-related metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("profile", "/api/account/profile")
@@ -234,7 +234,7 @@ public sealed class ExternalLoginEndpoint : ICarterModule
             ApiResponse<VerifyExternalToken.Result> apiResponse = result.ToApiResponse($"External token verified successfully for {provider}");
 
             // Add verification metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("token-exchange", $"{Route}/token/exchange/{normalizedProvider}")

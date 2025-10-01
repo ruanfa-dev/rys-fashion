@@ -83,7 +83,7 @@ public static partial class Logout
                 // Try to log user id for auditing if token validation is available.
                 ErrorOr<RefreshTokenValidationResult> validation = await _refreshTokenService
                         .ValidateRefreshTokenAsync(refreshToken, cancellationToken);
-                if (!validation.IsError && validation.Value.RefreshToken is not null)
+                if (validation is { IsError: false, Value.RefreshToken: not null })
                 {
                     User? user = validation.Value.RefreshToken.User;
                     if (user is not null)

@@ -1,17 +1,18 @@
 using Core.Catalog.Options;
 using Core.Catalog.Products;
 
-using MediatR;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+
+using SharedKernel.Domain.Attributes.Auditable;
+using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Options.Events;
 
 public class OptionTypeEventHandlers(IApplicationDbContext context, ILogger<OptionTypeEventHandlers> logger)
-    : INotificationHandler<OptionType.Events.TouchProducts>
+    : IDomainEventHandler<OptionType.Events.TouchProducts>
 {
     private readonly IApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OptionTypeEventHandlers> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -37,7 +38,7 @@ public class OptionTypeEventHandlers(IApplicationDbContext context, ILogger<Opti
 
             foreach (var product in products)
             {
-                product.MarkAsUpdated();
+                product.ApplyMarkAsUpdated();
                 // Optionally raise a product updated domain event here if needed
             }
 

@@ -1,17 +1,18 @@
 using Core.Catalog.Options;
 using Core.Catalog.Products;
 
-using MediatR;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+
+using SharedKernel.Domain.Attributes.Auditable;
+using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Options.Events;
 
 public class OptionValueEventHandlers(IApplicationDbContext context, ILogger<OptionValueEventHandlers> logger)
-    : INotificationHandler<OptionValue.Events.TouchProducts>, INotificationHandler<OptionValue.Events.TouchVariants>
+    : IDomainEventHandler<OptionValue.Events.TouchProducts>, IDomainEventHandler<OptionValue.Events.TouchVariants>
 {
     private readonly IApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<OptionValueEventHandlers> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -36,7 +37,7 @@ public class OptionValueEventHandlers(IApplicationDbContext context, ILogger<Opt
             var products = ov.Variants.SelectMany(v => v.Products ?? Enumerable.Empty<Product>()).Distinct().ToList();
             foreach (var product in products)
             {
-                product.MarkAsUpdated();
+                product.ApplyMarkAsUpdated();
             }
 
             _logger.LogInformation("Marked {Count} products as updated for OptionValue {OptionValueId}.", products.Count, notification.OptionValueId);

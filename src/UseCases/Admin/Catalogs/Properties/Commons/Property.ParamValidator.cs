@@ -10,21 +10,9 @@ public sealed class PropertyParamValidator : AbstractValidator<PropertyParam>
 {
     public PropertyParamValidator()
     {
-        RuleFor(x => x.Name)
-            .NotEmpty()
-            .WithErrorCode(Property.Errors.NameRequired.Code)
-            .WithMessage(Property.Errors.NameRequired.Description)
-            .Length(Property.Constraints.NameMinLength, Property.Constraints.NameMaxLength)
-            .WithErrorCode(Property.Errors.InvalidNameLength.Code)
-            .WithMessage(Property.Errors.InvalidNameLength.Description);
-
-        RuleFor(x => x.Presentation)
-            .NotEmpty()
-            .WithErrorCode(Property.Errors.PresentationRequired.Code)
-            .WithMessage(Property.Errors.PresentationRequired.Description)
-            .Length(Property.Constraints.PresentationMinLength, Property.Constraints.PresentationMaxLength)
-            .WithErrorCode(Property.Errors.InvalidPresentationLength.Code)
-            .WithMessage(Property.Errors.InvalidPresentationLength.Description);
+        this.ApplyParameterizableNameRules(nameof(Property));
+        this.ApplyMetadataSupportRules(nameof(Property));
+        this.ApplyPositionableRules(nameof(Property));
 
         RuleFor(x => x.DisplayOn)
             .IsInEnum()
@@ -35,13 +23,6 @@ public sealed class PropertyParamValidator : AbstractValidator<PropertyParam>
             .IsInEnum()
             .WithErrorCode(Property.Errors.InvalidKind.Code)
             .WithMessage(Property.Errors.InvalidKind.Description);
-
-        RuleFor(x => x.Position)
-            .InclusiveBetween(Property.Constraints.PositionMin, Property.Constraints.PositionMax)
-            .WithErrorCode(Property.Errors.InvalidPosition.Code)
-            .WithMessage(Property.Errors.InvalidPosition.Description);
-
-        Include(new MetadataSupportValidator());
 
     }
 }

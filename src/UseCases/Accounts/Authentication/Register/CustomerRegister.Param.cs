@@ -12,8 +12,8 @@ public static partial class CustomerRegister
         public string? FirstName { get; set; } = string.Empty;
         public string? LastName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
-        public string ConfirmPassword { get; set; } = default!;
-        public string Password { get; set; } = default!;
+        public string ConfirmPassword { get; set; } = null!;
+        public string Password { get; set; } = null!;
 
         // TODO: add Captcha
         // TODOL: add more properties if needed

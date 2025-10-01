@@ -9,16 +9,12 @@ public sealed class TaxonomyParamValidator : AbstractValidator<TaxonomyParam>
 {
     public TaxonomyParamValidator()
     {
+        this.ApplyMetadataSupportRules(nameof(Taxonomy));
+        this.ApplyPositionableRules(nameof(Taxonomy));
+
         RuleFor(x => x.Name)
             .NotEmpty()
             .MinimumLength(Taxonomy.Constraints.NameMinLength)
             .MaximumLength(Taxonomy.Constraints.NameMaxLength);
-
-        RuleFor(x => x.Position)
-            .InclusiveBetween(Taxonomy.Constraints.PositionMin, Taxonomy.Constraints.PositionMax)
-            .WithErrorCode(Taxonomy.Errors.InvalidPosition.Code)
-            .WithMessage(Taxonomy.Errors.InvalidPosition.Description);
-
-        Include(m => new MetadataSupportValidator());
     }
 }

@@ -51,7 +51,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            CreateProperty.Command command = new CreateProperty.Command(param);
+            CreateProperty.Command command = new(param);
             ErrorOr<CreateProperty.Result> result = await mediator.Send(command, cancellationToken);
             ApiResponse<CreateProperty.Result> apiResponse = result.ToApiResponseCreated("Property created successfully");
 
@@ -101,7 +101,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             ErrorOr<PagedList<GetPropertyPagedList.Result>> result = await mediator.Send(query, cancellationToken);
             ApiResponse<List<GetPropertyPagedList.Result>> apiResponse = result.ToApiResponsePaged("Properties retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 int currentPage = (pagination.PageIndex ?? 0) + 1;
                 int pageSize = pagination.PageSize ?? 10;
@@ -190,7 +190,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             ErrorOr<GetPropertyById.Result> result = await mediator.Send(query, cancellationToken);
             ApiResponse<GetPropertyById.Result> apiResponse = result.ToApiResponse("Property details retrieved successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
@@ -226,7 +226,7 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             ErrorOr<UpdateProperty.Result> result = await mediator.Send(command, cancellationToken);
             ApiResponse<UpdateProperty.Result> apiResponse = result.ToApiResponse("Property updated successfully");
 
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")

@@ -18,8 +18,8 @@ namespace UseCases.Admin.Catalogs.Taxons.Create;
 
 public static partial class CreateTaxon
 {
-    public sealed record Param : Commons.TaxonParam;
-    public sealed record Result : Commons.TaxonResult.Details;
+    public sealed record Param : TaxonParam;
+    public sealed record Result : TaxonResult.Details;
     public sealed record Command(Param Param) : ICommand<Result>;
 
     public sealed class CommandValidator : AbstractValidator<Command>

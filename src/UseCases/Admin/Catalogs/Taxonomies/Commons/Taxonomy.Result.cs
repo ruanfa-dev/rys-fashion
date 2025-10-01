@@ -6,13 +6,14 @@ public static class TaxonomyResult
         public Guid Id { get; init; }
         public string Name { get; init; } = string.Empty;
         public int Position { get; init; }
-        public Guid? StoreId { get; init; }
 
         // Audit
         public DateTimeOffset? CreatedAt { get; init; }
         public DateTimeOffset? UpdatedAt { get; init; }
 
-        // Statictic analysis
+        // Statistic analysis
+
+        public int? TaxonsCount { get; init; }
     
     }
 

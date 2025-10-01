@@ -76,7 +76,7 @@ public sealed class TodoItemEndpoint : ICarterModule
             ApiResponse<TodoItemResult> apiResponse = result.ToApiResponse("Todo item retrieved successfully");
             
             // Add HATEOAS links for the todo item
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")

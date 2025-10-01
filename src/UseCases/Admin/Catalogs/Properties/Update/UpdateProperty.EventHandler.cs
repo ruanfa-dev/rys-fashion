@@ -41,7 +41,6 @@ public static partial class UpdateProperty
                     dbContext.Set<ProductProperty>().UpdateRange(productProperties);
                     await dbContext.SaveChangesAsync(cancellationToken);
                 }
-
             }
         }
     }

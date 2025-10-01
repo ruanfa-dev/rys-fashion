@@ -43,7 +43,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
             ApiResponse<LoginWithPassword.Result> apiResponse = result.ToApiResponse("User logged in successfully");
             
             // Add authentication-related metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("profile", "/api/account/profile")
@@ -102,7 +102,7 @@ public sealed class AuthenticationEndpoint : ICarterModule
             ApiResponse<AccountSessionResult> apiResponse = result.ToApiResponse("Session information retrieved successfully");
             
             // Add session-related metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("profile", "/api/account/profile")

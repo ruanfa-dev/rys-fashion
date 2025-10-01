@@ -61,7 +61,7 @@ public sealed class PermissionManagementEndpoint : ICarterModule
             ApiResponse<List<ListAvailablePermissions.Result>> apiResponse = result.ToApiResponsePaged("Available permissions retrieved successfully");
 
             // Add pagination and admin management links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 // Add pagination links
                 int currentPage = (pagination.PageIndex ?? 0) + 1;

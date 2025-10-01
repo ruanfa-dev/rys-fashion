@@ -9,7 +9,6 @@ using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using SharedKernel.Extensions.Text;
 using SharedKernel.Messaging.Abstracts;
 
 using UseCases.Admin.Catalogs.Taxons.Commons;
@@ -19,8 +18,8 @@ namespace UseCases.Admin.Catalogs.Taxons.Update;
 
 public static partial class UpdateTaxon
 {
-    public sealed record Param : Commons.TaxonParam;
-    public sealed record Result : Commons.TaxonResult.ListItem;
+    public sealed record Param : TaxonParam;
+    public sealed record Result : TaxonResult.ListItem;
     public sealed record Command(Guid Id, Param Param) : ICommand<Result>;
 
     public sealed class CommandValidator : AbstractValidator<Command>
@@ -54,15 +53,17 @@ public static partial class UpdateTaxon
                     return Taxon.Errors.NotFound(request.Id);
 
                 // Check: uniqueness for name
-                string name = param.Name.Parameterize();
-
+                string trimmedName = param.Name?.Trim() ?? "";
                 bool exists = await _context.Set<Taxon>()
-                    .AnyAsync(t => t.Name == name && t.TaxonomyId == param.TaxonomyId && t.ParentId == param.ParentId && t.Id != request.Id, cancellationToken);
+                    .AnyAsync(t => t.Name == trimmedName && t.TaxonomyId == taxon.TaxonomyId && t.ParentId == param.ParentId && t.Id != request.Id, cancellationToken);
                 if (exists)
-                    return Taxon.Errors.NameAlreadyExists(name.Trim(), param.TaxonomyId);
+                    return Taxon.Errors.NameAlreadyExists(trimmedName, taxon.TaxonomyId);
+
+                // Store original ParentId to detect change
+                Guid? originalParentId = taxon.ParentId;
 
                 ErrorOr<Taxon> updateResult = taxon.Update(
-                    name,
+                    trimmedName,
                     param.ParentId,
                     param.Description,
                     param.Automatic,
@@ -77,6 +78,22 @@ public static partial class UpdateTaxon
                     param.PublicMetadata,
                     param.PrivateMetadata);
                 if (updateResult.IsError) return updateResult.Errors;
+
+                // If parent changed, load new parent and call SetParent to update navigation's
+                if (param.ParentId != originalParentId)
+                {
+                    Taxon? newParent = await _context.Set<Taxon>()
+                        .Include(t => t.Children)
+                        .FirstOrDefaultAsync(t => t.Id == param.ParentId, cancellationToken);
+                    if (newParent == null)
+                        return Taxon.Errors.NotFound(param.ParentId ?? Guid.Empty);
+
+                    ErrorOr<Taxon> setParentResult = taxon.SetParent(newParent);
+                    if (setParentResult.IsError) return setParentResult.Errors;
+                }
+
+                // Regenerate pretty name and permalink (recursively for descendants)
+                taxon.RegeneratePrettyNameAndPermalink();
 
                 await _context.SaveChangesAsync(cancellationToken);
 

@@ -1,5 +1,3 @@
-using SharedKernel.Messaging.Abstracts;
-
 namespace UseCases.Admin.Catalogs.Taxons.Create;
 
 public static partial class CreateTaxon

@@ -52,7 +52,7 @@ public sealed class TodoListEndpoint : ICarterModule
             ApiResponse<TodoListResult> apiResponse = result.ToApiResponseCreated("Todo list created successfully");
 
             // Add HATEOAS links for the created todo list
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
@@ -95,7 +95,7 @@ public sealed class TodoListEndpoint : ICarterModule
             ApiResponse<List<GetTodoListPagedList.Result>> apiResponse = result.ToApiResponsePaged("Todo lists retrieved successfully");
 
             // Add HATEOAS links for pagination
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 // Use PageIndex instead of PageNumber (based on PagingParams structure)
                 int currentPage = (pagination.PageIndex ?? 0) + 1; // Convert 0-based index to 1-based page number
@@ -139,7 +139,7 @@ public sealed class TodoListEndpoint : ICarterModule
             ApiResponse<TodoListResult> apiResponse = result.ToApiResponse("Todo list retrieved successfully");
 
             // Add HATEOAS links for the todo list
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")

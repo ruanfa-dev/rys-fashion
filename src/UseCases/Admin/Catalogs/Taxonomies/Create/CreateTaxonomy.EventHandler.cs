@@ -7,6 +7,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using SharedKernel.Messaging.Abstracts;
+
 using UseCases.Common.Persistence.Context;
 
 namespace UseCases.Admin.Catalogs.Taxonomies.Create;
@@ -16,7 +18,7 @@ public static partial class CreateTaxonomy
     public sealed class EventHandler(
         IApplicationDbContext context, 
         ILogger<EventHandler> logger)
-        : INotificationHandler<Taxonomy.Events.Created>
+        : IDomainEventHandler<Taxonomy.Events.Created>
     {
         public async Task Handle(Taxonomy.Events.Created notification, CancellationToken cancellationToken)
         {

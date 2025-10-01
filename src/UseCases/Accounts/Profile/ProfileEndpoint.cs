@@ -40,7 +40,7 @@ public sealed class ProfileEndpoint : ICarterModule
             ApiResponse<AccountProfileResult> apiResponse = result.ToApiResponse("Profile retrieved successfully");
             
             // Add profile-related metadata and links
-            if (apiResponse.IsSuccess && apiResponse.Data != null)
+            if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", Route)
