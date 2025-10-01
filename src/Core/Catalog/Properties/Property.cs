@@ -5,6 +5,7 @@ using ErrorOr;
 
 using SharedKernel.Domain.Attributes.Metadata;
 using SharedKernel.Domain.Attributes.Parameterizable;
+using SharedKernel.Domain.Attributes.Positionable;
 using SharedKernel.Domain.Attributes.TranslatableResource;
 using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging;
@@ -20,10 +21,10 @@ public sealed class Property :
     AuditableEntity,
     IParameterizableName,
     IMetadataSupport,
+    IPositionable,
     ITranslatable<PropertyTranslation>
 {
     #region Properties
-    #region Core Properties
 
     /// <summary>
     /// Internal identifier name (required, unique).
@@ -60,13 +61,17 @@ public sealed class Property :
     public int Position { get; set; }
     #endregion
 
+    #region Relationships
     public ICollection<PropertyPrototype> PrototypeProperties { get; set; } = new List<PropertyPrototype>();
     public ICollection<ProductProperty> ProductProperties { get; set; } = new List<ProductProperty>();
     public IEnumerable<Product> Products => ProductProperties.Select(pp => pp.Product);
     public IEnumerable<Prototype> Prototypes => PrototypeProperties.Select(pp => pp.Prototype).Where(p => p != null).Cast<Prototype>();
-    public ICollection<PropertyTranslation> Translations { get; set; } = new List<PropertyTranslation>();
 
-    // Metadata
+    // Translations
+    public ICollection<PropertyTranslation> Translations { get; set; } = new List<PropertyTranslation>();
+    #endregion
+
+    #region Metadata
     public IDictionary<string, string?>? PublicMetadata { get; set; } = new Dictionary<string, string?>();
     public IDictionary<string, string?>? PrivateMetadata { get; set; } = new Dictionary<string, string?>();
 
@@ -74,43 +79,13 @@ public sealed class Property :
 
     #endregion
 
-    #region Constraints
-
-    public static class Constraints
-    {
-        public const int NameMinLength = 2;
-        public const int NameMaxLength = 100;
-
-        public const int PresentationMinLength = 2;
-        public const int PresentationMaxLength = 255;
-
-        public const int PositionMin = 0;
-        public const int PositionMax = 100000;
-    }
-
-    #endregion
-
     #region Errors
 
     public static class Errors
     {
-        #region Validations
+        // Validations:
         // ID: required, non-empty
         public static Error IdRequired => Error.Validation("Property.InvalidId", "Property ID is required.");
-
-        // Name: required, length
-        public static Error NameRequired => Error.Validation("Property.NameRequired", "Property name is required.");
-        public static Error InvalidNameLength => Error.Validation(
-            "Property.InvalidNameLength",
-            $"Property name must be between {Constraints.NameMinLength} and {Constraints.NameMaxLength} characters long."
-        );
-
-        // Presentation: required, length
-        public static Error PresentationRequired => Error.Validation("Property.PresentationRequired", "Property presentation is required.");
-        public static Error InvalidPresentationLength => Error.Validation(
-            "Property.InvalidPresentationLength",
-            $"Property presentation must be between {Constraints.PresentationMinLength} and {Constraints.PresentationMaxLength} characters long."
-        );
 
         // DisplayOn: valid enum
         public static Error InvalidDisplayOn => Error.Validation(
@@ -124,30 +99,24 @@ public sealed class Property :
             "Invalid property kind. Must be one of: ShortText, LongText, Number, RichText."
         );
 
-        // Position: non-negative
-        public static Error InvalidPosition => Error.Validation(
-            "Property.InvalidPosition",
-            $"Position must be between {Constraints.PositionMin} and {Constraints.PositionMax}."
-        );
-
-        #endregion
-
+        // NotFound:
         public static Error NotFound(Guid id) => Error.NotFound(
             "Property.NotFound",
             $"Property with ID '{id}' was not found."
         );
 
+        // Conflict:
         public static Error NameAlreadyExists(string name) => Error.Conflict(
             "Property.NameAlreadyExists",
             $"A property with the name '{name}' already exists."
         );
 
-        // Cannot delete if product is using this property
-        public static Error CannotDeleteInUse(Guid id, int usageCount) => Error.Validation(
-            "Property.CannotDeleteInUse",
-            $"Cannot delete property '{id}' because it is used by {usageCount} product(s)."
+        // Delete:
+        // In use by product properties
+        public static Error HasDependentProductProperties => Error.Validation(
+            "Property.HasDependentProductProperties",
+            "Cannot delete property while it has associated product properties. Remove associations first."
         );
-
 
         public static Error UnexpectedError(string operationName, Exception? ex = null) => Error.Unexpected(
           code: $"Property.{operationName}UnexpectedError",
@@ -157,9 +126,7 @@ public sealed class Property :
     #endregion
 
     #region Constructors
-
     private Property() { }
-
     #endregion
 
     #region Factory
@@ -174,21 +141,25 @@ public sealed class Property :
         IDictionary<string, string?>? publicMetadata = null,
         IDictionary<string, string?>? privateMetadata = null)
     {
-        Property property = new Property
+        // Validation: already in fluent validation
+        // Create: new instance
+        Property property = new()
         {
             Name = name.Trim(),
             Presentation = presentation.Trim(),
             Kind = kind,
             Filterable = filterable,
             DisplayOn = displayOn,
-            Position = Math.Max(position, Constraints.PositionMin)
+            Position = Math.Max(position, PositionableConstraints.PositionMin)
         };
-        // assign optional metadata if provided
+
+        // Assign: optional metadata if provided
         if (publicMetadata != null)
             property.PublicMetadata = new Dictionary<string, string?>(publicMetadata);
         if (privateMetadata != null)
             property.PrivateMetadata = new Dictionary<string, string?>(privateMetadata);
 
+        // Raise: create events
         property.AddDomainEvent(new Events.Created(property.Id));
         return property;
     }
@@ -207,66 +178,65 @@ public sealed class Property :
         IDictionary<string, string?>? publicMetadata = null,
         IDictionary<string, string?>? privateMetadata = null)
     {
-        bool changed = false;
-        bool nameChanged = false, presentationChanged = false, kindChanged = false, filterableChanged = false, displayOnChanged = false, positionChanged = false;
+        var changedFields = new HashSet<string>();
 
         if (!string.IsNullOrWhiteSpace(name) && name != Name)
         {
-            ErrorOr<Success> result = SetName(name);
-            if (result.IsError) return result.Errors;
-            changed = true;
-            nameChanged = true;
+            Name = name.Trim();
+            changedFields.Add(nameof(Name));
         }
 
         if (!string.IsNullOrWhiteSpace(presentation) && presentation != Presentation)
         {
-            ErrorOr<Success> result = SetPresentation(presentation);
-            if (result.IsError) return result.Errors;
-            changed = true;
-            presentationChanged = true;
+            Presentation = presentation.Trim();
+            changedFields.Add(nameof(Presentation));
         }
 
         if (kind.HasValue && kind.Value != Kind)
         {
-            filterableChanged = true;
+            Kind = kind.Value;
+            changedFields.Add(nameof(Kind));
+        }
+
+        if (filterable.HasValue && filterable.Value != Filterable)
+        {
+            bool old = Filterable;
+            Filterable = filterable.Value;
+            changedFields.Add(nameof(Filterable));
         }
 
         if (displayOn.HasValue && displayOn.Value != DisplayOn)
         {
             DisplayOn = displayOn.Value;
-            changed = true;
-            displayOnChanged = true;
+            changedFields.Add(nameof(DisplayOn));
         }
 
         if (position.HasValue && position.Value != Position)
         {
-            SetPosition(position.Value);
-            changed = true;
-            positionChanged = true;
+            Position = Math.Clamp(position.Value, PositionableConstraints.PositionMin, PositionableConstraints.PositionMax);
+            changedFields.Add(nameof(Position));
         }
 
         if (publicMetadata != null)
         {
             PublicMetadata = new Dictionary<string, string?>(publicMetadata);
-            changed = true;
         }
 
         if (privateMetadata != null)
         {
             PrivateMetadata = new Dictionary<string, string?>(privateMetadata);
-            changed = true;
         }
 
-        if (changed)
+        // Update: all product if DEPENDENCY fields changed
+        if (changedFields.Overlaps([nameof(Name), nameof(Presentation), nameof(Kind), nameof(Filterable), nameof(DisplayOn), nameof(Position)]))
         {
-            // If one of the dependency fields changed, touch related products (mimics after_update behavior)
-            if (nameChanged || presentationChanged || kindChanged || filterableChanged || displayOnChanged || positionChanged)
-            {
-                TouchAllProducts();
-            }
+            TouchAllProducts();
+        }
 
-            MarkAsUpdated();
-            AddDomainEvent(new Events.Updated(Id));
+        // Raise: update event if any changes
+        if (Filterable)
+        {
+            EnsureProductPropertiesHaveFilterParams();
         }
 
         return this;
@@ -314,65 +284,11 @@ public sealed class Property :
         return pairs;
     }
 
-    public ErrorOr<Success> SetName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return Errors.NameRequired;
-        if (name.Length < Constraints.NameMinLength || name.Length > Constraints.NameMaxLength)
-            return Errors.InvalidNameLength;
-
-        Name = name.Trim();
-        MarkAsUpdated();
-        AddDomainEvent(new Events.Updated(Id));
-        return Result.Success;
-    }
-
-    public ErrorOr<Success> SetPresentation(string presentation)
-    {
-        if (string.IsNullOrWhiteSpace(presentation)) return Errors.PresentationRequired;
-        if (presentation.Length > Constraints.PresentationMaxLength)
-            return Errors.InvalidPresentationLength;
-
-        Presentation = presentation.Trim();
-        MarkAsUpdated();
-        AddDomainEvent(new Events.Updated(Id));
-        return Result.Success;
-    }
-
-    public void SetKind(PropertyKind kind)
-    {
-        if (kind != Kind)
-        {
-            Kind = kind;
-            MarkAsUpdated();
-            AddDomainEvent(new Events.Updated(Id));
-        }
-    }
-
-    public void SetFilterable(bool filterable)
-    {
-        if (filterable != Filterable)
-        {
-            bool old = Filterable;
-            Filterable = filterable;
-            MarkAsUpdated();
-            AddDomainEvent(new Events.FilterableChanged(Id, old, filterable));
-
-            if (Filterable)
-                EnsureProductPropertiesHaveFilterParams();
-        }
-    }
-
-    public void SetPosition(int position)
-    {
-        Position = Math.Clamp(position, Constraints.PositionMin, Constraints.PositionMax);
-        MarkAsUpdated();
-        AddDomainEvent(new Events.Updated(Id));
-    }
 
     public ErrorOr<Deleted> Delete()
     {
         if (ProductProperties.Any())
-            return Errors.CannotDeleteInUse(Id, ProductProperties.Count);
+            return Errors.HasDependentProductProperties;
 
         AddDomainEvent(new Events.Deleted(Id));
         return Result.Deleted;

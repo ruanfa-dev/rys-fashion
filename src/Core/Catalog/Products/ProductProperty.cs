@@ -98,7 +98,6 @@ public sealed class ProductProperty : AuditableEntity
             position: position
         );
 
-        productProperty.MarkAsCreated();
         productProperty.AddDomainEvent(new Events.Created(productProperty.Id));
         return productProperty;
     }
@@ -129,7 +128,7 @@ public sealed class ProductProperty : AuditableEntity
         if (changed)
         {
             EnsureFilterParam();
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
         }
 

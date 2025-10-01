@@ -9,7 +9,7 @@ public sealed class RoleClaim : IdentityRoleClaim<Guid>, IAssignable
     public string? AssignedBy { get; set; }
 
     // Add navigation property to Role
-    public Role Role { get; set; } = default!;
+    public Role Role { get; set; } = null!;
 
     public void MarkAsAssigned(string? userId = null)
     {

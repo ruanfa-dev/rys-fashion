@@ -17,10 +17,12 @@ public sealed class OptionValue :
     ITranslatable<OptionValueTranslation>
 {
     #region Properties
-    public Guid OptionTypeId { get; set; }
     public string Name { get; set; } = null!;
     public string Presentation { get; set; } = null!;
     public int Position { get; set; }
+
+    public Guid OptionTypeId { get; set; }
+
     #endregion
 
     #region Relationships
@@ -61,18 +63,12 @@ public sealed class OptionValue :
         public static Error IdRequired => Error.Validation("Property.InvalidId", "Property ID is required.");
 
         // Name: required, length
-        public static Error NameRequired => Error.Validation("Property.NameRequired", "Property name is required.");
-        public static Error InvalidNameLength => Error.Validation(
-            "Property.InvalidNameLength",
-            $"Property name must be between {Constraints.NameMinLength} and {Constraints.NameMaxLength} characters long."
-        );
+        public static Error NameRequired => ParameterizableErrors.NameRequired(prefix: nameof(OptionValue));
+        public static Error InvalidNameLength => ParameterizableErrors.InvalidNameLength(prefix: nameof(OptionValue));
 
         // Presentation: required, length
-        public static Error PresentationRequired => Error.Validation("Property.PresentationRequired", "Property presentation is required.");
-        public static Error InvalidPresentationLength => Error.Validation(
-            "Property.InvalidPresentationLength",
-            $"Property presentation must be between {Constraints.PresentationMinLength} and {Constraints.PresentationMaxLength} characters long."
-        );
+        public static Error PresentationRequired => ParameterizableErrors.PresentationRequired(prefix: nameof(OptionValue));
+        public static Error InvalidPresentationLength => ParameterizableErrors.InvalidPresentationLength(prefix: nameof(OptionValue));
 
         // Position: non-negative
         public static Error InvalidPosition => Error.Validation(
@@ -147,7 +143,7 @@ public sealed class OptionValue :
         }
         if (changed)
         {
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
             // mimic after_update behavior: touch related products when presentation changes
             if (presentationChanged)

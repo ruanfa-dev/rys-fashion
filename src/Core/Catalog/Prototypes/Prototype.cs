@@ -168,7 +168,7 @@ public sealed class Prototype : AuditableEntity, IMetadataSupport
 
         if (changed)
         {
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
         }
 

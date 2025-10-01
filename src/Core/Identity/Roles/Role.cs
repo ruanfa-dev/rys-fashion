@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Identity;
 
 using SharedKernel.Domain.Attributes;
+using SharedKernel.Domain.Attributes.Auditable;
 
 namespace Core.Identity.Roles;
 public partial class Role : IdentityRole<Guid>, IAuditable
@@ -23,8 +24,8 @@ public partial class Role : IdentityRole<Guid>, IAuditable
     #endregion
 
     #region Relationships
-    public virtual ICollection<UserRole> UserRoles { get; set; } = default!;
-    public virtual ICollection<RoleClaim> RoleClaims { get; set; } = default!;
+    public virtual ICollection<UserRole> UserRoles { get; set; } = null!;
+    public virtual ICollection<RoleClaim> RoleClaims { get; set; } = null!;
     #endregion
 
     #region Contructors
@@ -72,7 +73,6 @@ public partial class Role : IdentityRole<Guid>, IAuditable
         if (isSystemRole.HasValue)
             IsSystemRole = isSystemRole.Value;
 
-        MarkAsUpdated();
         return this;
     }
 

@@ -59,7 +59,6 @@ public class Asset : AuditableEntity, IMetadataSupport
         FileName = fileName;
         ContentType = contentType;
         Size = size;
-        MarkAsUpdated();
         AddDomainEvent(new Events.Updated(Id));
     }
 
@@ -68,7 +67,6 @@ public class Asset : AuditableEntity, IMetadataSupport
     public void SetPosition(int position)
     {
         Position = Math.Max(0, position);
-        MarkAsUpdated();
         AddDomainEvent(new Events.Updated(Id));
     }
 

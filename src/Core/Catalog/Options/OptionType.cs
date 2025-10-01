@@ -4,6 +4,7 @@ using ErrorOr;
 
 using SharedKernel.Domain.Attributes.Metadata;
 using SharedKernel.Domain.Attributes.Parameterizable;
+using SharedKernel.Domain.Attributes.Positionable;
 using SharedKernel.Domain.Attributes.TranslatableResource;
 using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging;
@@ -14,6 +15,7 @@ public sealed class OptionType :
     AuditableEntity,
     IParameterizableName,
     IMetadataSupport,
+    IPositionable,
     ITranslatable<OptionTypeTranslation>
 {
     #region Properties
@@ -41,19 +43,6 @@ public sealed class OptionType :
     public IReadOnlyCollection<string> TranslatableFields => [nameof(Presentation)];
     #endregion
 
-    #region Constraints
-    public static class Constraints
-    {
-        public const int NameMinLength = 2;
-        public const int NameMaxLength = 100;
-
-        public const int PresentationMinLength = 2;
-        public const int PresentationMaxLength = 255;
-
-        public const int PositionMin = 0;
-        public const int PositionMax = 100000;
-    }
-    #endregion
 
     #region Errors
     public static class Errors
@@ -61,26 +50,6 @@ public sealed class OptionType :
         // Validations:
         // ID: required, non-empty
         public static Error IdRequired => Error.Validation("OptionType.InvalidId", "OptionType ID is required.");
-
-        // Name: required, length
-        public static Error NameRequired => Error.Validation("OptionType.NameRequired", "OptionType name is required.");
-        public static Error InvalidNameLength => Error.Validation(
-            "OptionType.InvalidNameLength",
-            $"OptionType name must be between {Constraints.NameMinLength} and {Constraints.NameMaxLength} characters long."
-        );
-
-        // Presentation: required, length
-        public static Error PresentationRequired => Error.Validation("OptionType.PresentationRequired", "OptionType presentation is required.");
-        public static Error InvalidPresentationLength => Error.Validation(
-            "OptionType.InvalidPresentationLength",
-            $"OptionType presentation must be between {Constraints.PresentationMinLength} and {Constraints.PresentationMaxLength} characters long."
-        );
-
-        // Position: non-negative
-        public static Error InvalidPosition => Error.Validation(
-            "OptionType.InvalidPosition",
-            $"Position must be between {Constraints.PositionMin} and {Constraints.PositionMax}."
-        );
 
         // Not Found:
         public static Error NotFound(Guid id) => Error.NotFound(
@@ -94,10 +63,17 @@ public sealed class OptionType :
             $"A OptionType with the name '{name}' already exists."
         );
 
-        // Cannot delete if product is using this OptionType
-        public static Error CannotDeleteInUse(Guid id, int usageCount) => Error.Validation(
-            "OptionType.CannotDeleteInUse",
-            $"Cannot delete OptionType '{id}' because it is used by {usageCount} product(s)."
+        // Delete: 
+        // In use by products
+        public static Error InUseByProducts => Error.Failure(
+            "OptionType.InUseByProducts",
+            "OptionType cannot be deleted as it is in use by one or more products."
+        );
+
+        // In use by prototypes
+        public static Error InUseByPrototypes => Error.Failure(
+            "OptionType.InUseByPrototypes",
+            "OptionType cannot be deleted as it is in use by one or more prototypes."
         );
 
         // Unexpected error:
@@ -112,8 +88,8 @@ public sealed class OptionType :
 
     public static ErrorOr<OptionType> Create(string name, string presentation, bool filterable = false, int position = 0)
     {
-        if (string.IsNullOrWhiteSpace(presentation)) return Errors.PresentationRequired;
-
+        // Validate: already in fluent validation
+        // Create: instantiate
         OptionType ot = new OptionType
         {
             Name = name.Trim(),
@@ -122,6 +98,7 @@ public sealed class OptionType :
             Position = Math.Max(position, 0)
         };
 
+        // Raise: create event
         ot.AddDomainEvent(new Events.Created(ot.Id));
         return ot;
     }
@@ -131,7 +108,6 @@ public sealed class OptionType :
         bool changed = false;
         if (presentation != null && presentation.Trim() != Presentation)
         {
-            if (string.IsNullOrWhiteSpace(presentation)) return Errors.PresentationRequired;
             Presentation = presentation.Trim();
             changed = true;
         }
@@ -150,7 +126,6 @@ public sealed class OptionType :
 
         if (changed)
         {
-            MarkAsUpdated();
             AddDomainEvent(new Events.Updated(Id));
             AddDomainEvent(new Events.TouchProducts(Id));
         }
@@ -160,15 +135,15 @@ public sealed class OptionType :
 
     public ErrorOr<Deleted> Delete()
     {
+        if (ProductOptionTypes.Any())
+            return Errors.InUseByProducts;
+
+        if (OptionTypePrototypes.Any())
+            return Errors.InUseByPrototypes;
+
         AddDomainEvent(new Events.Deleted(Id));
         AddDomainEvent(new Events.TouchProducts(Id));
         return Result.Deleted;
-    }
-
-    private void TouchAllProducts()
-    {
-        // raise a domain event to be handled by handlers which will touch related products
-        AddDomainEvent(new Events.TouchProducts(Id));
     }
 
     public static class Events

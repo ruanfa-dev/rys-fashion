@@ -43,7 +43,7 @@ public sealed class Classification : AuditableEntity
         {
             if (position.Value < 0) return Errors.InvalidPosition;
             Position = position.Value;
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
         }
 

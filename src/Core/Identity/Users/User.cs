@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Identity;
 
 using SharedKernel.Domain.Attributes;
+using SharedKernel.Domain.Attributes.Auditable;
 
 namespace Core.Identity.Users;
 
@@ -34,9 +35,9 @@ public partial class User : IdentityUser<Guid>, IAuditable
     #endregion
 
     #region Relationships
-    public ICollection<RefreshToken> RefreshTokens { get; set; } = default!;
-    public ICollection<UserRole> UserRoles { get; set; } = default!;
-    public ICollection<UserClaim> UserClaims { get; set; } = default!;
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = null!;
+    public ICollection<UserRole> UserRoles { get; set; } = null!;
+    public ICollection<UserClaim> UserClaims { get; set; } = null!;
     #endregion
 
     #endregion
@@ -158,9 +159,6 @@ public partial class User : IdentityUser<Guid>, IAuditable
             PhoneNumberConfirmed = phoneNumberConfirmed;
         }
 
-        // Mark as updated and return.
-        MarkAsUpdated();
-
         return this;
     }
 
@@ -186,7 +184,6 @@ public partial class User : IdentityUser<Guid>, IAuditable
         CurrentSignInAt = DateTimeOffset.UtcNow;
         CurrentSignInIp = ipAddress;
         SignInCount++;
-        MarkAsUpdated();
     }
 
     #endregion

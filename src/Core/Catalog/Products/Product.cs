@@ -5,7 +5,7 @@ public class Product : AuditableEntity
 {
     // Placeholder for the Product entity
     #region Relationships
-    public ICollection<ProductProperty> ProductProperties { get; set; } = default!;
+    public ICollection<ProductProperty> ProductProperties { get; set; } = null!;
     #endregion
 
     // Domain flags used by taxon/product queries

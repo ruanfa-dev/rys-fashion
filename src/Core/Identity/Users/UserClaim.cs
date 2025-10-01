@@ -9,7 +9,7 @@ public sealed class UserClaim : IdentityUserClaim<Guid>, IAssignable
     public DateTimeOffset? AssignedAt { get; set; }
     public string? AssignedBy { get; set; }
 
-    public User User { get; set; } = default!;
+    public User User { get; set; } = null!;
 
     public void MarkAsAssigned(string? userId = null)
     {

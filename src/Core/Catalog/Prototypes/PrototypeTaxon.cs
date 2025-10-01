@@ -78,7 +78,7 @@ public sealed class PrototypeTaxon : AuditableEntity
 
         if (changed)
         {
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
         }
 

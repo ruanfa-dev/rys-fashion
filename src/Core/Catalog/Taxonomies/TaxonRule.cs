@@ -210,7 +210,7 @@ public sealed class TaxonRule : AuditableEntity
 
         if (changed)
         {
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
 
             // Trigger taxon product regeneration

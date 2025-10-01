@@ -4,6 +4,7 @@ using ErrorOr;
 using SharedKernel.Domain.Primitives;
 using SharedKernel.Messaging;
 using SharedKernel.Domain.Attributes.Metadata;
+using SharedKernel.Domain.Attributes.Positionable;
 using SharedKernel.Domain.Attributes.TranslatableResource;
 
 namespace Core.Catalog.Taxonomies;
@@ -14,7 +15,10 @@ namespace Core.Catalog.Taxonomies;
 /// - holds taxons hierarchy and belongs to a store
 /// - contains helper constants used by admin/search layers
 /// </summary>
-public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<TaxonomyTranslation>
+public sealed class Taxonomy : 
+    AuditableEntity, 
+    IPositionable,
+    IMetadataSupport, ITranslatable<TaxonomyTranslation>
 {
     #region Properties
 
@@ -34,7 +38,7 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
     public IDictionary<string, string?>? PublicMetadata { get; set; } = new Dictionary<string, string?>();
     public IDictionary<string, string?>? PrivateMetadata { get; set; } = new Dictionary<string, string?>();
 
-    public IReadOnlyCollection<string> TranslatableFields => new[] { nameof(Name) };
+    public IReadOnlyCollection<string> TranslatableFields => [nameof(Name)];
 
     #endregion
 
@@ -44,9 +48,6 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
     {
         public const int NameMinLength = 1;
         public const int NameMaxLength = 255;
-
-        public const int PositionMin = 0;
-        public const int PositionMax = 100000;
     }
 
     #endregion
@@ -56,10 +57,9 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
     public static class Errors
     {
         // Validation:
+        // Name
         public static Error NameRequired => Error.Validation("Taxonomy.NameRequired", "Taxonomy name is required.");
         public static Error InvalidNameLength => Error.Validation("Taxonomy.InvalidNameLength", $"Taxonomy name must be between {Constraints.NameMinLength} and {Constraints.NameMaxLength} characters long.");
-       
-        public static Error InvalidPosition => Error.Validation("Taxonomy.InvalidPosition", $"Position must be between {Constraints.PositionMin} and {Constraints.PositionMax}.");
 
         public static Error StoreRequired => Error.Validation("Taxonomy.StoreRequired", "Store is required for a taxonomy.");
        
@@ -83,7 +83,8 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
 
     public static ErrorOr<Taxonomy> Create(string name, Guid storeId, int position = 0)
     {
-        if (string.IsNullOrWhiteSpace(name)) return Errors.NameRequired;
+        if (string.IsNullOrWhiteSpace(name)) 
+            return Errors.NameRequired;
         string trimmed = name.Trim();
         if (trimmed.Length < Constraints.NameMinLength || trimmed.Length > Constraints.NameMaxLength)
             return Errors.InvalidNameLength;
@@ -136,7 +137,6 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
 
         if (changed)
         {
-            MarkAsUpdated();
             AddDomainEvent(new Events.Updated(Id));
         }
 
@@ -189,14 +189,6 @@ public sealed class Taxonomy : AuditableEntity, IMetadataSupport, ITranslatable<
         return newRoot;
     }
 
-    /// <summary>
-    /// Helper that mimics Rails' after_create :set_root behavior.
-    /// Ensures a root taxon exists for this taxonomy. Safe to call multiple times.
-    /// </summary>
-    public ErrorOr<Taxon> SetRoot()
-    {
-        return EnsureRoot();
-    }
 
     /// <summary>
     /// Applies the default ordering used by the Rails default_scope: position then created_at.

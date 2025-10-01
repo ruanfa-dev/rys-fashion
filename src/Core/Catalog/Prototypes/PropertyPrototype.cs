@@ -80,7 +80,7 @@ public sealed class PropertyPrototype : AuditableEntity
 
         if (changed)
         {
-            MarkAsUpdated();
+
             AddDomainEvent(new Events.Updated(Id));
         }
 

@@ -2,7 +2,6 @@
 
 using Core.Catalog.Products;
 using Core.Catalog.Prototypes;
-using Core.Commons.Extensions;
 using Core.Promotions;
 
 using ErrorOr;
@@ -18,14 +17,9 @@ namespace Core.Catalog.Taxonomies;
 /// <summary>
 /// Domain model for a Taxon (category node) following DDD principles.
 /// Combines hierarchical structure, automatic rule processing, and rich business behavior.
-/// Optimized for EF Core and CQRS patterns.
 /// </summary>
 public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<TaxonTranslation>
 {
-    // Test hook: external code (tests) can provide a resolver to map a ParentId
-    // to a Taxon instance when navigation properties are not populated.
-    internal static Func<Guid, Taxon?>? InstanceResolver { get; set; }
-
     #region Constraints
 
     public static class Constraints
@@ -35,13 +29,10 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         public const int PrettyNameMaxLength = 500;
         public const int DescriptionMaxLength = 2000;
         public const int PermalinkMaxLength = 500;
-        public const int MetaFieldMaxLength = 255;
         public const int PositionMin = 0;
         public const int PositionMax = 999999;
         public const int DepthMin = 0;
         public const int DepthMax = 20;
-        public const int LftMin = 1;
-        public const int RgtMin = 2;
         public static readonly string[] RulesMatchPolicies = { "all", "any" };
         public static readonly string[] SortOrders = {
             "manual", "best-selling", "name-a-z", "name-z-a",
@@ -84,34 +75,10 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             "Taxon.InvalidSortOrder",
             $"Sort order must be one of: {string.Join(", ", Constraints.SortOrders)}."
         );
-
-        // Meta field validations
-        public static Error MetaTitleTooLong => Error.Validation(
-            "Taxon.MetaTitleTooLong",
-            $"Meta title cannot exceed {Constraints.MetaFieldMaxLength} characters."
-        );
-        public static Error MetaDescriptionTooLong => Error.Validation(
-            "Taxon.MetaDescriptionTooLong",
-            $"Meta description cannot exceed {Constraints.MetaFieldMaxLength} characters."
-        );
-        public static Error MetaKeywordsTooLong => Error.Validation(
-            "Taxon.MetaKeywordsTooLong",
-            $"Meta keywords cannot exceed {Constraints.MetaFieldMaxLength} characters."
-        );
-
-        // Description validations
         public static Error DescriptionTooLong => Error.Validation(
             "Taxon.DescriptionTooLong",
             $"Description cannot exceed {Constraints.DescriptionMaxLength} characters."
         );
-
-        // Permalink validations
-        public static Error PermalinkTooLong => Error.Validation(
-            "Taxon.PermalinkTooLong",
-            $"Permalink cannot exceed {Constraints.PermalinkMaxLength} characters."
-        );
-
-        // Position validations
         public static Error InvalidPosition => Error.Validation(
             "Taxon.InvalidPosition",
             $"Position must be between {Constraints.PositionMin} and {Constraints.PositionMax}."
@@ -209,7 +176,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     #region Core Properties
 
-    public string Name { get; set; } = null!; // Private setter
+    public string Name { get; set; } = null!;
     public string? PrettyName { get; set; }
     public string? Description { get; set; }
     public string Permalink { get; set; } = string.Empty;
@@ -273,7 +240,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
     public bool IsManualSortOrder => SortOrder == "manual";
     public string PageBuilderImageUrl => SquareImageUrl ?? ImageUrl ?? string.Empty;
     public string SeoTitle => string.IsNullOrWhiteSpace(MetaTitle) ? Name : MetaTitle;
-
     public string Slug
     {
         get => Permalink;
@@ -327,7 +293,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     #region Constructors & Factory
 
-    private Taxon() { } // For EF Core
+    private Taxon() { }
 
     public static ErrorOr<Taxon> Create(
         string name,
@@ -346,32 +312,8 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         IDictionary<string, string?>? publicMetadata = null,
         IDictionary<string, string?>? privateMetadata = null)
     {
-        // Validate required fields
-        ErrorOr<Success> nameValidation = ValidateName(name);
-        if (nameValidation.IsError) return nameValidation.Errors;
-
-        ErrorOr<Success> taxonomyValidation = ValidateTaxonomyId(taxonomyId);
-        if (taxonomyValidation.IsError) return taxonomyValidation.Errors;
-
         rulesMatchPolicy ??= "all";
-        ErrorOr<Success> rulesMatchPolicyValidation = ValidateRulesMatchPolicy(rulesMatchPolicy);
-        if (rulesMatchPolicyValidation.IsError) return rulesMatchPolicyValidation.Errors;
-
         sortOrder ??= "manual";
-        ErrorOr<Success> sortOrderValidation = ValidateSortOrder(sortOrder);
-        if (sortOrderValidation.IsError) return sortOrderValidation.Errors;
-
-        ErrorOr<Success> metaValidation = ValidateMetaFields(metaTitle, metaDescription, metaKeywords);
-        if (metaValidation.IsError) return metaValidation.Errors;
-
-        if (!string.IsNullOrEmpty(description) && description.Length > Constraints.DescriptionMaxLength)
-            return Errors.DescriptionTooLong;
-
-        if (!string.IsNullOrEmpty(imageUrl) && !IsValidImageUrl(imageUrl))
-            return Errors.InvalidImageContentType;
-        if (!string.IsNullOrEmpty(squareImageUrl) && !IsValidImageUrl(squareImageUrl))
-            return Errors.InvalidImageContentType;
-
 
         string trimmedName = name.Trim();
         Taxon taxon = new Taxon
@@ -393,79 +335,10 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             PrivateMetadata = privateMetadata != null ? new Dictionary<string, string?>(privateMetadata) : new Dictionary<string, string?>()
         };
 
-        InstanceResolver?.Invoke(taxon.Id);
         taxon.SetPrettyName();
         taxon.SetPermalink(includeParentIfAvailable: false);
         taxon.AddDomainEvent(new Events.Created(taxon.Id, taxon));
         return taxon;
-    }
-
-    #endregion
-
-    #region Validation Methods
-
-    private static ErrorOr<Success> ValidateName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return Errors.NameRequired;
-
-        string trimmed = name.Trim();
-        if (trimmed.Length < Constraints.NameMinLength || trimmed.Length > Constraints.NameMaxLength)
-            return Errors.InvalidNameLength;
-
-        return Result.Success;
-    }
-
-    private static ErrorOr<Success> ValidateTaxonomyId(Guid taxonomyId)
-    {
-        if (taxonomyId == Guid.Empty)
-            return Errors.TaxonomyRequired;
-
-        return Result.Success;
-    }
-
-    private static ErrorOr<Success> ValidateRulesMatchPolicy(string rulesMatchPolicy)
-    {
-        if (!Constraints.RulesMatchPolicies.Contains(rulesMatchPolicy))
-            return Errors.InvalidRulesMatchPolicy;
-
-        return Result.Success;
-    }
-
-    private static ErrorOr<Success> ValidateSortOrder(string sortOrder)
-    {
-        if (!Constraints.SortOrders.Contains(sortOrder))
-            return Errors.InvalidSortOrder;
-
-        return Result.Success;
-    }
-
-    private static ErrorOr<Success> ValidateMetaFields(string? metaTitle, string? metaDescription, string? metaKeywords)
-    {
-        if (!string.IsNullOrEmpty(metaTitle) && metaTitle.Length > Constraints.MetaFieldMaxLength)
-            return Errors.MetaTitleTooLong;
-
-        if (!string.IsNullOrEmpty(metaDescription) && metaDescription.Length > Constraints.MetaFieldMaxLength)
-            return Errors.MetaDescriptionTooLong;
-
-        if (!string.IsNullOrEmpty(metaKeywords) && metaKeywords.Length > Constraints.MetaFieldMaxLength)
-            return Errors.MetaKeywordsTooLong;
-
-        return Result.Success;
-    }
-
-    private static bool IsValidImageUrl(string? url)
-    {
-        if (string.IsNullOrWhiteSpace(url)) return true;
-        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult) ||
-            uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps)
-            return false;
-
-        string extension = System.IO.Path.GetExtension(uriResult.AbsolutePath).ToLowerInvariant();
-        if (!string.IsNullOrEmpty(extension) && !Constraints.ValidImageExtensions.Contains(extension))
-            return false;
-
-        return true;
     }
 
     #endregion
@@ -490,59 +363,30 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
     {
         bool hasChanges = false;
         bool rulesPolicyChanged = false;
+        bool parentChanged = false;
 
         string? prevImageUrl = ImageUrl;
         string? prevSquareImageUrl = SquareImageUrl;
 
+        // Handle parent change (only update ParentId here, SetParent called from handler)
         if (parentId != ParentId)
         {
-            if (parentId == Id) return Errors.SelfParent;
+            if (parentId == Id)
+                return Errors.SelfParent;
 
-            Taxon? resolvedParent = null;
-            if (InstanceResolver != null && parentId.HasValue)
-            {
-                try { resolvedParent = InstanceResolver(parentId.Value); } catch { }
-            }
-
-            if (resolvedParent != null)
-            {
-                ErrorOr<Taxon> setParentResult = SetParent(resolvedParent);
-                if (setParentResult.IsError) return setParentResult.Errors;
-                hasChanges = true;
-            }
-            else if (!parentId.HasValue)
-            {
-                if (Parent != null)
-                {
-                    Parent.Children.Remove(this);
-                    Parent.InvalidateDescendantsCache();
-                    Parent.MarkAsUpdated();
-                    Parent.AddDomainEvent(new Events.Updated(Parent.Id, Parent));
-                }
-                Parent = null;
-                ParentId = null;
-                hasChanges = true;
-            }
-            else
-            {
-                ParentId = parentId;
-                hasChanges = true;
-            }
+            ParentId = parentId;
+            parentChanged = true;
+            hasChanges = true;
         }
 
         if (!string.IsNullOrWhiteSpace(name) && name.Trim() != Name)
         {
-            ErrorOr<Success> nameValidation = ValidateName(name);
-            if (nameValidation.IsError) return nameValidation.Errors;
             Name = name.Trim();
-            Permalink = string.Empty; // Clear for regeneration
             hasChanges = true;
         }
 
         if (description != null && description.Trim() != Description)
         {
-            if (description.Length > Constraints.DescriptionMaxLength)
-                return Errors.DescriptionTooLong;
             Description = description.Trim();
             hasChanges = true;
         }
@@ -555,8 +399,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (!string.IsNullOrWhiteSpace(rulesMatchPolicy) && rulesMatchPolicy != RulesMatchPolicy)
         {
-            ErrorOr<Success> rulesMatchPolicyValidation = ValidateRulesMatchPolicy(rulesMatchPolicy);
-            if (rulesMatchPolicyValidation.IsError) return rulesMatchPolicyValidation.Errors;
             RulesMatchPolicy = rulesMatchPolicy;
             rulesPolicyChanged = true;
             hasChanges = true;
@@ -564,8 +406,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (!string.IsNullOrWhiteSpace(sortOrder) && sortOrder != SortOrder)
         {
-            ErrorOr<Success> sortOrderValidation = ValidateSortOrder(sortOrder);
-            if (sortOrderValidation.IsError) return sortOrderValidation.Errors;
             SortOrder = sortOrder;
             hasChanges = true;
         }
@@ -576,22 +416,32 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             hasChanges = true;
         }
 
-        ErrorOr<bool> metaValidation = ValidateAndUpdateMetaFields(metaTitle, metaDescription, metaKeywords);
-        if (metaValidation.IsError) return metaValidation.Errors;
-        if (metaValidation.Value) hasChanges = true;
+        if (metaTitle != null && metaTitle != MetaTitle)
+        {
+            MetaTitle = metaTitle.Trim();
+            hasChanges = true;
+        }
+
+        if (metaDescription != null && metaDescription != MetaDescription)
+        {
+            MetaDescription = metaDescription.Trim();
+            hasChanges = true;
+        }
+
+        if (metaKeywords != null && metaKeywords != MetaKeywords)
+        {
+            MetaKeywords = metaKeywords.Trim();
+            hasChanges = true;
+        }
 
         if (imageUrl != ImageUrl)
         {
-            if (!string.IsNullOrEmpty(imageUrl) && !IsValidImageUrl(imageUrl))
-                return Errors.InvalidImageContentType;
             ImageUrl = imageUrl;
             hasChanges = true;
         }
 
         if (squareImageUrl != SquareImageUrl)
         {
-            if (!string.IsNullOrEmpty(squareImageUrl) && !IsValidImageUrl(squareImageUrl))
-                return Errors.InvalidImageContentType;
             SquareImageUrl = squareImageUrl;
             hasChanges = true;
         }
@@ -610,11 +460,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         if (hasChanges)
         {
-            SetPrettyName();
-            SetPermalink();
-            MarkAsUpdated();
-            AddDomainEvent(new Events.Updated(Id, this));
-            InvalidateDescendantsCache();
+            AddDomainEvent(new Events.Updated(Id, this, parentChanged));
 
             bool imagesChanged = prevImageUrl != ImageUrl || prevSquareImageUrl != SquareImageUrl;
             if (imagesChanged)
@@ -636,37 +482,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         return this;
     }
 
-    private ErrorOr<bool> ValidateAndUpdateMetaFields(string? metaTitle, string? metaDescription, string? metaKeywords)
-    {
-        bool hasChanges = false;
-
-        if (metaTitle != null && metaTitle != MetaTitle)
-        {
-            if (metaTitle.Length > Constraints.MetaFieldMaxLength)
-                return Errors.MetaTitleTooLong;
-            MetaTitle = metaTitle.Trim();
-            hasChanges = true;
-        }
-
-        if (metaDescription != null && metaDescription != MetaDescription)
-        {
-            if (metaDescription.Length > Constraints.MetaFieldMaxLength)
-                return Errors.MetaDescriptionTooLong;
-            MetaDescription = metaDescription.Trim();
-            hasChanges = true;
-        }
-
-        if (metaKeywords != null && metaKeywords != MetaKeywords)
-        {
-            if (metaKeywords.Length > Constraints.MetaFieldMaxLength)
-                return Errors.MetaKeywordsTooLong;
-            MetaKeywords = metaKeywords.Trim();
-            hasChanges = true;
-        }
-
-        return hasChanges;
-    }
-
     public ErrorOr<Deleted> Delete()
     {
         if (Children.Any())
@@ -681,7 +496,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         if (PromotionRuleTaxons.Any())
             return Errors.HasPromotionRules;
 
-        // Include the entity instance in the Deleted event so handlers can use its data
         AddDomainEvent(new Events.Deleted(Id, this));
         return Result.Deleted;
     }
@@ -694,15 +508,13 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         if (newParent.TaxonomyId != TaxonomyId)
             return Errors.ParentTaxonomyMismatch;
 
-        if (IsAncestorOf(newParent, Constraints.DepthMax))
+        if (IsAncestorOf(newParent))
             return Errors.CircularReference;
 
         if (Parent != null)
         {
             Parent.Children.Remove(this);
             Parent.InvalidateDescendantsCache();
-            Parent.MarkAsUpdated();
-            Parent.AddDomainEvent(new Events.Updated(Parent.Id, Parent));
         }
 
         ParentId = newParent.Id;
@@ -715,9 +527,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         SetPermalink();
         InvalidateDescendantsCache();
         newParent.InvalidateDescendantsCache();
-
-        MarkAsUpdated();
-        AddDomainEvent(new Events.Updated(Id, this));
 
         return this;
     }
@@ -775,14 +584,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         return this;
     }
 
-    public ErrorOr<Taxon> ClassifyProduct(Product product, int position = 0)
-    {
-        if (product == null)
-            return Errors.NullProduct;
-
-        return ClassifyProduct(product.Id, position);
-    }
-
     public ErrorOr<Taxon> UnclassifyProduct(Guid productId)
     {
         Classification? classification = Classifications.FirstOrDefault(c => c.ProductId == productId);
@@ -814,7 +615,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     #endregion
 
-    #region Collection Management (Internal for EF Core)
+    #region Collection Management
 
     public void AddChild(Taxon child)
     {
@@ -824,8 +625,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         {
             child.Parent.Children.Remove(child);
             child.Parent.InvalidateDescendantsCache();
-            child.Parent.MarkAsUpdated();
-            child.Parent.AddDomainEvent(new Events.Updated(child.Parent.Id, child.Parent));
         }
 
         Children.Add(child);
@@ -834,12 +633,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         InvalidateDescendantsCache();
         child.InvalidateDescendantsCache();
-
-        MarkAsUpdated();
-        AddDomainEvent(new Events.Updated(Id, this));
-
-        child.MarkAsUpdated();
-        child.AddDomainEvent(new Events.Updated(child.Id, child));
     }
 
     internal void RemoveChild(Taxon child)
@@ -852,24 +645,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         InvalidateDescendantsCache();
         child.InvalidateDescendantsCache();
-
-        MarkAsUpdated();
-        AddDomainEvent(new Events.Updated(Id, this));
-
-        child.MarkAsUpdated();
-        child.AddDomainEvent(new Events.Updated(child.Id, child));
-    }
-
-    internal void AddClassification(Classification classification)
-    {
-        if (classification == null || Classifications.Any(c => c.Id == classification.Id)) return;
-        Classifications.Add(classification);
-    }
-
-    internal void AddTranslation(TaxonTranslation translation)
-    {
-        if (translation == null || Translations.Contains(translation)) return;
-        Translations.Add(translation);
     }
 
     #endregion
@@ -961,31 +736,22 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         return Name;
     }
 
-    public void SetPermalink(bool includeParentIfAvailable = true)
+    public void SetPermalink()
     {
-        Permalink = GenerateSlug(includeParentIfAvailable);
+        Permalink = GenerateSlug();
     }
 
-    public string GenerateSlug(bool includeParentIfAvailable = true)
+    public string GenerateSlug()
     {
-        Taxon? effectiveParent = Parent;
-        if (includeParentIfAvailable && effectiveParent == null && ParentId.HasValue)
+        if (Parent != null)
         {
-            try { effectiveParent = InstanceResolver?.Invoke(ParentId.Value); } catch { }
-        }
-
-        if (effectiveParent != null && includeParentIfAvailable)
-        {
-            string source = string.IsNullOrWhiteSpace(Permalink) ? Name : Permalink.Split('/').Last();
-            string slugPart = source.Parameterize();
-            if (!string.IsNullOrWhiteSpace(effectiveParent.Permalink))
-                return string.Join('/', new[] { effectiveParent.Permalink.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            string slugPart = Name.Parameterize();
+            if (!string.IsNullOrWhiteSpace(Parent.Permalink))
+                return string.Join('/', new[] { Parent.Permalink.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
             return slugPart;
         }
 
-        if (string.IsNullOrWhiteSpace(Permalink))
-            return Name.Parameterize();
-        return Permalink.Parameterize();
+        return Name.Parameterize();
     }
 
     public void RegeneratePrettyNameAndPermalink()
@@ -1000,18 +766,14 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         foreach (Taxon child in Children)
         {
-            try { child.RegeneratePrettyNameAndPermalinkAsChild(this); } catch { }
+            try { child.RegeneratePrettyNameAndPermalinkRecursive(); } catch { }
         }
     }
 
-    public void RegeneratePrettyNameAndPermalinkAsChild(Taxon parent)
+    private void RegeneratePrettyNameAndPermalinkRecursive()
     {
-        PrettyName = parent.PrettyName is not null ? $"{parent.PrettyName} -> {Name}" : Name;
-        string slugPart = string.IsNullOrWhiteSpace(Permalink) ? Name.Parameterize() : Permalink.Split('/').Last().Parameterize();
-        if (!string.IsNullOrWhiteSpace(parent.Permalink))
-            Permalink = string.Join('/', new[] { parent.Permalink.TrimEnd('/'), slugPart }.Where(x => !string.IsNullOrWhiteSpace(x)));
-        else
-            Permalink = slugPart;
+        SetPrettyName();
+        SetPermalink();
 
         foreach (TaxonTranslation t in Translations)
         {
@@ -1020,15 +782,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         foreach (Taxon child in Children)
         {
-            try { child.RegeneratePrettyNameAndPermalinkAsChild(this); } catch { }
-        }
-    }
-
-    public void RegenerateTranslationsPrettyNameAndPermalink()
-    {
-        foreach (TaxonTranslation t in Translations)
-        {
-            try { t.UpdatePrettyNameAndPermalink(this); } catch { }
+            try { child.RegeneratePrettyNameAndPermalinkRecursive(); } catch { }
         }
     }
 
@@ -1052,7 +806,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         Rgt = rgt;
         Depth = depth;
 
-        MarkAsUpdated();
         AddDomainEvent(new Events.Updated(Id, this));
         return Result.Success;
     }
@@ -1063,7 +816,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             return Error.Validation("Taxon.InvalidChildIndex", "Child index must be non-negative.");
 
         ChildIndex = index;
-        AddDomainEvent(new Events.Moved(Id, ParentId, index));
         return Result.Success;
     }
 
@@ -1090,9 +842,9 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public static class Events
     {
-        public record Created(Guid TaxonId, Taxon Taxon) : DomainEvent;
-        public record Updated(Guid TaxonId, Taxon Taxon) : DomainEvent;
-        public record Deleted(Guid TaxonId, Taxon Taxon) : DomainEvent;
+        public record Created(Guid TaxonId, Taxon? Taxon = null) : DomainEvent;
+        public record Updated(Guid TaxonId, Taxon? Taxon = null, bool ParentChanged = false) : DomainEvent;
+        public record Deleted(Guid TaxonId, Taxon? Taxon = null) : DomainEvent;
         public record RuleAdded(Guid TaxonId, Guid RuleId) : DomainEvent;
         public record RuleRemoved(Guid TaxonId, Guid RuleId) : DomainEvent;
         public record ProductClassified(Guid TaxonId, Guid ProductId) : DomainEvent;
