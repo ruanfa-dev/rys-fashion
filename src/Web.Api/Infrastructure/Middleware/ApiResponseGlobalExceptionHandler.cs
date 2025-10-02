@@ -221,7 +221,7 @@ internal sealed class ApiResponseGlobalExceptionHandler : IExceptionHandler
     /// <returns>List of validation errors with full error codes</returns>
     private static List<Error> ExtractFluentValidationErrors(Exception exception)
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         try
         {

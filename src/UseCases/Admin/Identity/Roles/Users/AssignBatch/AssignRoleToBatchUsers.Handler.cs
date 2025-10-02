@@ -167,8 +167,8 @@ public static partial class AssignRoleToBatchUsers
         private async Task<(List<User> AssignedUsers, List<User> SkippedUsers)> ProcessRoleAssignmentsAsync(
             List<User> users, Role role, CancellationToken cancellationToken)
         {
-            List<User> assignedUsers = new List<User>();
-            List<User> skippedUsers = new List<User>();
+            List<User> assignedUsers = [];
+            List<User> skippedUsers = [];
 
             foreach (User user in users)
             {

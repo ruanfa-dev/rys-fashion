@@ -33,7 +33,7 @@ public static class NotificationDataMapper
         SmsNotificationData smsData = new SmsNotificationData
         {
             UseCase = notificationData.UseCase,
-            Receivers = notificationData.Receivers?.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList() ?? new List<string>(),
+            Receivers = notificationData.Receivers?.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList() ?? [],
             Content = content,
             CreatedBy = notificationData.CreatedBy,
             CreatedAt = notificationData.CreatedAt,
@@ -79,13 +79,14 @@ public static class NotificationDataMapper
         EmailNotificationData emailData = new EmailNotificationData
         {
             UseCase = notificationData.UseCase,
-            Receivers = notificationData.Receivers?.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList() ?? new List<string>(),
+            Receivers = notificationData.Receivers?.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList() ?? [],
             Title = title,
             Content = content,
             HtmlContent = string.IsNullOrWhiteSpace(htmlContent) ? null : htmlContent,
             CreatedBy = notificationData.CreatedBy,
             CreatedAt = notificationData.CreatedAt,
-            Attachments = notificationData.Attachments?.Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList() ?? new List<string>(),
+            Attachments = notificationData.Attachments?.Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList() ??
+                          [],
             Priority = notificationData.Priority,
             Language = notificationData.Language
         };

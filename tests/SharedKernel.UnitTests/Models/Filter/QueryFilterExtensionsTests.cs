@@ -790,11 +790,27 @@ public sealed class QueryFilterExtensionsTests(ITestOutputHelper output)
     public void ApplyFilters_WithSpecialCharactersInValue_HandlesCorrectly()
     {
         // Arrange
-        List<User> users = new List<User>
-        {
-            new() { Id = 1, Name = "Test & User", Email = "test@example.com", Age = 25, IsActive = true, Department = "IT" },
-            new() { Id = 2, Name = "Regular User", Email = "regular@example.com", Age = 30, IsActive = true, Department = "HR" }
-        };
+        List<User> users =
+        [
+            new()
+            {
+                Id = 1,
+                Name = "Test & User",
+                Email = "test@example.com",
+                Age = 25,
+                IsActive = true,
+                Department = "IT"
+            },
+            new()
+            {
+                Id = 2,
+                Name = "Regular User",
+                Email = "regular@example.com",
+                Age = 30,
+                IsActive = true,
+                Department = "HR"
+            }
+        ];
         IQueryable<User> query = users.AsQueryable();
         string queryString = "name[contains]=Test%20%26%20User"; // "Test & User" encoded
 

@@ -1,11 +1,12 @@
 ﻿using Core.Stores;
 
 using ErrorOr;
-using SharedKernel.Domain.Primitives;
-using SharedKernel.Messaging;
+
 using SharedKernel.Domain.Attributes.Metadata;
 using SharedKernel.Domain.Attributes.Positionable;
 using SharedKernel.Domain.Attributes.TranslatableResource;
+using SharedKernel.Domain.Primitives;
+using SharedKernel.Messaging;
 
 namespace Core.Catalog.Taxonomies;
 
@@ -15,8 +16,8 @@ namespace Core.Catalog.Taxonomies;
 /// - holds taxons hierarchy and belongs to a store
 /// - contains helper constants used by admin/search layers
 /// </summary>
-public sealed class Taxonomy : 
-    AuditableEntity, 
+public sealed class Taxonomy :
+    AuditableEntity,
     IPositionable,
     IMetadataSupport, ITranslatable<TaxonomyTranslation>
 {
@@ -62,7 +63,7 @@ public sealed class Taxonomy :
         public static Error InvalidNameLength => Error.Validation("Taxonomy.InvalidNameLength", $"Taxonomy name must be between {Constraints.NameMinLength} and {Constraints.NameMaxLength} characters long.");
 
         public static Error StoreRequired => Error.Validation("Taxonomy.StoreRequired", "Store is required for a taxonomy.");
-       
+
         public static Error RootCreationFailed => Error.Failure("Taxonomy.RootCreationFailed", "Unable to create root taxon for taxonomy.");
         public static Error NotFound(Guid id) => Error.NotFound("Taxonomy.NotFound", $"Taxonomy with ID '{id}' was not found.");
         public static Error NameAlreadyExists(string name) => Error.Conflict("Taxonomy.NameAlreadyExists", $"A taxonomy with the name '{name}' already exists.");
@@ -83,7 +84,7 @@ public sealed class Taxonomy :
 
     public static ErrorOr<Taxonomy> Create(string name, Guid storeId, int position = 0)
     {
-        if (string.IsNullOrWhiteSpace(name)) 
+        if (string.IsNullOrWhiteSpace(name))
             return Errors.NameRequired;
         string trimmed = name.Trim();
         if (trimmed.Length < Constraints.NameMinLength || trimmed.Length > Constraints.NameMaxLength)
@@ -107,7 +108,7 @@ public sealed class Taxonomy :
         }
 
         taxonomy.Taxons.Add(rootResult.Value);
-        taxonomy.AddDomainEvent(new Events.Created(taxonomy.Id));
+        taxonomy.AddDomainEvent(new Events.Created(taxonomy.Id, taxonomy));
         return taxonomy;
     }
 
@@ -137,17 +138,8 @@ public sealed class Taxonomy :
 
         if (changed)
         {
-            AddDomainEvent(new Events.Updated(Id));
+            AddDomainEvent(new Events.Updated(this.Id, this));
         }
-
-        // If there's a root taxon in-memory, keep its name synchronized with taxonomy (mirrors Rails after_update behavior)
-        Taxon? root = Root;
-        if (root != null && root.Name != Name)
-        {
-            ErrorOr<Taxon> _ = root.Update(Name);
-            // root.Update will emit its own Updated event; persistence is left to the caller
-        }
-
         return this;
     }
 
@@ -166,7 +158,7 @@ public sealed class Taxonomy :
         if (Taxons.SelectMany(t => t.Classifications).Any())
             return Errors.HasClassifications;
 
-        AddDomainEvent(new Events.Deleted(Id));
+        AddDomainEvent(new Events.Deleted(Id, this));
         return Result.Deleted;
     }
 
@@ -189,34 +181,15 @@ public sealed class Taxonomy :
         return newRoot;
     }
 
-
-    /// <summary>
-    /// Applies the default ordering used by the Rails default_scope: position then created_at.
-    /// Use in repositories to consistently order taxonomies.
-    /// </summary>
-    public static IQueryable<Taxonomy> ApplyDefaultOrdering(IQueryable<Taxonomy> query)
-    {
-        if (query == null) throw new ArgumentNullException(nameof(query));
-        return query.OrderBy(t => t.Position).ThenBy(t => t.CreatedAt);
-    }
-
-    /// <summary>
-    /// Helper to get translated value for a named field. Uses the ITranslatable<T> extension helpers.
-    /// </summary>
-    public string? GetTranslatedName(string? locale = null, bool fallback = true)
-    {
-        return this.GetField("Name", locale ?? string.Empty, fallback);
-    }
-
     #endregion
 
     #region Events
 
     public static class Events
     {
-        public record Created(Guid TaxonomyId) : DomainEvent;
-        public record Updated(Guid TaxonomyId) : DomainEvent;
-        public record Deleted(Guid TaxonomyId) : DomainEvent;
+        public record Created(Guid TaxonomyId, Taxonomy Taxonomy) : DomainEvent;
+        public record Updated(Guid TaxonomyId, Taxonomy Taxonomy) : DomainEvent;
+        public record Deleted(Guid TaxonomyId, Taxonomy Taxonomy) : DomainEvent;
     }
 
     #endregion

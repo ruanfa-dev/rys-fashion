@@ -11,7 +11,7 @@ public sealed class GoogleOption : IValidateOptions<GoogleOption>
 
     public ValidateOptionsResult Validate(string? name, GoogleOption options)
     {
-        List<string> errors = new List<string>();
+        List<string> errors = [];
 
         if (string.IsNullOrWhiteSpace(options.ClientId))
         {

@@ -41,10 +41,12 @@ public static partial class UpdateTaxon
             try
             {
                 Param param = request.Param;
-                // Check: entity existing
+
+                // Load taxon with necessary relationships
                 Taxon? taxon = await _context.Set<Taxon>()
                     .Include(t => t.Taxonomy)
-                    .Include(t => t.Parent).ThenInclude(p => p!.Children)
+                    .Include(t => t.Parent)
+                        .ThenInclude(p => p!.Children)
                     .Include(t => t.Children)
                     .Include(t => t.Translations)
                     .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
@@ -52,18 +54,39 @@ public static partial class UpdateTaxon
                 if (taxon == null)
                     return Taxon.Errors.NotFound(request.Id);
 
-                // Check: uniqueness for name
-                string trimmedName = param.Name?.Trim() ?? "";
-                bool exists = await _context.Set<Taxon>()
-                    .AnyAsync(t => t.Name == trimmedName && t.TaxonomyId == taxon.TaxonomyId && t.ParentId == param.ParentId && t.Id != request.Id, cancellationToken);
-                if (exists)
-                    return Taxon.Errors.NameAlreadyExists(trimmedName, taxon.TaxonomyId);
+                // Check name uniqueness if name is changing
+                if (!string.IsNullOrWhiteSpace(param.Name))
+                {
+                    string trimmedName = param.Name.Trim();
+                    bool nameExists = await _context.Set<Taxon>()
+                        .AnyAsync(t => t.Name == trimmedName
+                            && t.TaxonomyId == param.TaxonomyId
+                            && t.ParentId == param.ParentId
+                            && t.Id != request.Id,
+                            cancellationToken);
 
-                // Store original ParentId to detect change
-                Guid? originalParentId = taxon.ParentId;
+                    if (nameExists)
+                        return Taxon.Errors.NameAlreadyExists(trimmedName, param.TaxonomyId);
+                }
 
+                // Handle parent change if specified
+                Taxon? newParent = null;
+                if (param.ParentId != taxon.ParentId)
+                {
+                    if (param.ParentId.HasValue)
+                    {
+                        newParent = await _context.Set<Taxon>()
+                            .Include(t => t.Children)
+                            .FirstOrDefaultAsync(t => t.Id == param.ParentId.Value, cancellationToken);
+
+                        if (newParent == null)
+                            return Taxon.Errors.NotFound(param.ParentId.Value);
+                    }
+                }
+
+                // Update taxon properties
                 ErrorOr<Taxon> updateResult = taxon.Update(
-                    trimmedName,
+                    param.Name,
                     param.ParentId,
                     param.Description,
                     param.Automatic,
@@ -77,27 +100,40 @@ public static partial class UpdateTaxon
                     param.SquareImageUrl,
                     param.PublicMetadata,
                     param.PrivateMetadata);
-                if (updateResult.IsError) return updateResult.Errors;
 
-                // If parent changed, load new parent and call SetParent to update navigation's
-                if (param.ParentId != originalParentId)
+                if (updateResult.IsError)
+                    return updateResult.Errors;
+
+                // Apply parent change if needed
+                if (newParent != null)
                 {
-                    Taxon? newParent = await _context.Set<Taxon>()
-                        .Include(t => t.Children)
-                        .FirstOrDefaultAsync(t => t.Id == param.ParentId, cancellationToken);
-                    if (newParent == null)
-                        return Taxon.Errors.NotFound(param.ParentId ?? Guid.Empty);
-
                     ErrorOr<Taxon> setParentResult = taxon.SetParent(newParent);
-                    if (setParentResult.IsError) return setParentResult.Errors;
+                    if (setParentResult.IsError)
+                        return setParentResult.Errors;
+
+                    newParent.AddChild(taxon);
+                }
+                else if (param.ParentId != taxon.ParentId && !param.ParentId.HasValue)
+                {
+                    // Remove parent (make root)
+                    if (taxon.Parent != null)
+                    {
+                        taxon.Parent.RemoveChild(taxon);
+                    }
                 }
 
-                // Regenerate pretty name and permalink (recursively for descendants)
-                taxon.RegeneratePrettyNameAndPermalink();
+                // Regenerate pretty names and permalinks if parent changed or name changed
+                if (param.ParentId != taxon.ParentId || (!string.IsNullOrWhiteSpace(param.Name) && param.Name.Trim() != taxon.Name))
+                {
+                    taxon.RegeneratePrettyNameAndPermalink();
+                }
 
                 await _context.SaveChangesAsync(cancellationToken);
 
-                _logger.LogInformation("Updated taxon {TaxonId} with name {Name}", taxon.Id, taxon.Name);
+                _logger.LogInformation(
+                    "Updated taxon {TaxonId} with name '{Name}'",
+                    taxon.Id, taxon.Name);
+
                 return taxon.Adapt<Result>();
             }
             catch (Exception ex)

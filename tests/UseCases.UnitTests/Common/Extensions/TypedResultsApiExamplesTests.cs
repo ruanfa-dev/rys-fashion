@@ -255,7 +255,7 @@ public class TypedResultsApiExamplesTests
             }
 
             // Return empty search results (as in the actual implementation)
-            List<TestProductModel> searchResults = new List<TestProductModel>();
+            List<TestProductModel> searchResults = [];
             return Results.Ok(searchResults);
         };
     }

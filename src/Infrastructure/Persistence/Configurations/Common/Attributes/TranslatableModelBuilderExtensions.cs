@@ -36,7 +36,7 @@ internal static class TranslatableModelBuilderExtensions
                 Type closed = translationConfigDef.MakeGenericType(clr);
                 object? instance = Activator.CreateInstance(closed);
                 MethodInfo genericApply = applyMethod.MakeGenericMethod(clr);
-                genericApply.Invoke(builder, new[] { instance! });
+                genericApply.Invoke(builder, [instance!]);
             }
         }
 
@@ -60,7 +60,7 @@ internal static class TranslatableModelBuilderExtensions
                 if (configInstance == null) continue;
 
                 MethodInfo genericApply = applyMethod.MakeGenericMethod(entityClr);
-                genericApply.Invoke(builder, new[] { configInstance! });
+                genericApply.Invoke(builder, [configInstance!]);
             }
         }
     }

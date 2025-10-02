@@ -20,15 +20,7 @@ public static partial class UpdateTaxonomy
         {
             logger.LogInformation("Domain Event: {DomainEvent} for Taxonomy {TaxonomyId}", notification.GetType().Name, notification.TaxonomyId);
 
-            Taxonomy? taxonomy = await context.Set<Taxonomy>()
-                .Include(t => t.Taxons)
-                .FirstOrDefaultAsync(t => t.Id == notification.TaxonomyId, cancellationToken);
-
-            if (taxonomy == null)
-            {
-                logger.LogWarning("Taxonomy {TaxonomyId} not found when handling Updated event.", notification.TaxonomyId);
-                return;
-            }
+            Taxonomy? taxonomy = notification.Taxonomy;
 
             // Update root taxon name if taxonomy name changed
             Taxon? root = taxonomy.Root;

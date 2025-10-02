@@ -195,7 +195,7 @@ public sealed class QueryFilterBuilderTests(ITestOutputHelper output)
     {
         // Arrange
         QueryFilterBuilder builder = QueryFilterBuilder.Create();
-        string[] departments = new[] { "IT", "HR", "Finance" };
+        string[] departments = ["IT", "HR", "Finance"];
 
         // Act
         List<QueryFilterParameter> filters = builder

@@ -21,7 +21,7 @@ public static class ViewableResolver
         Type? type = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a =>
             {
-                try { return a.GetTypes(); } catch { return Array.Empty<Type>(); }
+                try { return a.GetTypes(); } catch { return []; }
             })
             .FirstOrDefault(t =>
                 string.Equals(t.Name, shortName, StringComparison.OrdinalIgnoreCase) ||

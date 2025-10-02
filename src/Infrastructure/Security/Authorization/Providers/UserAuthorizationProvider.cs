@@ -100,7 +100,7 @@ public sealed class UserAuthorizationProvider(
     {
         IList<string> roleNames = await userManager.GetRolesAsync(user);
         if (roleNames.Count == 0)
-            return (roleNames, new());
+            return (roleNames, []);
 
         // Try to load role claims mapping from cache
         string? cachedJson = await cache.GetStringAsync(RoleClaimsCacheKey);

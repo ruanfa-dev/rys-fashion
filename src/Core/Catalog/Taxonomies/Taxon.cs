@@ -33,12 +33,13 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         public const int PositionMax = 999999;
         public const int DepthMin = 0;
         public const int DepthMax = 20;
-        public static readonly string[] RulesMatchPolicies = { "all", "any" };
-        public static readonly string[] SortOrders = {
+        public static readonly string[] RulesMatchPolicies = ["all", "any"];
+        public static readonly string[] SortOrders =
+        [
             "manual", "best-selling", "name-a-z", "name-z-a",
             "price-high-to-low", "price-low-to-high", "newest-first", "oldest-first"
-        };
-        public static readonly string[] ValidImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
+        ];
+        public static readonly string[] ValidImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"];
     }
 
     #endregion
@@ -160,15 +161,11 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             "Taxon.NameAlreadyExists",
             $"A taxon with the name '{name}' already exists in this taxonomy."
         );
-        public static Error PermalinkAlreadyExists(string permalink, Guid taxonomyId) => Error.Conflict(
-            "Taxon.PermalinkAlreadyExists",
-            $"A taxon with the permalink '{permalink}' already exists in this taxonomy."
-        );
 
         // Unexpected Errors
         public static Error UnexpectedError(string operationName, Exception? ex = null) => Error.Unexpected(
             code: $"Taxon.{operationName}UnexpectedError",
-            description: $"An unexpected error occurred during execution of {operationName} operation on Taxon. {ex?.Message}"
+            description: $"An unexpected error occurred during {operationName}. {ex?.Message}"
         );
     }
 
@@ -250,7 +247,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     #region Caching
 
-    private readonly object _cacheLock = new();
+    private readonly Lock _cacheLock = new();
     private List<Guid>? _cachedSelfAndDescendantsIds;
 
     public IReadOnlyList<Guid> CachedSelfAndDescendantsIds
@@ -262,7 +259,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
                 if (_cachedSelfAndDescendantsIds != null)
                     return _cachedSelfAndDescendantsIds.AsReadOnly();
 
-                List<Guid> ids = new List<Guid> { Id };
+                List<Guid> ids = [Id];
                 CollectDescendantIds(this, ids);
                 _cachedSelfAndDescendantsIds = ids;
                 return _cachedSelfAndDescendantsIds.AsReadOnly();
@@ -331,12 +328,12 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             MetaKeywords = metaKeywords?.Trim(),
             ImageUrl = imageUrl,
             SquareImageUrl = squareImageUrl,
-            PublicMetadata = publicMetadata != null ? new Dictionary<string, string?>(publicMetadata) : new Dictionary<string, string?>(),
-            PrivateMetadata = privateMetadata != null ? new Dictionary<string, string?>(privateMetadata) : new Dictionary<string, string?>()
+            PublicMetadata = publicMetadata == null ? new Dictionary<string, string?>() : new Dictionary<string, string?>(publicMetadata),
+            PrivateMetadata = privateMetadata == null ? new Dictionary<string, string?>() : new Dictionary<string, string?>(privateMetadata)
         };
 
         taxon.SetPrettyName();
-        taxon.SetPermalink(includeParentIfAvailable: false);
+        taxon.SetPermalink();
         taxon.AddDomainEvent(new Events.Created(taxon.Id, taxon));
         return taxon;
     }
@@ -584,6 +581,14 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         return this;
     }
 
+    public ErrorOr<Taxon> ClassifyProduct(Product product, int position = 0)
+    {
+        if (product == null)
+            return Errors.NullProduct;
+
+        return ClassifyProduct(product.Id, position);
+    }
+
     public ErrorOr<Taxon> UnclassifyProduct(Guid productId)
     {
         Classification? classification = Classifications.FirstOrDefault(c => c.ProductId == productId);
@@ -598,7 +603,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public IEnumerable<Product> GetActiveProductsWithDescendants()
     {
-        List<Product> products = new List<Product>();
+        List<Product> products = [];
         foreach (Classification c in Classifications)
         {
             if (c.Product != null && c.Product.IsActive)
@@ -635,7 +640,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         child.InvalidateDescendantsCache();
     }
 
-    internal void RemoveChild(Taxon child)
+    public void RemoveChild(Taxon child)
     {
         if (child == null || !Children.Contains(child)) return;
 
@@ -653,7 +658,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public IEnumerable<Taxon> GetAllDescendants()
     {
-        List<Taxon> descendants = new List<Taxon>();
+        List<Taxon> descendants = [];
         CollectAllDescendants(this, descendants);
         return descendants;
     }
@@ -669,7 +674,7 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public IEnumerable<Taxon> GetAncestors()
     {
-        List<Taxon> ancestors = new List<Taxon>();
+        List<Taxon> ancestors = [];
         Taxon? current = Parent;
         while (current != null)
         {
@@ -806,7 +811,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         Rgt = rgt;
         Depth = depth;
 
-        AddDomainEvent(new Events.Updated(Id, this));
         return Result.Success;
     }
 
@@ -817,23 +821,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
         ChildIndex = index;
         return Result.Success;
-    }
-
-    public void TouchAncestorsAndTaxonomy()
-    {
-        Taxon? current = Parent;
-        while (current != null)
-        {
-            current.MarkAsUpdated();
-            current.AddDomainEvent(new Events.Updated(current.Id, current));
-            current = current.Parent;
-        }
-
-        if (Taxonomy != null)
-        {
-            Taxonomy.MarkAsUpdated();
-            Taxonomy.AddDomainEvent(new Taxonomy.Events.Updated(Taxonomy.Id));
-        }
     }
 
     #endregion

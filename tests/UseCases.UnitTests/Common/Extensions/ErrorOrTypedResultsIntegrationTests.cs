@@ -40,13 +40,13 @@ public class ErrorOrTypedResultsIntegrationTests
     public void CompleteFlow_ProductCreationWithValidation_ReturnsValidationProblem()
     {
         // Arrange - Simulate validation errors from service layer
-        List<Error> validationErrors = new List<Error>
-        {
+        List<Error> validationErrors =
+        [
             Error.Validation("Name", "Product name is required"),
             Error.Validation("Name", "Product name must be unique"),
             Error.Validation("Price", "Product price must be greater than 0"),
             Error.Validation("Category", "Product category is required")
-        };
+        ];
         ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(validationErrors);
 
         // Act - Simulate what happens in a POST endpoint
@@ -201,27 +201,26 @@ public class ErrorOrTypedResultsIntegrationTests
     public void MultiErrorScenario_ComplexValidationWithMultipleFields_HandlesCorrectly()
     {
         // Arrange - Simulate complex validation with multiple errors per field
-        List<Error> errors = new List<Error>
-        {
-            // Name validations
+        List<Error> errors =
+        [
             Error.Validation("Name", "Name is required"),
             Error.Validation("Name", "Name must be at least 3 characters"),
             Error.Validation("Name", "Name contains invalid characters"),
-            
+
             // Price validations
             Error.Validation("Price", "Price is required"),
             Error.Validation("Price", "Price must be greater than 0"),
             Error.Validation("Price", "Price cannot exceed $10,000"),
-            
+
             // Category validations
             Error.Validation("CategoryId", "Category is required"),
             Error.Validation("CategoryId", "Category does not exist"),
-            
+
             // SKU validations
             Error.Validation("SKU", "SKU is required"),
             Error.Validation("SKU", "SKU must be unique"),
             Error.Validation("SKU", "SKU format is invalid")
-        };
+        ];
         ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(errors);
 
         // Act
@@ -256,13 +255,13 @@ public class ErrorOrTypedResultsIntegrationTests
     public void MultiErrorScenario_MixedErrorTypesWithValidationFirst_TreatsAsValidation()
     {
         // Arrange - First error is validation, so should be treated as validation problem
-        List<Error> errors = new List<Error>
-        {
+        List<Error> errors =
+        [
             Error.Validation("Field1", "Validation error"),
             Error.NotFound("Resource.NotFound", "Resource not found"),
             Error.Conflict("Resource.Conflict", "Resource conflict"),
             Error.Failure("System.Error", "System error")
-        };
+        ];
         ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(errors);
 
         // Act
@@ -279,12 +278,12 @@ public class ErrorOrTypedResultsIntegrationTests
     public void MultiErrorScenario_MixedErrorTypesWithNonValidationFirst_UsesFirstErrorType()
     {
         // Arrange - First error is not validation, so should use that error type
-        List<Error> errors = new List<Error>
-        {
+        List<Error> errors =
+        [
             Error.NotFound("Resource.NotFound", "Resource not found"),
             Error.Validation("Field1", "Validation error"),
             Error.Conflict("Resource.Conflict", "Resource conflict")
-        };
+        ];
         ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(errors);
 
         // Act
@@ -347,7 +346,7 @@ public class ErrorOrTypedResultsIntegrationTests
     public void BoundaryTest_EmptyErrorList_ReturnsGenericInternalServerError()
     {
         // Arrange
-        List<Error> emptyErrors = new List<Error>();
+        List<Error> emptyErrors = [];
 
         // Act
         IResult httpResult = ErrorOrTypedResultsExtensions.ToProblemDetails(emptyErrors);

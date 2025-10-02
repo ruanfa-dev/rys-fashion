@@ -29,7 +29,7 @@ public sealed class JwtOptions : IValidateOptions<JwtOptions>
 
     public ValidateOptionsResult Validate(string? name, JwtOptions options)
     {
-        List<string> failures = new List<string>();
+        List<string> failures = [];
 
         // Required string validations
         if (string.IsNullOrWhiteSpace(options.Issuer))

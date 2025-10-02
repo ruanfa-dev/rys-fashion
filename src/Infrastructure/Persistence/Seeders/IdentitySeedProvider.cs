@@ -50,7 +50,7 @@ public sealed class IdentitySeedProvider(IServiceProvider serviceProvider) : IDa
         Log.Information("[IdentitySeed:Permissions] Ensuring all permissions exist in database");
 
         // Get all predefined permissions from the Feature class
-        Permission[] allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions ?? Array.Empty<Permission>();
+        Permission[] allPermissions = UseCases.Common.Security.Authorization.Permissions.Feature.Permissions ?? [];
 
         // Get existing permission names from database (normalize to lower-case for comparison)
         HashSet<string> existingPermissionNames = await dbContext.Permissions

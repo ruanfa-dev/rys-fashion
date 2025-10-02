@@ -13,14 +13,14 @@ namespace UseCases.Common.Notification.Models;
 public partial class EmailNotificationData
 {
     public required NotificationUseCase UseCase { get; set; }
-    public List<string> Receivers { get; set; } = new();
-    public List<string> Cc { get; set; } = new();
-    public List<string> Bcc { get; set; } = new();
+    public List<string> Receivers { get; set; } = [];
+    public List<string> Cc { get; set; } = [];
+    public List<string> Bcc { get; set; } = [];
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
     public string? HtmlContent { get; set; }
     public string CreatedBy { get; set; } = "System";
-    public List<string> Attachments { get; set; } = new();
+    public List<string> Attachments { get; set; } = [];
     public DateTimeOffset? CreatedAt { get; set; }
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
     public NotificationSendMethod SendMethod { get; set; } = NotificationSendMethod.Email;
@@ -31,7 +31,7 @@ public partial class EmailNotificationData
     /// </summary>
     public ErrorOr<EmailNotificationData> Validate()
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         if (UseCase == NotificationUseCase.None)
             errors.Add(Errors.MissingUseCase);

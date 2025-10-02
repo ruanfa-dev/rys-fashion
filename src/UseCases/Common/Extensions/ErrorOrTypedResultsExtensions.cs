@@ -274,7 +274,7 @@ public sealed class TypedResultsExampleService
 
     private List<Error> ValidateCreateProductRequest(CreateProductRequest request)
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         if (string.IsNullOrWhiteSpace(request.Name))
             errors.Add(Error.Validation("Name", "Product name is required"));
@@ -365,7 +365,7 @@ public static class TypedResultsApiExamples
             }
 
             // Your search implementation here
-            List<TestProductModel> searchResults = new List<TestProductModel>();
+            List<TestProductModel> searchResults = [];
             return Results.Ok(searchResults);
         })
         .WithName("SearchProducts")

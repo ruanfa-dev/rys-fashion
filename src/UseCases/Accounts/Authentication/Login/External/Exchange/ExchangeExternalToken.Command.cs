@@ -65,7 +65,7 @@ public static partial class ExchangeExternalToken
         public string? ProfilePictureUrl { get; init; }
         public bool EmailVerified { get; init; }
         public bool HasExternalLogins { get; init; }
-        public string[] ExternalProviders { get; init; } = Array.Empty<string>();
+        public string[] ExternalProviders { get; init; } = [];
         public Dictionary<string, string> AdditionalClaims { get; init; } = new();
     }
 
@@ -213,7 +213,7 @@ public static partial class ExchangeExternalToken
                     EmailVerified = user.EmailConfirmed,
                     ProfilePictureUrl = externalUserInfo.ProfilePictureUrl,
                     HasExternalLogins = true,
-                    ExternalProviders = Array.Empty<string>(),
+                    ExternalProviders = [],
                     AdditionalClaims = new Dictionary<string, string>
                     {
                         ["user_id"] = user.Id.ToString(),

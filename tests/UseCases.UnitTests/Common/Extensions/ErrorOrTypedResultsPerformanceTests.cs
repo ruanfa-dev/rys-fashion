@@ -62,7 +62,7 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Performance_MultipleValidationErrors_ScalesLinearly(int errorCount)
     {
         // Arrange
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
         for (int i = 0; i < errorCount; i++)
         {
             errors.Add(Error.Validation($"Field{i}", $"Error message {i}"));
@@ -93,7 +93,7 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
         // Arrange
         TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
         ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
-        List<long> times = new List<long>();
+        List<long> times = [];
 
         // Act - Perform multiple conversions
         for (int i = 0; i < 1000; i++)
@@ -144,7 +144,7 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
     public void Memory_ManyErrorsWithLargeMessages_HandledGracefully()
     {
         // Arrange
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
         for (int i = 0; i < 100; i++)
         {
             string largeMessage = new string('X', 10_000); // 10KB each
@@ -179,7 +179,7 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
         // Arrange
         TestProductModel product = new TestProductModel(1, "Test Product", 99.99m);
         ErrorOr<TestProductModel> successResult = ErrorOrFactory.From(product);
-        List<Task<IResult>> tasks = new List<Task<IResult>>();
+        List<Task<IResult>> tasks = [];
 
         // Act - Run conversions in parallel
         for (int i = 0; i < 1000; i++)
@@ -204,7 +204,7 @@ public class ErrorOrTypedResultsPerformanceTests(ITestOutputHelper output)
         // Arrange
         Error error = Error.NotFound("Product.NotFound", "Product was not found");
         ErrorOr<TestProductModel> errorResult = ErrorOrFactory.From<TestProductModel>(error);
-        List<Task<IResult>> tasks = new List<Task<IResult>>();
+        List<Task<IResult>> tasks = [];
 
         // Act
         for (int i = 0; i < 1000; i++)

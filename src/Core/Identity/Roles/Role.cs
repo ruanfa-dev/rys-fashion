@@ -45,7 +45,7 @@ public partial class Role : IdentityRole<Guid>, IAuditable
             IsDefault = isDefault,
             IsSystemRole = isSystemRole
         };
-        role.MarkAsCreated();
+        role.ApplyMarkAsCreated();
         return role;
     }
     #endregion

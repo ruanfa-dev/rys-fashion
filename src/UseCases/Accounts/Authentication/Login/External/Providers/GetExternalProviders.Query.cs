@@ -19,7 +19,7 @@ public record ExternalProvider
     public string LoginUrl { get; init; } = null!;
     public string? IconUrl { get; init; }
     public bool IsEnabled { get; init; } = true;
-    public string[] RequiredScopes { get; init; } = Array.Empty<string>();
+    public string[] RequiredScopes { get; init; } = [];
     public string ConfigurationUrl { get; init; } = null!;
 }
 
@@ -50,7 +50,7 @@ public static partial class GetExternalProviders
                 string baseUrl = GetBaseUrl();
                 const string externalRoute = ExternalLoginEndpoint.Route;
 
-                List<Result> providers = new List<Result>();
+                List<Result> providers = [];
 
                 foreach (AuthenticationScheme scheme in schemes)
                 {
@@ -150,7 +150,7 @@ public static partial class GetExternalProviders
             {
                 "google" => ["openid", "email", "profile"],
                 "facebook" => ["email", "public_profile"],
-                _ => Array.Empty<string>()
+                _ => []
             };
 
         private bool IsProviderConfigured(string providerName)

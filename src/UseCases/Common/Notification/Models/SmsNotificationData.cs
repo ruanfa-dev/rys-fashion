@@ -13,7 +13,7 @@ namespace UseCases.Common.Notification.Models;
 public partial class SmsNotificationData
 {
     public required NotificationUseCase UseCase { get; set; }
-    public List<string> Receivers { get; set; } = new();
+    public List<string> Receivers { get; set; } = [];
     public string Content { get; set; } = string.Empty;
     public string SenderNumber { get; set; } = string.Empty;
     public string CreatedBy { get; set; } = "System";
@@ -29,7 +29,7 @@ public partial class SmsNotificationData
     /// </summary>
     public ErrorOr<SmsNotificationData> Validate()
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         if (UseCase == NotificationUseCase.None)
             errors.Add(Errors.MissingUseCase);

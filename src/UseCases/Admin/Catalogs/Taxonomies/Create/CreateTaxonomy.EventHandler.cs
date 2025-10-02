@@ -2,8 +2,6 @@ using Core.Catalog.Taxonomies;
 
 using ErrorOr;
 
-using MediatR;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +14,7 @@ namespace UseCases.Admin.Catalogs.Taxonomies.Create;
 public static partial class CreateTaxonomy
 {
     public sealed class EventHandler(
-        IApplicationDbContext context, 
+        IApplicationDbContext context,
         ILogger<EventHandler> logger)
         : IDomainEventHandler<Taxonomy.Events.Created>
     {
@@ -25,15 +23,7 @@ public static partial class CreateTaxonomy
             logger.LogInformation("Domain Event: {DomainEvent} for Taxonomy {TaxonomyId}", notification.GetType().Name, notification.TaxonomyId);
 
             // Load taxonomy with taxons
-            Taxonomy? taxonomy = await context.Set<Taxonomy>()
-                .Include(t => t.Taxons)
-                .FirstOrDefaultAsync(t => t.Id == notification.TaxonomyId, cancellationToken);
-
-            if (taxonomy == null)
-            {
-                logger.LogWarning("Taxonomy {TaxonomyId} not found when handling Created event.", notification.TaxonomyId);
-                return;
-            }
+            Taxonomy? taxonomy = notification.Taxonomy;
 
             // Ensure root exists
             ErrorOr<Taxon> rootResult = taxonomy.EnsureRoot();

@@ -743,7 +743,7 @@ public sealed class ApiResponseWrappedExampleService
 
     private List<Error> ValidateCreateOrderRequest(CreateOrderRequest request)
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         if (request.CustomerId <= 0)
             errors.Add(Error.Validation("Customer.InvalidId", "Customer ID is required"));

@@ -8,9 +8,9 @@ namespace UseCases.Common.Security.Authorization.Configuration;
 /// </summary>
 public sealed class AuthorizationBuilder
 {
-    private readonly List<string> _permissions = new();
-    private readonly List<string> _roles = new();
-    private readonly List<string> _policies = new();
+    private readonly List<string> _permissions = [];
+    private readonly List<string> _roles = [];
+    private readonly List<string> _policies = [];
 
     /// <summary>
     /// Adds a required permission.
@@ -189,7 +189,7 @@ public sealed class AuthorizationBuilder
     /// <returns>String describing the current configuration</returns>
     public override string ToString()
     {
-        List<string> parts = new List<string>();
+        List<string> parts = [];
 
         if (_permissions.Count > 0)
             parts.Add($"Permissions: [{string.Join(", ", _permissions)}]");

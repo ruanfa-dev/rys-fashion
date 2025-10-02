@@ -76,7 +76,7 @@ internal sealed class NotificationService(
                 .Distinct()
                 .ToListAsync(cancellationToken),
 
-            _ => new List<string>()
+            _ => []
         };
     }
 

@@ -197,7 +197,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
     /// <returns>List of validation errors</returns>
     private static List<Error> ExtractFluentValidationErrors(Exception exception)
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         try
         {

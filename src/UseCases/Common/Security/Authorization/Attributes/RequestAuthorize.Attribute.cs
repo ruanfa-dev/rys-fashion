@@ -182,7 +182,7 @@ public sealed class RequestAuthorizeAttribute : AuthorizeAttribute
     /// <returns>String describing the authorization requirements</returns>
     public override string ToString()
     {
-        List<string> parts = new List<string>();
+        List<string> parts = [];
 
         if (Permissions?.Length > 0)
             parts.Add($"Permissions: [{string.Join(", ", Permissions)}]");

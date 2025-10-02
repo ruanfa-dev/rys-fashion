@@ -26,8 +26,8 @@ public sealed class PagingExtensionsTests
         Inactive
     }
 
-    private readonly List<User> _users = new()
-    {
+    private readonly List<User> _users =
+    [
         new User
         {
             Id = 1,
@@ -38,6 +38,7 @@ public sealed class PagingExtensionsTests
             LastActivityOffset = DateTimeOffset.Parse("2023-06-01T00:00:00+00:00"),
             Status = UserStatus.Active
         },
+
         new User
         {
             Id = 2,
@@ -48,6 +49,7 @@ public sealed class PagingExtensionsTests
             LastActivityOffset = null,
             Status = UserStatus.Inactive
         },
+
         new User
         {
             Id = 3,
@@ -58,7 +60,7 @@ public sealed class PagingExtensionsTests
             LastActivityOffset = DateTimeOffset.Parse("2023-07-01T00:00:00+00:00"),
             Status = UserStatus.Active
         }
-    };
+    ];
 
     private IQueryable<User> GetQueryableUsers() => _users.AsQueryable();
 

@@ -130,7 +130,7 @@ public static class OpenApiConfiguration
                             Id = "Google"
                         }
                     },
-                    new[] { "openid", "profile", "email" }
+                    ["openid", "profile", "email"]
                 }
             };
         }
@@ -148,7 +148,7 @@ public static class OpenApiConfiguration
                             Id = "Facebook"
                         }
                     },
-                    new[] { "email", "public_profile" }
+                    ["email", "public_profile"]
                 }
             };
         }

@@ -42,7 +42,7 @@ public static class UserExternalLoginExtensions
             {
                 UserId = user.Id,
                 HasPassword = false,
-                ExternalLogins = new List<ExternalLoginInfo>(),
+                ExternalLogins = [],
                 CanRemoveExternalLogins = false,
                 PrimaryAuthenticationMethod = "Unknown"
             };
@@ -97,7 +97,7 @@ public sealed record ExternalLoginSummary
 {
     public Guid UserId { get; init; }
     public bool HasPassword { get; init; }
-    public List<ExternalLoginInfo> ExternalLogins { get; init; } = new();
+    public List<ExternalLoginInfo> ExternalLogins { get; init; } = [];
     public bool CanRemoveExternalLogins { get; init; }
     public string PrimaryAuthenticationMethod { get; init; } = string.Empty;
     public int TotalLoginMethods => (HasPassword ? 1 : 0) + ExternalLogins.Count;

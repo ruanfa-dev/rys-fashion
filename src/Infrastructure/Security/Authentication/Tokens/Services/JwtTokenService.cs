@@ -56,12 +56,12 @@ public sealed class JwtTokenService : IJwtTokenService
             DateTimeOffset expires = now.AddMinutes(_jwtOptions.AccessTokenLifetimeMinutes);
 
             // Essential claims only - avoid PII in JWT
-            List<Claim> claims = new List<Claim>
-            {
+            List<Claim> claims =
+            [
                 new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-            };
+            ];
 
             // Add: username only if needed (avoid email in JWT for privacy)
             if (!string.IsNullOrEmpty(user.UserName))

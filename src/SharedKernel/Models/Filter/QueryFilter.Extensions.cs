@@ -167,7 +167,7 @@ public static class QueryFilterExtensions
         if (queryParams is null || !queryParams.Any())
             return [];
 
-        List<QueryFilterParameter> filters = new List<QueryFilterParameter>();
+        List<QueryFilterParameter> filters = [];
 
         // Extract global settings first
         FilterLogicalOperator globalLogic = FilterLogicalOperator.All; // Default to AND
@@ -756,7 +756,7 @@ public static class QueryFilterExtensions
         Type propertyType = property.Type;
         Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
-        List<object?> convertedValues = new List<object?>();
+        List<object?> convertedValues = [];
         foreach (string value in values)
         {
             try

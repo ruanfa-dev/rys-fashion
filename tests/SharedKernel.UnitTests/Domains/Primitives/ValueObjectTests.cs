@@ -567,7 +567,7 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ValueObject_InHashSet_BehavesCorrectly()
     {
         // Arrange
-        HashSet<TestValueObject> set = new HashSet<TestValueObject>();
+        HashSet<TestValueObject> set = [];
         TestValueObject value1 = new TestValueObject("test", 42);
         TestValueObject value2 = new TestValueObject("test", 42); // Same content
         TestValueObject value3 = new TestValueObject("different", 42);
@@ -610,14 +610,14 @@ public sealed class ValueObjectTests(ITestOutputHelper output)
     public void ValueObject_ComplexWorkflow_MaintainsIntegrity()
     {
         // Arrange
-        List<TestValueObject> values = new List<TestValueObject>
-        {
+        List<TestValueObject> values =
+        [
             new("a", 1),
             new("b", 2),
             new("a", 1), // Duplicate
             new("c", 3),
-            new("b", 2)  // Duplicate
-        };
+            new("b", 2)
+        ];
 
         // Act - Remove duplicates and sort
         TestValueObject[] uniqueValues = values.Distinct().OrderBy(v => v).ToArray();

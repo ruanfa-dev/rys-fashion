@@ -56,7 +56,7 @@ public static class ITranslationExtensions
     public static Error[] Validate(this ITranslation translation, string? prefix = null)
     {
         if (translation is null) throw new ArgumentNullException(nameof(translation));
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         // Culture
         if (string.IsNullOrWhiteSpace(translation.Culture))

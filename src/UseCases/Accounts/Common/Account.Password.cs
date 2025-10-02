@@ -36,11 +36,11 @@ public static partial class Account
         string userId = await userManager.GetUserIdAsync(user);
 
         // Prepare route values
-        List<KeyValuePair<string, string?>> routeValues = new List<KeyValuePair<string, string?>>
-        {
+        List<KeyValuePair<string, string?>> routeValues =
+        [
             new("userId", userId),
             new("code", encodedResetCode)
-        };
+        ];
 
         // Check: front-end client URI fallback
         StorefrontOption? storefrontOption = configuration.GetSection(StorefrontOption.Section).Get<StorefrontOption>();

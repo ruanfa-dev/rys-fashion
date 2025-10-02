@@ -40,11 +40,11 @@ public static partial class Account
         string userId = await userManager.GetUserIdAsync(user);
 
         // Prepare route values
-        List<KeyValuePair<string, string?>> routeValues = new List<KeyValuePair<string, string?>>
-        {
+        List<KeyValuePair<string, string?>> routeValues =
+        [
             new("userId", userId),
             new("code", code)
-        };
+        ];
 
         if (!string.IsNullOrWhiteSpace(newPhoneNumber))
         {

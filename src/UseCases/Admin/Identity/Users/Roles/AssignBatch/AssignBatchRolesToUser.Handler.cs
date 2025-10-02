@@ -55,8 +55,8 @@ public static partial class AssignBatchRolesToUser
                     return User.Errors.UserNotFound;
 
                 // Validate all roles exist upfront and get their names
-                List<string> roleNames = new List<string>();
-                List<Error> nonExistentRoles = new List<Error>();
+                List<string> roleNames = [];
+                List<Error> nonExistentRoles = [];
 
                 foreach (string roleId in param.RoleIds)
                 {

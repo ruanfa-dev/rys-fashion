@@ -18,13 +18,13 @@ public partial class NotificationData
     public NotificationSendMethod SendMethodType { get; set; } = NotificationSendMethod.Email;
     public NotificationFormat TemplateFormatType { get; set; } = NotificationFormat.Default;
     public Dictionary<NotificationParameter, string?> Values { get; set; } = new();
-    public List<string> Receivers { get; set; } = new();
+    public List<string> Receivers { get; set; } = [];
     public string? Title { get; set; }
     public string? Content { get; set; }
     public string? HtmlContent { get; set; }
     public string CreatedBy { get; set; } = "System";
     public DateTimeOffset? CreatedAt { get; set; }
-    public List<string> Attachments { get; set; } = new();
+    public List<string> Attachments { get; set; } = [];
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
     public string Language { get; set; } = "en-US";
     public string? Sender { get; set; }
@@ -34,7 +34,7 @@ public partial class NotificationData
     /// </summary>
     public ErrorOr<NotificationData> Validate()
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         if (UseCase == NotificationUseCase.None)
             errors.Add(Errors.MissingUseCase);

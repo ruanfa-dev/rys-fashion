@@ -334,7 +334,7 @@ public sealed class TaxonManagementEndpoint : ICarterModule
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
-                List<string> qs = new List<string>();
+                List<string> qs = [];
                 if (taxonomyId.HasValue) qs.Add($"taxonomy_id={taxonomyId}");
                 if (storeId.HasValue) qs.Add($"store_id={storeId}");
                 if (includeLeavesOnly.HasValue) qs.Add($"include_leaves_only={includeLeavesOnly.Value.ToString().ToLowerInvariant()}");

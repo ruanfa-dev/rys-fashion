@@ -19,12 +19,12 @@ public static class MinimalApiBindHelper
             if (!prop.CanWrite) continue;
 
             // try multiple candidate keys
-            string[] candidates = new[]
-            {
+            string[] candidates =
+            [
                 prop.Name,                          // PageIndex
                 ToCamelCase(prop.Name),             // pageIndex (redundant when prop.Name is pascal)
                 ToSnakeCase(prop.Name)              // page_index
-            };
+            ];
 
             foreach (string key in candidates)
             {

@@ -175,12 +175,12 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToTypedResult_WithMultipleValidationErrors_ReturnsValidationProblemWithAllErrors()
     {
         // Arrange
-        List<Error> errors = new List<Error>
-        {
+        List<Error> errors =
+        [
             Error.Validation("Field1", "Field1 is required"),
             Error.Validation("Field2", "Field2 is invalid"),
-            Error.Validation("Field1", "Field1 must be unique") // Same field, multiple errors
-        };
+            Error.Validation("Field1", "Field1 must be unique")
+        ];
         ErrorOr<TestModel> errorResult = ErrorOrFactory.From<TestModel>(errors);
 
         // Act
@@ -413,7 +413,7 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithEmptyErrorList_ReturnsGenericProblem()
     {
         // Arrange
-        List<Error> emptyErrors = new List<Error>();
+        List<Error> emptyErrors = [];
 
         // Act
         IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(emptyErrors);
@@ -429,10 +429,7 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithSingleNonValidationError_ReturnsProblemDetails()
     {
         // Arrange
-        List<Error> errors = new List<Error>
-        {
-            Error.NotFound("User.NotFound", "User with specified ID was not found")
-        };
+        List<Error> errors = [Error.NotFound("User.NotFound", "User with specified ID was not found")];
 
         // Act
         IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
@@ -450,10 +447,7 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithSingleValidationError_ReturnsValidationProblem()
     {
         // Arrange
-        List<Error> errors = new List<Error>
-        {
-            Error.Validation("Email", "Email is required")
-        };
+        List<Error> errors = [Error.Validation("Email", "Email is required")];
 
         // Act
         IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
@@ -474,13 +468,13 @@ public class ErrorOrTypedResultsExtensionsTests
     public void ToProblemDetails_WithMultipleValidationErrors_GroupsByPropertyName()
     {
         // Arrange
-        List<Error> errors = new List<Error>
-        {
+        List<Error> errors =
+        [
             Error.Validation("Email", "Email is required"),
             Error.Validation("Email", "Email format is invalid"),
             Error.Validation("Password", "Password is required"),
             Error.Validation("Age", "Age must be positive")
-        };
+        ];
 
         // Act
         IResult result = ErrorOrTypedResultsExtensions.ToProblemDetails(errors);
@@ -586,8 +580,8 @@ public class ErrorOrTypedResultsExtensionsTests
         // Arrange
         Dictionary<string, List<TestModel>> complexModel = new Dictionary<string, List<TestModel>>
         {
-            ["category1"] = new List<TestModel> { _testModel },
-            ["category2"] = new List<TestModel> { new(2, "Test2", 200.0m) }
+            ["category1"] = [_testModel],
+            ["category2"] = [new(2, "Test2", 200.0m)]
         };
         ErrorOr<Dictionary<string, List<TestModel>>> successResult = ErrorOrFactory.From(complexModel);
 

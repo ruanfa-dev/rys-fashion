@@ -27,8 +27,8 @@ public static class NotificationDataBuilder
             HtmlContent = template?.HtmlTemplateContent,
             Title = template?.Name,
             Values = new Dictionary<NotificationParameter, string?>(),
-            Receivers = new List<string>(),
-            Attachments = new List<string>()
+            Receivers = [],
+            Attachments = []
         };
 
         return notificationData;
@@ -100,7 +100,7 @@ public static class NotificationDataBuilder
         if (receivers == null || !receivers.Any(r => !string.IsNullOrWhiteSpace(r)))
             return notificationData;
 
-        notificationData.Receivers ??= new List<string>();
+        notificationData.Receivers ??= [];
         List<string> uniqueReceivers = receivers.Where(r => !string.IsNullOrWhiteSpace(r) && !notificationData.Receivers.Contains(r)).ToList();
         notificationData.Receivers.AddRange(uniqueReceivers);
         return notificationData;
@@ -115,7 +115,7 @@ public static class NotificationDataBuilder
         if (string.IsNullOrWhiteSpace(receiver))
             return notificationData;
 
-        notificationData.Receivers ??= new List<string>();
+        notificationData.Receivers ??= [];
         if (!notificationData.Receivers.Contains(receiver))
             notificationData.Receivers.Add(receiver);
         return notificationData;
@@ -182,7 +182,7 @@ public static class NotificationDataBuilder
         if (attachments == null || !attachments.Any(a => !string.IsNullOrWhiteSpace(a)))
             return notificationData;
 
-        notificationData.Attachments ??= new List<string>();
+        notificationData.Attachments ??= [];
         List<string> uniqueAttachments = attachments.Where(a => !string.IsNullOrWhiteSpace(a) && !notificationData.Attachments.Contains(a)).ToList();
         notificationData.Attachments.AddRange(uniqueAttachments);
         return notificationData;
@@ -291,7 +291,7 @@ public static class NotificationDataBuilder
             Title = title,
             Content = content,
             HtmlContent = htmlContent,
-            Attachments = new List<string>(),
+            Attachments = [],
             Priority = useCase == NotificationUseCase.SystemResetPassword ? NotificationPriority.High : NotificationPriority.Normal
         };
 
@@ -330,7 +330,7 @@ public static class NotificationDataBuilder
             Title = template?.Name ?? useCase.ToString(),
             Receivers = receivers.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),
             Values = new Dictionary<NotificationParameter, string?>(parameters),
-            Attachments = new List<string>(),
+            Attachments = [],
             Priority = GetDefaultPriority(useCase)
         };
 

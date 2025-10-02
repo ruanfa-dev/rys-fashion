@@ -30,7 +30,7 @@ public static class SortParamExtensions
 
         IOrderedQueryable<T>? orderedQuery = null;
 
-        foreach (SortParams sort in sortParams?.Where(s => !string.IsNullOrWhiteSpace(s.SortBy)) ?? Enumerable.Empty<SortParams>())
+        foreach (SortParams sort in sortParams?.Where(s => !string.IsNullOrWhiteSpace(s.SortBy)) ?? [])
         {
             if (orderedQuery == null)
             {

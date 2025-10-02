@@ -716,8 +716,8 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithSpecialCharacters_HandlesCorrectly()
     {
         // Arrange
-        List<TestEntity> testDataWithSpecialChars = new List<TestEntity>
-        {
+        List<TestEntity> testDataWithSpecialChars =
+        [
             new TestEntity
             {
                 Id = 99,
@@ -725,7 +725,7 @@ public sealed class SearchParamsExtensionsTests
                 NullableStringProperty = "Special-Character_Value",
                 Status = TestStatus.Active
             }
-        };
+        ];
         IQueryable<TestEntity> query = testDataWithSpecialChars.AsQueryable();
         SearchParameter searchParams = new SearchParameter(SearchTerm: "@Email");
 
@@ -759,7 +759,7 @@ public sealed class SearchParamsExtensionsTests
     public void ApplySearch_WithLargeDataset_PerformsEfficiently()
     {
         // Arrange
-        List<TestEntity> largeDataset = new List<TestEntity>();
+        List<TestEntity> largeDataset = [];
         for (int i = 0; i < 1000; i++)
         {
             largeDataset.Add(new TestEntity

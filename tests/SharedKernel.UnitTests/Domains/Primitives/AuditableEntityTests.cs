@@ -148,7 +148,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         DateTimeOffset beforeMark = DateTimeOffset.UtcNow;
 
         // Act
-        entity.MarkAsCreated();
+        entity.ApplyMarkAsCreated();
         DateTimeOffset afterMark = DateTimeOffset.UtcNow;
 
         // Assert
@@ -171,7 +171,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         DateTimeOffset beforeMark = DateTimeOffset.UtcNow;
 
         // Act
-        entity.MarkAsCreated(userId);
+        entity.ApplyMarkAsCreated(userId);
         DateTimeOffset afterMark = DateTimeOffset.UtcNow;
 
         // Assert
@@ -183,25 +183,25 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("user123")]
-    [InlineData("admin@example.com")]
-    public void MarkAsCreated_WithVariousUserIds_HandlesCorrectly(string? userId)
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("   ", null)]
+    [InlineData("user123", "user123")]
+    [InlineData("admin@example.com", "admin@example.com")]
+    public void MarkAsCreated_WithVariousUserIds_HandlesCorrectly(string? userId, string? expectedCreatedBy)
     {
         // Arrange
         TestAuditableEntity entity = new TestAuditableEntity(1);
         DateTimeOffset beforeMark = DateTimeOffset.UtcNow;
 
         // Act
-        entity.MarkAsCreated(userId);
+        entity.ApplyMarkAsCreated(userId);
         DateTimeOffset afterMark = DateTimeOffset.UtcNow;
 
         // Assert
         entity.CreatedAt.ShouldBeGreaterThanOrEqualTo(beforeMark);
         entity.CreatedAt.ShouldBeLessThanOrEqualTo(afterMark);
-        entity.CreatedBy.ShouldBe(userId);
+        entity.CreatedBy.ShouldBe(expectedCreatedBy);
 
         _output.WriteLine($"UserId: '{userId}' -> CreatedBy: '{entity.CreatedBy}'");
     }
@@ -217,9 +217,10 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         TestAuditableEntity entity = new TestAuditableEntity(1);
         DateTimeOffset originalCreatedAt = entity.CreatedAt;
         DateTimeOffset beforeUpdate = DateTimeOffset.UtcNow;
+        Thread.Sleep(1); // Ensure time difference
 
         // Act
-        entity.ApplyMarkAsCreated();
+        entity.ApplyMarkAsUpdated();
         DateTimeOffset afterUpdate = DateTimeOffset.UtcNow;
 
         // Assert
@@ -242,7 +243,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         DateTimeOffset beforeUpdate = DateTimeOffset.UtcNow;
 
         // Act
-        entity.ApplyMarkAsCreated(userId);
+        entity.ApplyMarkAsUpdated(userId);
         DateTimeOffset afterUpdate = DateTimeOffset.UtcNow;
 
         // Assert
@@ -259,7 +260,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         TestAuditableEntity entity = new TestAuditableEntity(1);
 
         // Act & Assert - First update
-        entity.MarkAsUpdated("user1");
+        entity.ApplyMarkAsUpdated("user1");
         DateTimeOffset? firstUpdate = entity.UpdatedAt;
         firstUpdate.ShouldNotBeNull();
         entity.UpdatedBy.ShouldBe("user1");
@@ -268,7 +269,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         Thread.Sleep(1);
 
         // Act & Assert - Second update
-        entity.MarkAsUpdated("user2");
+        entity.ApplyMarkAsUpdated("user2");
         DateTimeOffset? secondUpdate = entity.UpdatedAt;
         secondUpdate.ShouldNotBeNull();
         secondUpdate.Value.ShouldBeGreaterThan(firstUpdate!.Value);
@@ -278,26 +279,26 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("admin")]
-    [InlineData("system@example.com")]
-    public void MarkAsUpdated_WithVariousUserIds_HandlesCorrectly(string? userId)
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("   ", null)]
+    [InlineData("admin", "admin")]
+    [InlineData("system@example.com", "system@example.com")]
+    public void MarkAsUpdated_WithVariousUserIds_HandlesCorrectly(string? userId, string? expectedUpdatedBy)
     {
         // Arrange
         TestAuditableEntity entity = new TestAuditableEntity(1);
         DateTimeOffset beforeUpdate = DateTimeOffset.UtcNow;
 
         // Act
-        entity.MarkAsUpdated(userId);
+        entity.ApplyMarkAsUpdated(userId);
         DateTimeOffset afterUpdate = DateTimeOffset.UtcNow;
 
         // Assert
         entity.UpdatedAt.ShouldNotBeNull();
         entity.UpdatedAt!.Value.ShouldBeGreaterThanOrEqualTo(beforeUpdate);
         entity.UpdatedAt!.Value.ShouldBeLessThanOrEqualTo(afterUpdate);
-        entity.UpdatedBy.ShouldBe(userId);
+        entity.UpdatedBy.ShouldBe(expectedUpdatedBy);
 
         _output.WriteLine($"UserId: '{userId}' -> UpdatedBy: '{entity.UpdatedBy}'");
     }
@@ -330,7 +331,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
 
         // Simulate different audit times
         Thread.Sleep(1);
-        entity2.MarkAsUpdated("different-user");
+        entity2.ApplyMarkAsUpdated("different-user");
 
         // Act & Assert
         entity1.Equals(entity2).ShouldBeTrue();
@@ -374,7 +375,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         Thread.Sleep(1);
 
         // Act & Assert - Manual creation marking
-        entity.MarkAsCreated("creator123");
+        entity.ApplyMarkAsCreated("creator123");
         entity.CreatedAt.ShouldBeGreaterThan(originalCreatedAt);
         entity.CreatedBy.ShouldBe("creator123");
         entity.UpdatedAt.ShouldBeNull();
@@ -383,7 +384,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         Thread.Sleep(1);
 
         // Act & Assert - First update
-        entity.MarkAsUpdated("updater456");
+        entity.ApplyMarkAsUpdated("updater456");
         entity.UpdatedAt.ShouldNotBeNull();
         entity.UpdatedAt.Value.ShouldBeGreaterThan(entity.CreatedAt);
         entity.UpdatedBy.ShouldBe("updater456");
@@ -396,7 +397,7 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         // Act & Assert - Second update
         Thread.Sleep(1);
         DateTimeOffset? firstUpdateTime = entity.UpdatedAt;
-        entity.MarkAsUpdated("finalUpdater");
+        entity.ApplyMarkAsUpdated("finalUpdater");
         entity.UpdatedAt.ShouldNotBeNull();
         entity.UpdatedAt.Value.ShouldBeGreaterThan(firstUpdateTime!.Value);
         entity.UpdatedBy.ShouldBe("finalUpdater");
@@ -431,14 +432,14 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
 
         // Act - Complex scenario
         entity.AddDomainEvent(domainEvent1);
-        entity.MarkAsCreated("system");
+        entity.ApplyMarkAsCreated("system");
 
         Thread.Sleep(1);
-        entity.MarkAsUpdated("user1");
+        entity.ApplyMarkAsUpdated("user1");
         entity.AddDomainEvent(domainEvent2);
 
         Thread.Sleep(1);
-        entity.MarkAsUpdated("user2");
+        entity.ApplyMarkAsUpdated("user2");
         entity.Name = "Updated Name";
 
         // Assert - All behaviors work together
@@ -513,10 +514,10 @@ public sealed class AuditableEntityTests(ITestOutputHelper output)
         TimeSpan precision = TimeSpan.FromMilliseconds(1);
 
         // Act - Multiple rapid updates
-        List<DateTimeOffset> updates = new List<DateTimeOffset>();
+        List<DateTimeOffset> updates = [];
         for (int i = 0; i < 5; i++)
         {
-            entity.MarkAsUpdated($"user{i}");
+            entity.ApplyMarkAsUpdated($"user{i}");
             updates.Add(entity.UpdatedAt!.Value);
             Thread.Sleep(1);
         }

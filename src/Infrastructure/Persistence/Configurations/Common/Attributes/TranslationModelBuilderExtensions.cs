@@ -48,7 +48,7 @@ internal static class TranslationModelBuilderExtensions
                 if (applyMethod == null) continue;
 
                 MethodInfo genericApply = applyMethod.MakeGenericMethod(entityType);
-                genericApply.Invoke(builder, new[] { configInstance! });
+                genericApply.Invoke(builder, [configInstance!]);
             }
         }
     }
@@ -70,7 +70,7 @@ internal static class TranslationModelBuilderExtensions
             if (configInstance == null) continue;
 
             MethodInfo genericApply = applyMethod.MakeGenericMethod(clrType);
-            genericApply.Invoke(builder, new[] { configInstance! });
+            genericApply.Invoke(builder, [configInstance!]);
         }
     }
 }

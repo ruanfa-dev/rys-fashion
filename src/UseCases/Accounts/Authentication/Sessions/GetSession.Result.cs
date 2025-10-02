@@ -7,6 +7,6 @@ public record AccountSessionResult
     public string? PhoneNumber { get; set; }
     public bool IsEmailConfirmed { get; set; }
     public bool IsPhoneNumberConfirmed { get; set; }
-    public List<string> Roles { get; set; } = new();
-    public List<string> Permissions { get; set; } = new();
+    public List<string> Roles { get; set; } = [];
+    public List<string> Permissions { get; set; } = [];
 }

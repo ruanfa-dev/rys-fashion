@@ -8,7 +8,7 @@ public sealed class SearchBuilder<T>
 {
     private readonly IQueryable<T> _query;
     private readonly string _searchTerm;
-    private readonly List<Expression<Func<T, string>>> _searchFields = new();
+    private readonly List<Expression<Func<T, string>>> _searchFields = [];
     private SearchOptions _options = new();
 
     internal SearchBuilder(IQueryable<T> query, string searchTerm)

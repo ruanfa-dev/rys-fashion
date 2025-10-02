@@ -57,9 +57,9 @@ internal class HasAuthorizationPolicyProvider(IOptions<AuthorizationOptions> opt
     /// <returns>Tuple containing lists of permissions, policies, and roles</returns>
     private static (List<string> permissions, List<string> policies, List<string> roles) ParsePolicyName(string policyName)
     {
-        List<string> permissions = new List<string>();
-        List<string> policies = new List<string>();
-        List<string> roles = new List<string>();
+        List<string> permissions = [];
+        List<string> policies = [];
+        List<string> roles = [];
 
         try
         {

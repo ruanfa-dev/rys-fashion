@@ -147,8 +147,8 @@ public static class TranslatableExtensions
     public static IEnumerable<string> GetAvailableCultures<TTranslation>(this ITranslatable<TTranslation>? resource)
         where TTranslation : class, ITranslation
     {
-        if (resource is null) return Array.Empty<string>();
-        return resource.Translations?.Select(t => t.Culture).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct(StringComparer.OrdinalIgnoreCase) ?? Array.Empty<string>();
+        if (resource is null) return [];
+        return resource.Translations?.Select(t => t.Culture).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct(StringComparer.OrdinalIgnoreCase) ?? [];
     }
 
     #endregion
@@ -158,7 +158,7 @@ public static class TranslatableExtensions
     private static string GetNeutralCulture(string culture)
     {
         if (string.IsNullOrWhiteSpace(culture)) return string.Empty;
-        string[] parts = culture.Split(new[] { '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = culture.Split(['-', '_'], StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 0 ? parts[0] : culture;
     }
 

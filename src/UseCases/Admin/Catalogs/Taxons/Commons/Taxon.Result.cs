@@ -35,7 +35,7 @@ public static class TaxonResult
         public string? SquareImageUrl { get; set; }
         public Guid? ParentId { get; set; }
         public ListItem? Parent { get; set; }
-        public List<ListItem> Children { get; set; } = new();
+        public List<ListItem> Children { get; set; } = [];
     }
 
     public record TreeItem
@@ -47,7 +47,7 @@ public static class TaxonResult
         public int Lft { get; set; }
         public int Rgt { get; set; }
         public int Depth { get; set; }
-        public List<TreeItem> Children { get; set; } = new();
+        public List<TreeItem> Children { get; set; } = [];
         public int Position { get; set; }
         public string? Description { get; set; }
         public DateTimeOffset? CreatedAt { get; set; }

@@ -5,7 +5,7 @@
 public sealed class SortBuilder<T>
 {
     private readonly IQueryable<T> _query;
-    private readonly List<SortParams> _sortParams = new();
+    private readonly List<SortParams> _sortParams = [];
 
     internal SortBuilder(IQueryable<T> query)
     {

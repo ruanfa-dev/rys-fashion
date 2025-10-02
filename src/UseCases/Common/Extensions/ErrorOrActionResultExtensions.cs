@@ -386,7 +386,7 @@ public sealed class MvcControllerExampleService
 
     private List<Error> ValidateCreateCustomerRequest(CreateCustomerRequest request)
     {
-        List<Error> errors = new List<Error>();
+        List<Error> errors = [];
 
         if (string.IsNullOrWhiteSpace(request.Name))
             errors.Add(Error.Validation("Name", "Customer name is required"));

@@ -28,8 +28,7 @@ public sealed class TestEntity
     public TestAddress? Address { get; set; }
 
     public static List<TestEntity> GetTestData() =>
-        new()
-        {
+    [
         new TestEntity
         {
             Id = 1,
@@ -44,6 +43,7 @@ public sealed class TestEntity
             Status = TestStatus.Active,
             Address = new TestAddress { City = "New York", PostalCode = "10001" }
         },
+
         new TestEntity
         {
             Id = 2,
@@ -58,6 +58,7 @@ public sealed class TestEntity
             Status = TestStatus.Pending,
             Address = new TestAddress { City = "London", PostalCode = null }
         },
+
         new TestEntity
         {
             Id = 3,
@@ -72,5 +73,5 @@ public sealed class TestEntity
             Status = TestStatus.Inactive,
             Address = null // Null nested object
         }
-        };
+    ];
 }

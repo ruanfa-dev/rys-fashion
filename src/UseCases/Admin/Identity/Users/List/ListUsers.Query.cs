@@ -71,7 +71,7 @@ public static partial class ListUsers
                     .ToListAsync(cancellationToken);
 
                 // Get roles for each user
-                List<Result> results = new List<Result>();
+                List<Result> results = [];
                 foreach (User user in users)
                 {
                     IList<string> roles = await userManager.GetRolesAsync(user);

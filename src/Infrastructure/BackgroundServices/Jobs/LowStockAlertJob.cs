@@ -49,7 +49,7 @@ public sealed class LowStockAlertJob(IUnitOfWork unitOfWork, ILogger<LowStockAle
     {
         // Find products with stock below threshold
         await Task.Delay(100, cancellationToken); // Placeholder
-        return new List<LowStockItem>();
+        return [];
     }
 
     private async Task SendLowStockAlerts(List<LowStockItem> items, CancellationToken cancellationToken)

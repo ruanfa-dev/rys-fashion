@@ -18,7 +18,7 @@ public static partial class GetOAuthConfig
         public string ClientId { get; init; } = null!;
         public string AuthorizationUrl { get; init; } = null!;
         public string TokenUrl { get; init; } = null!;
-        public string[] Scopes { get; init; } = Array.Empty<string>();
+        public string[] Scopes { get; init; } = [];
         public string ResponseType { get; init; } = "code";
         public Dictionary<string, string> AdditionalParameters { get; init; } = new();
         public string TokenExchangeUrl { get; init; } = null!;

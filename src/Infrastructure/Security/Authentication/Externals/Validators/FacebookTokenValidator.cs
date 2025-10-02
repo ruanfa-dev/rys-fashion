@@ -242,7 +242,7 @@ public sealed class FacebookTokenValidator : IExternalTokenValidator
         // Validate required scopes for e-commerce
         if (debugInfo.Data.Scopes != null)
         {
-            string[] requiredScopes = new[] { "email", "public_profile" };
+            string[] requiredScopes = ["email", "public_profile"];
             bool hasRequiredScopes = requiredScopes.All(scope => 
                 debugInfo.Data.Scopes.Contains(scope, StringComparer.OrdinalIgnoreCase));
 
