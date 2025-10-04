@@ -22,9 +22,9 @@ public static partial class ForgotPassword
     {
         public static Result Default => new("If an account with the provided email exists, a password reset link has been sent to that email address.");
     }
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param).SetValidator(new ParamValidator());
         }

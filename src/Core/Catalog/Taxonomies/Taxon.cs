@@ -134,12 +134,10 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
             "Taxon.HasPromotionRules",
             "Cannot delete taxon with associated promotion rules. Remove promotion rules first."
         );
-        public static Error NullRule => Error.Validation("Taxon.NullRule", "Cannot add null rule.");
         public static Error AutomaticOnly => Error.Validation(
             "Taxon.AutomaticOnly",
             "Rules can only be added to automatic taxons."
         );
-        public static Error NullProduct => Error.Validation("Taxon.NullProduct", "Cannot classify null product.");
         public static Error ProductAlreadyClassified => Error.Validation(
             "Taxon.ProductAlreadyClassified",
             "Product is already classified under this taxon."
@@ -530,9 +528,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public ErrorOr<Taxon> AddRule(TaxonRule rule)
     {
-        if (rule == null)
-            return Errors.NullRule;
-
         if (IsManual)
             return Errors.AutomaticOnly;
 
@@ -566,9 +561,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
 
     public ErrorOr<Taxon> ClassifyProduct(Guid productId, int position = 0)
     {
-        if (productId == Guid.Empty)
-            return Errors.NullProduct;
-
         if (Classifications.Any(c => c.ProductId == productId))
             return Errors.ProductAlreadyClassified;
 
@@ -579,14 +571,6 @@ public sealed class Taxon : AuditableEntity, IMetadataSupport, ITranslatable<Tax
         AddDomainEvent(new Events.ProductClassified(Id, productId));
 
         return this;
-    }
-
-    public ErrorOr<Taxon> ClassifyProduct(Product product, int position = 0)
-    {
-        if (product == null)
-            return Errors.NullProduct;
-
-        return ClassifyProduct(product.Id, position);
     }
 
     public ErrorOr<Taxon> UnclassifyProduct(Guid productId)

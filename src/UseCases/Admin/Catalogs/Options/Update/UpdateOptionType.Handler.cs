@@ -1,5 +1,4 @@
-﻿using Core.Catalog.Properties;
-using Core.Commons.Extensions;
+﻿using Core.Catalog.Options;
 
 using ErrorOr;
 
@@ -14,25 +13,24 @@ using Serilog;
 using SharedKernel.Extensions.Text;
 using SharedKernel.Messaging.Abstracts;
 
-using UseCases.Admin.Catalogs.Properties.Commons;
-using UseCases.Admin.Catalogs.Properties.Create;
+using UseCases.Admin.Catalogs.Options.Commons;
 using UseCases.Common.Persistence.Context;
 
-namespace UseCases.Admin.Catalogs.Properties.Update;
-public static partial class UpdateProperty
+namespace UseCases.Admin.Catalogs.Options.Update;
+public static partial class UpdateOptionType
 {
-    public record Param : PropertyParam;
-    public record Result : PropertyResult.ListItem;
+    public record Param : OptionTypeParam;
+    public record Result : OptionTypeResult.ListItem;
     public sealed record Command(Guid Id, Param Param) : ICommand<Result>;
     public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
         {
             RuleFor(x => x.Id).NotEmpty()
-                .WithErrorCode(Property.Errors.IdRequired.Code)
-                .WithMessage(Property.Errors.IdRequired.Description);
+                .WithErrorCode(OptionType.Errors.IdRequired.Code)
+                .WithMessage(OptionType.Errors.IdRequired.Description);
             RuleFor(x => x.Param)
-                .SetValidator(new PropertyParamValidator());
+                .SetValidator(new OptionTypeParamValidator());
         }
     }
     public sealed class Handler(
@@ -44,27 +42,25 @@ public static partial class UpdateProperty
             try
             {
                 IApplicationDbContext dbContext = unitOfWork.Context;
-                Property? entity = await dbContext.Set<Property>()
+                OptionType? entity = await dbContext.Set<OptionType>()
                     .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
                 if (entity is null)
-                    return Property.Errors.NotFound(request.Id);
+                    return OptionType.Errors.NotFound(request.Id);
 
                 Param param = request.Param;
 
                 // Check: for name uniqueness
                 string name = param.Name.Parameterize();
-                bool nameExists = await dbContext.Set<Property>()
+                bool nameExists = await dbContext.Set<OptionType>()
                     .AnyAsync(p => p.Id != request.Id && p.Name == name, cancellationToken);
                 if (nameExists)
-                    return Property.Errors.NameAlreadyExists(name);
+                    return OptionType.Errors.NameAlreadyExists(name);
 
                 // Update: entity
-                ErrorOr<Property> updateResult = entity.Update(
+                ErrorOr<OptionType> updateResult = entity.Update(
                     name: name,
                     presentation: param.Presentation,
-                    kind: param.Kind,
                     filterable: param.Filterable,
-                    displayOn: param.DisplayOn,
                     position: param.Position,
                     publicMetadata: param.PublicMetadata,
                     privateMetadata: param.PrivateMetadata
@@ -73,14 +69,14 @@ public static partial class UpdateProperty
                     return updateResult.Errors;
 
                 // Save: changes
-                dbContext.Set<Property>().Update(updateResult.Value);
+                dbContext.Set<OptionType>().Update(updateResult.Value);
                 Result result = updateResult.Value.Adapt<Result>();
                 return result;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "An error occurred while updating property {PropertyId}", request.Id);
-                return Property.Errors.UnexpectedError(nameof(CreateProperty), ex);
+                Log.Error(ex, "An error occurred while updating property {OptionTypeId}", request.Id);
+                return OptionType.Errors.UnexpectedError(nameof(UpdateOptionType), ex);
             }
         }
     }

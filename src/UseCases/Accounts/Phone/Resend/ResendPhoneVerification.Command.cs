@@ -20,9 +20,9 @@ namespace UseCases.Accounts.Phone.Resend;
 public static partial class ResendPhoneVerification
 {
     public sealed record Command(Param Param) : ICommand<Result>;
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param).SetValidator(new ParamValidator());
         }

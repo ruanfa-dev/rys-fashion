@@ -43,9 +43,9 @@ public static partial class AssignRoleToBatchUsers
     public sealed record Result : BatchRoleUserResult;
     public sealed record Command(Guid RoleId, Param Param) : ICommand<Result>;
 
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.RoleId)
                 .NotEmpty()

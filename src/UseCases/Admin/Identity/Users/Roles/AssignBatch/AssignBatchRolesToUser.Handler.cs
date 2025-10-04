@@ -21,9 +21,9 @@ public static partial class AssignBatchRolesToUser
     public sealed record Param : BatchRolesParam;
     public sealed record Result : BatchUserRoleResult;
     public sealed record Command(Guid UserId, Param Param) : ICommand<Result>;
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             // UserId 
             RuleFor(x => x.UserId)

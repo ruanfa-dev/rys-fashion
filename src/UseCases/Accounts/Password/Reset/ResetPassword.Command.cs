@@ -20,9 +20,9 @@ public static partial class ResetPassword
     {
         public static Result Default => new("Password has been successfully reset.");
     }
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param).SetValidator(new ParamValidator());
         }

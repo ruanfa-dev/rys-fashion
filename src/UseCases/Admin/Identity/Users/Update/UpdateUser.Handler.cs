@@ -21,9 +21,9 @@ public static partial class UpdateUser
     public sealed record Result : UserResult.ListItem;
 
     public sealed record Command(Guid Id, Param Param) : ICommand<Result>;
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(m => m.Id)
                 .NotEmpty()

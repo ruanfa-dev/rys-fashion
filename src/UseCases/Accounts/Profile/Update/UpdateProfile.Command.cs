@@ -18,9 +18,9 @@ public static partial class UpdateProfile
 {
     public sealed record Command(AccountProfileParam Param) : ICommand<Updated>;
 
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param).SetValidator(new AccountProfileParamValidator());
         }

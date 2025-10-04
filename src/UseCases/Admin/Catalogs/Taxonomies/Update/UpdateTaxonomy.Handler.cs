@@ -22,9 +22,9 @@ public partial class UpdateTaxonomy
     public sealed record Param : TaxonomyParam;
     public sealed record Result : TaxonomyResult.ListItem;
     public sealed record Command(Guid Id, Param Param) : SharedKernel.Messaging.Abstracts.ICommand<Result>;
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Id).NotEmpty();
             RuleFor(x => x.Param).SetValidator(new TaxonomyParamValidator());

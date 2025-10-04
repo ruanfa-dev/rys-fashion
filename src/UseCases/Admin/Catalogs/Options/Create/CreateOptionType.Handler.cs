@@ -1,5 +1,4 @@
-﻿using Core.Catalog.Properties;
-using Core.Commons.Extensions;
+﻿using Core.Catalog.Options;
 
 using ErrorOr;
 
@@ -14,20 +13,20 @@ using Serilog;
 using SharedKernel.Extensions.Text;
 using SharedKernel.Messaging.Abstracts;
 
-using UseCases.Admin.Catalogs.Properties.Commons;
+using UseCases.Admin.Catalogs.Options.Commons;
 using UseCases.Common.Persistence.Context;
 
-namespace UseCases.Admin.Catalogs.Properties.Create;
-public static partial class CreateProperty
+namespace UseCases.Admin.Catalogs.Options.Create;
+public static partial class CreateOptionType
 {
-    public sealed record Param : PropertyParam;
-    public sealed record Result : PropertyResult.ListItem;
+    public sealed record Param : OptionTypeParam;
+    public sealed record Result : OptionTypeResult.ListItem;
     public sealed record Command(Param Param) : ICommand<Result>;
     public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
         {
-            RuleFor(x => x.Param).SetValidator(new PropertyParamValidator());
+            RuleFor(x => x.Param).SetValidator(new OptionTypeParamValidator());
         }
     }
     public sealed class Handler(
@@ -42,19 +41,17 @@ public static partial class CreateProperty
 
                 // Check: uniqueness of name
                 string name = param.Name.Parameterize();
-                bool exists = await context.Set<Property>()
+                bool exists = await context.Set<OptionType>()
                     .AnyAsync(p => p.Name == name, cancellationToken);
 
                 if (exists)
-                    return Property.Errors.NameAlreadyExists(name);
+                    return OptionType.Errors.NameAlreadyExists(name);
 
                 // Create: new entity
-                ErrorOr<Property> createResult = Property.Create(
+                ErrorOr<OptionType> createResult = OptionType.Create(
                     name: name,
                     presentation: param.Presentation,
-                    kind: param.Kind,
                     filterable: param.Filterable,
-                    displayOn: param.DisplayOn,
                     position: param.Position,
                     publicMetadata: param.PublicMetadata,
                     privateMetadata: param.PrivateMetadata
@@ -64,7 +61,7 @@ public static partial class CreateProperty
                     return createResult.Errors;
 
                 // Save: to database
-                context.Set<Property>().Add(createResult.Value);
+                context.Set<OptionType>().Add(createResult.Value);
                 await context.SaveChangesAsync(cancellationToken);
 
                 Result result = createResult.Value.Adapt<Result>();
@@ -72,8 +69,8 @@ public static partial class CreateProperty
             }
             catch (Exception ex)
             {
-                Log.Error(ex, messageTemplate: "An error occurred while creating a new property with name {PropertyName}", request.Param.Name);
-                return Property.Errors.UnexpectedError(nameof(CreateProperty), ex);
+                Log.Error(ex, messageTemplate: "An error occurred while creating a new property with name {OptionTypeName}", request.Param.Name);
+                return OptionType.Errors.UnexpectedError(nameof(Options.Create.CreateOptionType), ex);
             }
         }
     }

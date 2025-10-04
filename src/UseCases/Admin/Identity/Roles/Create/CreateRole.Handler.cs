@@ -27,9 +27,9 @@ public static partial class CreateRole
 
     public sealed record class Result(Guid Id);
     public sealed record Command(Param Param) : ICommand<Result>;
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param)
                 .SetValidator(new ParamValidator());

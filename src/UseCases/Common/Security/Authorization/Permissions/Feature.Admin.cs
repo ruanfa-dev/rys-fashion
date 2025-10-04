@@ -14,7 +14,8 @@ public static partial class Feature
             .. AuditLog.All,
             .. Property.All,
             .. Taxonomy.All,
-            .. Taxon.All
+            .. Taxon.All,
+            .. OptionType.All
         ];
     }
 }

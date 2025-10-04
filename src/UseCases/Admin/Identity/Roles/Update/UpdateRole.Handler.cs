@@ -20,9 +20,9 @@ public static partial class UpdateRole
 
     public sealed record Param : RoleParam;
     public sealed record Result : RoleResult.ListItem;
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param)
                 .SetValidator(new RoleParamValidator());

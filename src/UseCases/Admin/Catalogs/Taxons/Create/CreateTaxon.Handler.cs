@@ -22,9 +22,9 @@ public static partial class CreateTaxon
     public sealed record Result : TaxonResult.Details;
     public sealed record Command(Param Param) : ICommand<Result>;
 
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             RuleFor(x => x.Param).SetValidator(new TaxonParamValidator());
         }

@@ -16,25 +16,26 @@ using SharedKernel.Models.Paging;
 using SharedKernel.Models.Search;
 using SharedKernel.Models.Sort;
 
-using UseCases.Admin.Catalogs.Properties.Create;
-using UseCases.Admin.Catalogs.Properties.Delete;
-using UseCases.Admin.Catalogs.Properties.Get.Id;
-using UseCases.Admin.Catalogs.Properties.Get.OptionList;
+using UseCases.Admin.Catalogs.Options.Create;
+using UseCases.Admin.Catalogs.Options.Delete;
+using UseCases.Admin.Catalogs.Options.Get.Id;
+using UseCases.Admin.Catalogs.Options.Get.OptionList;
+using UseCases.Admin.Catalogs.Options.Get.PagedList;
+using UseCases.Admin.Catalogs.Options.Update;
 using UseCases.Admin.Catalogs.Properties.Get.PagedList;
-using UseCases.Admin.Catalogs.Properties.Update;
 using UseCases.Common.Extensions;
 using UseCases.Common.Security.Authorization.Attributes;
 using UseCases.Common.Security.Authorization.Permissions;
 
-namespace UseCases.Admin.Catalogs.Properties;
+namespace UseCases.Admin.Catalogs.Options;
 
-public sealed class PropertyManagementEndpoint : ICarterModule
+public sealed class OptionTypeManagementEndpoint : ICarterModule
 {
-    private const string Route = "api/admin/properties";
-    private const string Tag = "Property Management";
-    private const string Description = "Administrative endpoints for property management including CRUD and listing";
-    private const string Summary = "Property Management API";
-    private const string Name = "PropertyManagement";
+    private const string Route = "api/admin/option-types";
+    private const string Tag = "Option Type Management";
+    private const string Description = "Administrative endpoints for option type management including CRUD and listing";
+    private const string Summary = "Option Type Management API";
+    private const string Name = "OptionTypeManagement";
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
@@ -45,43 +46,42 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             .WithDescription(Description)
             .RequireAuthorization();
 
-        // Create property
+        // Create option type
         group.MapPost("", async (
-            [FromBody] CreateProperty.Param param,
+            [FromBody] CreateOptionType.Param param,
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            CreateProperty.Command command = new(param);
-            ErrorOr<CreateProperty.Result> result = await mediator.Send(command, cancellationToken);
-            ApiResponse<CreateProperty.Result> apiResponse = result.ToApiResponseCreated("Property created successfully");
+            CreateOptionType.Command command = new(param);
+            ErrorOr<CreateOptionType.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<CreateOptionType.Result> apiResponse = result.ToApiResponseCreated("Option type created successfully");
 
-            // Add HATEOAS links for created property
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{apiResponse.Data.Id}")
                     .WithLink("update", $"{Route}/{apiResponse.Data.Id}")
                     .WithLink("delete", $"{Route}/{apiResponse.Data.Id}")
-                    .WithLink("all-properties", Route)
+                    .WithLink("all-option-types", Route)
                     .WithLink("all-products", "/api/admin/products")
-                    .WithMetadata("adminAction", "property-creation");
+                    .WithMetadata("adminAction", "option-type-creation");
             }
 
             return TypedResults.Ok(apiResponse);
         })
-        .WithName(CreateProperty.Name)
-        .WithSummary(CreateProperty.Summary)
-        .WithDescription(CreateProperty.Description)
+        .WithName(CreateOptionType.Name)
+        .WithSummary(CreateOptionType.Summary)
+        .WithDescription(CreateOptionType.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<CreateProperty.Result>>()
+        .Produces<ApiResponse<CreateOptionType.Result>>()
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
-        .RequirePermission(Feature.Admin.Property.Create);
+        .RequirePermission(Feature.Admin.OptionType.Create);
 
-        // List properties (paged)
+        // List option types (paged)
         group.MapGet("", async (
             [AsParameters] PagingParams pagination,
             [AsParameters] SortParams sort,
@@ -90,16 +90,16 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            GetPropertyPagedList.Param param = new GetPropertyPagedList.Param
+            GetOptionTypePagedList.Param param = new GetOptionTypePagedList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            GetPropertyPagedList.Query query = new GetPropertyPagedList.Query(param);
-            ErrorOr<PagedList<GetPropertyPagedList.Result>> result = await mediator.Send(query, cancellationToken);
-            ApiResponse<List<GetPropertyPagedList.Result>> apiResponse = result.ToApiResponsePaged("Properties retrieved successfully");
+            GetOptionTypePagedList.Query query = new GetOptionTypePagedList.Query(param);
+            ErrorOr<PagedList<GetOptionTypePagedList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<List<GetOptionTypePagedList.Result>> apiResponse = result.ToApiResponsePaged("Option types retrieved successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
@@ -120,25 +120,25 @@ public sealed class PropertyManagementEndpoint : ICarterModule
                     apiResponse.WithLink("last", $"{Route}?page_index={apiResponse.Pagination.TotalPages}&page_size={pageSize}");
 
                 apiResponse
-                    .WithLink("create-property", Route)
+                    .WithLink("create-option-type", Route)
                     .WithLink("all-products", "/api/admin/products")
-                    .WithMetadata("adminContext", "property-listing")
+                    .WithMetadata("adminContext", "option-type-listing")
                     .WithMetadata("filterApplied", !string.IsNullOrEmpty(search.SearchTerm));
             }
 
             return TypedResults.Ok(apiResponse);
         })
-        .WithName(GetPropertyPagedList.Name)
-        .WithSummary(GetPropertyPagedList.Summary)
-        .WithDescription(GetPropertyPagedList.Description)
+        .WithName(GetOptionTypePagedList.Name)
+        .WithSummary(GetOptionTypePagedList.Summary)
+        .WithDescription(GetOptionTypePagedList.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<List<GetPropertyPagedList.Result>>>()
+        .Produces<ApiResponse<List<GetOptionTypePagedList.Result>>>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
-        .RequirePermission(Feature.Admin.Property.List);
+        .RequirePermission(Feature.Admin.OptionType.List);
 
-        // Option list for properties (lightweight items for dropdowns)
+        // Option type select list (lightweight for dropdowns)
         group.MapGet("/select", async (
             [AsParameters] PagingParams pagination,
             [AsParameters] SortParams sort,
@@ -147,48 +147,47 @@ public sealed class PropertyManagementEndpoint : ICarterModule
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            GetPropertyOptionList.Param param = new GetPropertyOptionList.Param
+            GetOptionTypeOptionList.Param param = new GetOptionTypeOptionList.Param
             {
                 Paging = pagination,
                 Sort = sort,
                 Search = search,
                 Filter = filter
             };
-            GetPropertyOptionList.Query query = new GetPropertyOptionList.Query(param);
-            ErrorOr<PagedList<GetPropertyOptionList.Result>> result = await mediator.Send(query, cancellationToken);
-            ApiResponse<PagedList<GetPropertyOptionList.Result>> apiResponse = result.ToApiResponse("Option type option list retrieved successfully");
+            GetOptionTypeOptionList.Query query = new GetOptionTypeOptionList.Query(param);
+            ErrorOr<PagedList<GetOptionTypeOptionList.Result>> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<PagedList<GetOptionTypeOptionList.Result>> apiResponse = result.ToApiResponse("Option type select list retrieved successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/select")
-                    .WithLink("create-property", Route)
+                    .WithLink("create-option-type", Route)
                     .WithLink("all-products", "/api/admin/products")
-                    .WithMetadata("adminContext", "property-select-list");
+                    .WithMetadata("adminContext", "option-type-select-list");
             }
 
             return TypedResults.Ok(apiResponse);
         })
-        .WithName(GetPropertyOptionList.Name)
-        .WithSummary(GetPropertyOptionList.Summary)
-        .WithDescription(GetPropertyOptionList.Description)
+        .WithName(GetOptionTypeOptionList.Name)
+        .WithSummary(GetOptionTypeOptionList.Summary)
+        .WithDescription(GetOptionTypeOptionList.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<List<GetPropertyOptionList.Result>>>()
+        .Produces<ApiResponse<List<GetOptionTypeOptionList.Result>>>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
-        .RequirePermission(Feature.Admin.Property.List);
+        .RequirePermission(Feature.Admin.OptionType.List);
 
-        // Get property by id
+        // Get option type by id
         group.MapGet("/{id:guid}", async (
             [FromRoute] Guid id,
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-
-            GetPropertyById.Query query = new GetPropertyById.Query(id);
-            ErrorOr<GetPropertyById.Result> result = await mediator.Send(query, cancellationToken);
-            ApiResponse<GetPropertyById.Result> apiResponse = result.ToApiResponse("Property details retrieved successfully");
+            GetOptionTypeById.Query query = new GetOptionTypeById.Query(id);
+            ErrorOr<GetOptionTypeById.Result> result = await mediator.Send(query, cancellationToken);
+            ApiResponse<GetOptionTypeById.Result> apiResponse = result.ToApiResponse("Option type details retrieved successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
@@ -196,86 +195,86 @@ public sealed class PropertyManagementEndpoint : ICarterModule
                     .WithLink("self", $"{Route}/{id}")
                     .WithLink("update", $"{Route}/{id}")
                     .WithLink("delete", $"{Route}/{id}")
-                    .WithLink("all-properties", Route)
+                    .WithLink("all-option-types", Route)
                     .WithLink("all-products", "/api/admin/products")
-                    .WithMetadata("adminContext", "property-details")
-                    .WithMetadata("propertyId", id);
+                    .WithMetadata("adminContext", "option-type-details")
+                    .WithMetadata("optionTypeId", id);
             }
 
             return TypedResults.Ok(apiResponse);
         })
-        .WithName(GetPropertyById.Name)
-        .WithSummary(GetPropertyById.Summary)
-        .WithDescription(GetPropertyById.Description)
+        .WithName(GetOptionTypeById.Name)
+        .WithSummary(GetOptionTypeById.Summary)
+        .WithDescription(GetOptionTypeById.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<GetPropertyById.Result>>()
+        .Produces<ApiResponse<GetOptionTypeById.Result>>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
-        .RequirePermission(Feature.Admin.Property.View);
+        .RequirePermission(Feature.Admin.OptionType.View);
 
-        // Update property
+        // Update option type
         group.MapPut("/{id:guid}", async (
             [FromRoute] Guid id,
-            [FromBody] UpdateProperty.Param param,
+            [FromBody] UpdateOptionType.Param param,
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            UpdateProperty.Command command = new UpdateProperty.Command(id, param);
-            ErrorOr<UpdateProperty.Result> result = await mediator.Send(command, cancellationToken);
-            ApiResponse<UpdateProperty.Result> apiResponse = result.ToApiResponse("Property updated successfully");
+            UpdateOptionType.Command command = new UpdateOptionType.Command(id, param);
+            ErrorOr<UpdateOptionType.Result> result = await mediator.Send(command, cancellationToken);
+            ApiResponse<UpdateOptionType.Result> apiResponse = result.ToApiResponse("Option type updated successfully");
 
             if (apiResponse is { IsSuccess: true, Data: not null })
             {
                 apiResponse
                     .WithLink("self", $"{Route}/{id}")
                     .WithLink("delete", $"{Route}/{id}")
-                    .WithLink("all-properties", Route)
-                    .WithMetadata("adminAction", "property-update")
+                    .WithLink("all-option-types", Route)
+                    .WithMetadata("adminAction", "option-type-update")
                     .WithMetadata("updatedAt", DateTime.UtcNow)
                     .WithMetadata("operation", "update");
             }
 
             return TypedResults.Ok(apiResponse);
         })
-        .WithName(UpdateProperty.Name)
-        .WithSummary(UpdateProperty.Summary)
-        .WithDescription(UpdateProperty.Description)
+        .WithName(UpdateOptionType.Name)
+        .WithSummary(UpdateOptionType.Summary)
+        .WithDescription(UpdateOptionType.Description)
         .WithTags(Tag)
-        .Produces<ApiResponse<UpdateProperty.Result>>()
+        .Produces<ApiResponse<UpdateOptionType.Result>>()
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
-        .RequirePermission(Feature.Admin.Property.Update);
+        .RequirePermission(Feature.Admin.OptionType.Update);
 
-        // Delete property
+        // Delete option type
         group.MapDelete("/{id:guid}", async (
             [FromRoute] Guid id,
             [FromServices] ISender mediator,
             CancellationToken cancellationToken) =>
         {
-            DeleteProperty.Command command = new DeleteProperty.Command(id);
+            DeleteOptionType.Command command = new DeleteOptionType.Command(id);
             ErrorOr<Deleted> result = await mediator.Send(command, cancellationToken);
-            ApiResponse apiResponse = result.ToApiResponseDeleted("Property deleted successfully");
+            ApiResponse apiResponse = result.ToApiResponseDeleted("Option type deleted successfully");
 
             apiResponse
-                .WithLink("all-properties", Route)
-                .WithLink("create-property", Route)
+                .WithLink("all-option-types", Route)
+                .WithLink("create-option-type", Route)
                 .WithLink("all-products", "/api/admin/products")
-                .WithMetadata("adminAction", "property-deletion")
+                .WithMetadata("adminAction", "option-type-deletion")
                 .WithMetadata("deletedAt", DateTime.UtcNow)
-                .WithMetadata("deletedPropertyId", id)
+                .WithMetadata("deletedOptionTypeId", id)
                 .WithMetadata("operation", "delete");
 
             return TypedResults.Ok(apiResponse);
         })
-        .WithName(DeleteProperty.Name)
-        .WithSummary(DeleteProperty.Summary)
-        .WithDescription(DeleteProperty.Description)
+        .WithName(DeleteOptionType.Name)
+        .WithSummary(DeleteOptionType.Summary)
+        .WithDescription(DeleteOptionType.Description)
         .WithTags(Tag)
         .Produces<ApiResponse>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -284,6 +283,6 @@ public sealed class PropertyManagementEndpoint : ICarterModule
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
-        .RequirePermission(Feature.Admin.Property.Delete);
+        .RequirePermission(Feature.Admin.OptionType.Delete);
     }
 }

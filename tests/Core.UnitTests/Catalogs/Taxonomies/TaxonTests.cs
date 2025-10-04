@@ -523,7 +523,6 @@ public class TaxonTests
 
         // Assert
         result.IsError.ShouldBeTrue();
-        result.FirstError.ShouldBe(Taxon.Errors.NullProduct);
     }
 
     [Fact]

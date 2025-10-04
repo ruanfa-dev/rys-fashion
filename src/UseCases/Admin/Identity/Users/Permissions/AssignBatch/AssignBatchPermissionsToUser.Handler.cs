@@ -38,9 +38,9 @@ public static partial class AssignBatchPermissionsToUser
     
     public sealed record Command(Guid UserId, Param Param) : ICommand<Result>;
 
-    public sealed class CommandValidator : AbstractValidator<Command>
+    public sealed class Validator : AbstractValidator<Command>
     {
-        public CommandValidator()
+        public Validator()
         {
             // UserId 
             RuleFor(x => x.UserId)
